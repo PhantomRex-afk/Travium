@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Travium</string>
+    <string name="title_activity_home_page">HomePageActivity</string>
+    <string name="title_activity_make_post">MakePostActivity</string>
+</resources>
