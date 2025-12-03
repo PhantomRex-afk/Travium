@@ -10,6 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,10 +19,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -44,83 +54,81 @@ class HomePageActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeBody(){
-    Scaffold {
-        padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
+
+    data class NavItems(val label : String, val icon: Int)
+    var selectedIndex by remember { mutableStateOf(0) }
 
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Start,
+    val listItems = listOf(
 
+            NavItems("Home", R.drawable.outline_home_24),
+            NavItems("Post", R.drawable.addbox),
+            NavItems("Guide", R.drawable.outline_map_pin_review_24),
+            NavItems("Profile", R.drawable.profile),
+        )
 
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(80.dp)
-                    .padding(10.dp)
-                    .background(color = Color.Green)
-            ) {
-
-
-                Text(
-                    "Travium", style = TextStyle(
-                        fontSize = 35.sp,
-                        fontWeight = FontWeight.Bold
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        "Travium", style = TextStyle(
+                            fontSize = 35.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                     )
-                )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.LightGray
+                ),
+                actions = {
+                    Icon(painter = painterResource(R.drawable.notification),
+                        contentDescription = null
+                    )
 
 
-                Spacer(modifier = Modifier.width(160.dp))
+                    Spacer(modifier = Modifier.width(20.dp))
 
 
-                Icon(painter = painterResource(R.drawable.notification),
-                    contentDescription = null
-                )
+                    Icon(painter = painterResource(R.drawable.chatbox),
+                        contentDescription = null
+                    )
+                }
+            )
+        },
 
-
-                Spacer(modifier = Modifier.width(20.dp))
-
-
-                Icon(painter = painterResource(R.drawable.chatbox),
-                    contentDescription = null
-                )
-
-            }
-
-
-
-            Column(
-                modifier = Modifier
-                    .height(700.dp)
-            ) {
-
-            }
-
-
-
-            Row(
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically,
-
-
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(10.dp)
-                    .background(color = Color.LightGray)
-                    .height(40.dp)
-            ) {
-
-
-                NavigationRow()
-
+        bottomBar = {
+            NavigationBar {
+                listItems.forEachIndexed { index, item ->
+                    NavigationBarItem(
+                        icon = {
+                            Icon(painter = painterResource(item.icon),
+                                contentDescription = item.label)
+                        },
+                        label = {Text(item.label)},
+                        selected = selectedIndex == index,
+                        onClick = {selectedIndex=index}
+                    )
+                }
 
             }
+
+        }
+    ) {
+        padding ->
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(padding)
+        ){
+            when(selectedIndex){
+                0 -> HomeScreenBody()
+                1 -> MakePostBody()
+                else -> HomeScreenBody()
+            }
+
         }
     }
 }
@@ -136,16 +144,14 @@ fun NavigationRow(){
 
 
 
-    IconButton(onClick = { mark = !mark }) {
-        Icon(painter = if (mark){painterResource(R.drawable.outline_home_24)
-        } else painterResource(R.drawable.outline_home_24),
-            tint = if (mark) Color.Blue else Color.Black,
-            contentDescription = null,
-        )
-        val intent = Intent(context, HomePageActivity::class.java)
-        context.startActivity(intent)
-        activity.finish()
-    }
+    Icon(painter = painterResource(R.drawable.outline_home_24),
+        contentDescription = null,
+        modifier = Modifier.clickable{
+            val intent = Intent(context, HomePageActivity::class.java)
+            context.startActivity(intent)
+            activity.finish()
+        }
+    )
 
 
 
