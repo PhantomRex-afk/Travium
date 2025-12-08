@@ -1,4 +1,4 @@
-package com.example.travium
+package com.example.travium.view
 
 import androidx.compose.runtime.Composable
 

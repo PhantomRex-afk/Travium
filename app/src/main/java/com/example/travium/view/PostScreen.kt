@@ -1,4 +1,4 @@
-package com.example.travium
+package com.example.travium.view
 
 import android.app.Activity
 import android.content.Intent
@@ -32,6 +32,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.travium.R
 
 @Composable
 fun MakePostBody(){
