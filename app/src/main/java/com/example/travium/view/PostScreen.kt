@@ -1,11 +1,7 @@
-package com.example.travium
+package com.example.travium.view
 
 import android.app.Activity
 import android.content.Intent
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,22 +30,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.travium.ui.theme.PurpleGrey80
-import com.example.travium.ui.theme.TraviumTheme
-
-class MakePostActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            MakePostBody()
-        }
-    }
-}
+import com.example.travium.R
 
 @Composable
 fun MakePostBody(){
@@ -114,7 +97,7 @@ fun MakePostBody(){
                 ) {
 
                     Icon(painter = painterResource(R.drawable.image),
-                    contentDescription = null,
+                        contentDescription = null,
                         modifier = Modifier
                             .weight(1f)
                             .align(Alignment.CenterHorizontally)
@@ -169,58 +152,34 @@ fun MakePostBody(){
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-               Button(
-                   onClick = {},
-                   colors = ButtonDefaults.buttonColors(
-                       containerColor = Color.Blue,
-                   ),
-                   shape = RoundedCornerShape(12.dp),
-                   modifier = Modifier
-                       .fillMaxWidth()
+                Button(
+                    onClick = {},
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Blue,
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
 
-                       .height(60.dp).padding(horizontal = 15.dp)
-               ) {
-                   Text("Post", style = TextStyle(
-                       fontSize = 25.sp,
-                       fontWeight = FontWeight.SemiBold
-                   ),
-                       modifier = Modifier
-                           .padding(10.dp)
+                        .height(60.dp).padding(horizontal = 15.dp)
+                ) {
+                    Text("Post", style = TextStyle(
+                        fontSize = 25.sp,
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                        modifier = Modifier
+                            .padding(10.dp)
 
-                           .fillMaxWidth()
-                           .height(30.dp))
-               }
+                            .fillMaxWidth()
+                            .height(30.dp))
+                }
 
             }
 
             Spacer(modifier = Modifier.height(25.dp))
 
 
-            Row(
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically,
-
-
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(10.dp)
-                    .background(color = Color.LightGray)
-                    .height(40.dp)
-                    .align(Alignment.End)
-            ) {
-                NavigationRow()
-            }
 
         }
     }
-}
-
-
-
-
-
-@Preview(showBackground = true)
-@Composable
-fun MakePostPreviewer(){
-    MakePostBody()
 }
