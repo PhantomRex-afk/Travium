@@ -1,4 +1,4 @@
-package com.example.travium
+package com.example.travium.view
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
