@@ -57,8 +57,10 @@ fun HomeBody(){
     val listItems = listOf(
 
             NavItems("Home", R.drawable.outline_home_24),
-            NavItems("Post", R.drawable.addbox),
+
             NavItems("Guide", R.drawable.outline_map_pin_review_24),
+            NavItems("Post", R.drawable.addbox),
+            NavItems("ChatBox", icon = R.drawable.chatbox),
             NavItems("Profile", R.drawable.profile),
         )
 
@@ -85,9 +87,7 @@ fun HomeBody(){
                     Spacer(modifier = Modifier.width(20.dp))
 
 
-                    Icon(painter = painterResource(R.drawable.chatbox),
-                        contentDescription = null
-                    )
+
                 }
             )
         },
@@ -117,7 +117,9 @@ fun HomeBody(){
         ){
             when(selectedIndex){
                 0 -> HomeScreenBody()
-                1 -> MakePostBody()
+                1 -> HomeScreenBody()
+                2 -> MakePostBody()
+
                 else -> HomeScreenBody()
             }
 
