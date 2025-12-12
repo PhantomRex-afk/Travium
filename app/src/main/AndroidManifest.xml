@@ -12,17 +12,37 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Travium">
         <activity
+            android:name=".SplashActivity"
+            android:exported="true"
+            android:label="@string/title_activity_splash"
+            android:theme="@style/Theme.Travium">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".LoginActivity"
+            android:exported="true"
+            android:label="@string/title_activity_login"
+            android:theme="@style/Theme.Travium">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".MakePostActivity"
             android:exported="true"
             android:label="@string/title_activity_make_post"
-            android:theme="@style/Theme.Travium">
-        </activity>
+            android:theme="@style/Theme.Travium" />
         <activity
             android:name=".HomePageActivity"
             android:exported="true"
             android:label="@string/title_activity_home_page"
-            android:theme="@style/Theme.Travium">
-        </activity>
+            android:theme="@style/Theme.Travium" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
