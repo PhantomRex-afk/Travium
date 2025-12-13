@@ -60,6 +60,7 @@ fun MakePostBody(){
                         )
                     )
                 },
+                modifier = Modifier.height(70.dp),
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Gray,
                 ),
@@ -74,6 +75,8 @@ fun MakePostBody(){
                 .padding(20.dp)
                 .fillMaxSize()
         ) {
+
+                Spacer( modifier = Modifier.height(60.dp))
 
                 Card(
 

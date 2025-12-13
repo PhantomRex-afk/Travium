@@ -1,24 +1,28 @@
 package com.example.travium.view
 
-import android.app.Activity
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,7 +31,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -52,6 +55,8 @@ fun HomeBody(){
 
     data class NavItems(val label : String, val icon: Int)
     var selectedIndex by remember { mutableStateOf(0) }
+
+    var search by remember { mutableStateOf("") }
 
 
     val listItems = listOf(
@@ -111,67 +116,48 @@ fun HomeBody(){
         }
     ) {
         padding ->
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)
-        ){
-            when(selectedIndex){
-                0 -> HomeScreenBody()
-                1 -> HomeScreenBody()
-                2 -> MakePostBody()
+        Column(modifier = Modifier.padding(padding)) {
+            OutlinedTextField(
+                value = search,
+                onValueChange = {
+                    search = it
+                },
+                trailingIcon = {
+                    Icon(painter = painterResource(R.drawable.search),
+                        contentDescription = null,
+                        modifier = Modifier.clickable(onClick = {})
+                    )
+                },
+                placeholder={
+                    Text("Search")
+                },
+                        modifier = Modifier
+                        .fillMaxWidth()
+                    .padding(horizontal = 15.dp),
+                shape = RoundedCornerShape(15.dp),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+            ))
+            Box(modifier = Modifier
+                .fillMaxSize()
+            ){
+                when(selectedIndex){
+                    0 -> HomeScreenBody()
+                    1 -> HomeScreenBody()
+                    2 -> MakePostBody()
 
-                else -> HomeScreenBody()
+                    else -> HomeScreenBody()
+                }
+
             }
-
         }
     }
 }
 
 
 
-@Composable
-fun NavigationRow(){
-    val context = LocalContext.current
 
-    val activity = context as Activity
-
-
-
-
-    Icon(painter = painterResource(R.drawable.outline_home_24),
-        contentDescription = null,
-        modifier = Modifier.clickable{
-            val intent = Intent(context, HomePageActivity::class.java)
-            context.startActivity(intent)
-            activity.finish()
-        }
-    )
-
-
-
-    Icon(painter = painterResource(R.drawable.addbox),
-        contentDescription = null,
-        modifier = Modifier.clickable{
-            val intent = Intent(context, MakePostActivity::class.java)
-            context.startActivity(intent)
-            activity.finish()
-        }
-    )
-
-
-
-    Icon(painter = painterResource(R.drawable.outline_map_pin_review_24),
-        contentDescription = null
-    )
-
-
-
-    Icon(painter = painterResource(R.drawable.profile),
-        contentDescription = null
-    )
-
-
-}
 
 
 @Preview(showBackground = true)
