@@ -56,7 +56,7 @@ fun HomeBody(){
     data class NavItems(val label : String, val icon: Int)
     var selectedIndex by remember { mutableStateOf(0) }
 
-    var search by remember { mutableStateOf("") }
+
 
 
     val listItems = listOf(
@@ -117,28 +117,7 @@ fun HomeBody(){
     ) {
         padding ->
         Column(modifier = Modifier.padding(padding)) {
-            OutlinedTextField(
-                value = search,
-                onValueChange = {
-                    search = it
-                },
-                trailingIcon = {
-                    Icon(painter = painterResource(R.drawable.search),
-                        contentDescription = null,
-                        modifier = Modifier.clickable(onClick = {})
-                    )
-                },
-                placeholder={
-                    Text("Search")
-                },
-                        modifier = Modifier
-                        .fillMaxWidth()
-                    .padding(horizontal = 15.dp),
-                shape = RoundedCornerShape(15.dp),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-            ))
+
             Box(modifier = Modifier
                 .fillMaxSize()
             ){
