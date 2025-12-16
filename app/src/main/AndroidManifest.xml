@@ -12,17 +12,48 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Travium">
         <activity
+            android:name=".ProfileActivity"
+            android:exported="true"
+            android:label="@string/title_activity_profile"
+            android:theme="@style/Theme.Travium">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".ChatBox"
+            android:exported="true"
+            android:label="@string/title_activity_chat_box"
+            android:theme="@style/Theme.Travium">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".ui.theme.MainActivity"
+            android:exported="true"
+            android:label="@string/title_activity_main"
+            android:theme="@style/Theme.Travium">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".MakePostActivity"
             android:exported="true"
             android:label="@string/title_activity_make_post"
-            android:theme="@style/Theme.Travium">
-        </activity>
+            android:theme="@style/Theme.Travium" />
         <activity
             android:name=".HomePageActivity"
             android:exported="true"
             android:label="@string/title_activity_home_page"
-            android:theme="@style/Theme.Travium">
-        </activity>
+            android:theme="@style/Theme.Travium" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
