@@ -76,9 +76,6 @@ import com.example.travium.R
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import kotlin.collections.forEach
-import kotlin.jvm.java
-import kotlin.let
 
 class RegisterActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -110,9 +107,6 @@ fun RegisterBody() {
 
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(yearRange = 1900..Calendar.getInstance().get(Calendar.YEAR))
-
-    val editor = if (!isInPreview) context.getSharedPreferences("User", Context.MODE_PRIVATE).edit() else null
-    val activity = if (!isInPreview) context as? Activity else null
 
     val cardBackground = Color(0xCC1A1A1A)
     val primaryColor = Color(0xFF6C63FF)
@@ -146,7 +140,7 @@ fun RegisterBody() {
                 .padding(padding)
         ) {
             Image(
-                painter = painterResource(id = R.drawable.c),
+                painter = painterResource(id = R.drawable.signup_background),
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
@@ -226,7 +220,16 @@ fun RegisterBody() {
                 }
 
                 // Footer
-                Text(buildAnnotatedString { withStyle(SpanStyle(White.copy(alpha = 0.8f))) { append("Already have an account? ") }; withStyle(SpanStyle(secondaryColor, fontWeight = FontWeight.Bold)) { append("Sign In") } }, modifier = Modifier.clickable { context.startActivity(Intent(context, loginActivity::class.java)) })
+                Text(
+                    buildAnnotatedString {
+                        withStyle(SpanStyle(White.copy(alpha = 0.8f))) { append("Already have an account? ") }
+                        withStyle(SpanStyle(secondaryColor, fontWeight = FontWeight.Bold)) { append("Sign In") }
+                    },
+                    modifier = Modifier.clickable {
+                        // TODO: Uncomment when LoginActivity is pushed by team member
+                        // context.startActivity(Intent(context, LoginActivity::class.java))
+                    }
+                )
             }
         }
     }
