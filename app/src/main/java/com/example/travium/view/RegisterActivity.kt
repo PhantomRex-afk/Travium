@@ -1,10 +1,9 @@
-package com.example.travium
+package com.example.travium.view
 
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -73,9 +72,13 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.travium.R
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import kotlin.collections.forEach
+import kotlin.jvm.java
+import kotlin.let
 
 class RegisterActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -214,7 +217,9 @@ fun RegisterBody() {
                             Text("I agree to the terms and conditions", color = White.copy(alpha = 0.9f), fontSize = 14.sp)
                         }
 
-                        Box(modifier = Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(16.dp)).background(brush = Brush.horizontalGradient(listOf(primaryColor, secondaryColor))).clickable { /* Validation logic */ }, contentAlignment = Alignment.Center) {
+                        Box(modifier = Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(16.dp)).background(brush = Brush.horizontalGradient(
+                            listOf(primaryColor, secondaryColor)
+                        )).clickable { /* Validation logic */ }, contentAlignment = Alignment.Center) {
                             Text("Create Account", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, color = White))
                         }
                     }
