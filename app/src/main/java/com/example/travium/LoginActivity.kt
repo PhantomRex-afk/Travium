@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.content.Intent
 import androidx.compose.ui.platform.LocalContext
-import kotlin.jvm.java
+import com.example.travium.view.RegisterActivity
 
 class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -226,9 +226,10 @@ fun LoginBody() {
                         append("Sign Up")
                     }
                 },
-//                modifier = Modifier.clickable {
-//                context.startActivity(Intent(context, RegisterActivity::class.java))
-                fontSize = 18.sp
+                fontSize = 18.sp,
+                modifier = Modifier.clickable {
+                    context.startActivity(Intent(context, RegisterActivity::class.java))
+                }
             )
         }
     }
@@ -267,7 +268,7 @@ fun CustomCheckbox(
     Box(
         modifier = Modifier
             .size(20.dp)
-            .clickable { onCheckedChange() }   // 🔹 clickable added
+            .clickable { onCheckedChange() }
             .background(
                 color = if (checked) primaryColor else Color.Transparent,
                 shape = RoundedCornerShape(6.dp)
