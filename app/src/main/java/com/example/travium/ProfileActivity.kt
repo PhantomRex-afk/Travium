@@ -1,11 +1,7 @@
 package com.example.travium
 
 import android.net.Uri
-import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -17,11 +13,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import coil.compose.rememberAsyncImagePainter
 
 @Composable
@@ -54,6 +55,9 @@ fun PrototypeBody(){
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri -> imageUri = uri }
     )
+    var showDialog by remember { mutableStateOf(false) }
+    var selectedEvent by remember { mutableStateOf<String?>(null) }
+    var eventCount by remember { mutableStateOf(10) }
 
     Scaffold {
             padding->
@@ -86,19 +90,12 @@ fun PrototypeBody(){
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
-                    painter = rememberAsyncImagePainter(
-                        model = imageUri ?: R.drawable.blastoise
-                    ),
+                    painter = painterResource(R.drawable.blastoise),
                     contentDescription = null,
                     modifier = Modifier
                         .height(100.dp)
                         .width(100.dp)
-                        .clip(shape = CircleShape)
-                        .clickable {
-                            singlePhotoPickerLauncher.launch(
-                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                            )
-                        },
+                        .clip(shape = CircleShape),
                     contentScale = ContentScale.Crop
                 )
                 Spacer(Modifier.width(16.dp))
@@ -161,26 +158,39 @@ fun PrototypeBody(){
                 ) {
                     Text("Message")
                 }
+
             }
-            Column(
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    StoryCard(R.drawable.blastoise, "Event 1", modifier = Modifier.weight(1f))
-                    StoryCard(R.drawable.blastoise, "Event 2", modifier = Modifier.weight(1f))
+                items(eventCount) { i ->
+                    val eventTitle = "Event ${i + 1}"
+                    Box(
+                        modifier = Modifier
+                            .aspectRatio(1f)
+                            .clickable {
+                                selectedEvent = eventTitle
+                                showDialog = true
+                            }
+                    ) {
+                        StoryCard(
+                            R.drawable.blastoise,
+                            eventTitle
+                        )
+                    }
                 }
-                Row(
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    StoryCard(R.drawable.blastoise, "Event 3", modifier = Modifier.weight(1f))
-                    StoryCard(R.drawable.blastoise, "Event 4", modifier = Modifier.weight(1f))
+            }
+        }
+
+        if (showDialog) {
+            selectedEvent?.let { event ->
+                EventDetailPopup(eventTitle = event) {
+                    showDialog = false
                 }
             }
         }
@@ -214,6 +224,32 @@ fun StoryCard(imageRes: Int, title: String, modifier: Modifier = Modifier) {
                     .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             )
+        }
+    }
+}
+
+@Composable
+fun EventDetailPopup(eventTitle: String, onDismiss: () -> Unit) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(0.5f),
+            shape = RoundedCornerShape(16.dp),
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "Details for $eventTitle", fontWeight = FontWeight.Bold)
+                    // Add more details here
+                    Spacer(modifier = Modifier.height(20.dp))
+                    Button(onClick = onDismiss) {
+                        Text("Close")
+                    }
+                }
+            }
         }
     }
 }

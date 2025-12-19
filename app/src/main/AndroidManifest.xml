@@ -12,6 +12,28 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Travium">
         <activity
+            android:name=".SettingsActivity"
+            android:exported="true"
+            android:label="@string/title_activity_settings"
+            android:theme="@style/Theme.Travium">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".EditProfileActivity"
+            android:exported="true"
+            android:label="@string/title_activity_edit_profile"
+            android:theme="@style/Theme.Travium">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".ProfileActivity"
             android:exported="true"
             android:label="@string/title_activity_profile"
