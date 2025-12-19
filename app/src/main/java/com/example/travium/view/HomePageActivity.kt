@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -29,6 +31,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -56,7 +59,7 @@ fun HomeBody(){
     data class NavItems(val label : String, val icon: Int)
     var selectedIndex by remember { mutableStateOf(0) }
 
-    var search by remember { mutableStateOf("") }
+
 
 
     val listItems = listOf(
@@ -117,28 +120,7 @@ fun HomeBody(){
     ) {
         padding ->
         Column(modifier = Modifier.padding(padding)) {
-            OutlinedTextField(
-                value = search,
-                onValueChange = {
-                    search = it
-                },
-                trailingIcon = {
-                    Icon(painter = painterResource(R.drawable.search),
-                        contentDescription = null,
-                        modifier = Modifier.clickable(onClick = {})
-                    )
-                },
-                placeholder={
-                    Text("Search")
-                },
-                        modifier = Modifier
-                        .fillMaxWidth()
-                    .padding(horizontal = 15.dp),
-                shape = RoundedCornerShape(15.dp),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-            ))
+
             Box(modifier = Modifier
                 .fillMaxSize()
             ){
