@@ -7,9 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.travium"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.travium"

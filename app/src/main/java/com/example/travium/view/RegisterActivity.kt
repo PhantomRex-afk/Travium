@@ -1,9 +1,7 @@
 package com.example.travium.view
 
-import android.app.Activity
-import android.content.Context
-import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -31,6 +29,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
@@ -59,7 +58,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -73,6 +71,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.travium.R
+import com.example.travium.model.UserModel
+import com.example.travium.repository.UserRepoImpl
+import com.example.travium.viewmodel.UserViewModel
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -82,14 +83,16 @@ class RegisterActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            RegisterBody()
+            val userRepo = UserRepoImpl()
+            val userViewModel = UserViewModel(userRepo)
+            RegisterBody(userViewModel)
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegisterBody() {
+fun RegisterBody(viewModel: UserViewModel? = null) {
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -99,11 +102,12 @@ fun RegisterBody() {
     var confirmVisibility by remember { mutableStateOf(false) }
     var terms by remember { mutableStateOf(false) }
     var expanded by remember { mutableStateOf(false) }
-    var selectedOptionText by remember { mutableStateOf("Select Country") }
-    val options = listOf("Nepal", "Japan", "India", "China", "USA", "Brazil", "Spain")
+    var selectedOptionText by remember { mutableStateOf("") } // Start empty for placeholder
+    var customCountry by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+    val options = listOf("Nepal", "Japan", "India", "China", "USA", "Brazil", "Spain", "Other")
 
     val context = LocalContext.current
-    val isInPreview = LocalInspectionMode.current
 
     var showDatePicker by remember { mutableStateOf(false) }
     val datePickerState = rememberDatePickerState(yearRange = 1900..Calendar.getInstance().get(Calendar.YEAR))
@@ -200,9 +204,61 @@ fun RegisterBody() {
                         OutlinedTextField(value = confirmPassword, onValueChange = { confirmPassword = it }, placeholder = { Text("Confirm Password") }, visualTransformation = if (confirmVisibility) VisualTransformation.None else PasswordVisualTransformation(), trailingIcon = { IconButton(onClick = { confirmVisibility = !confirmVisibility }) { Icon(painter = if (confirmVisibility) painterResource(R.drawable.baseline_visibility_24) else painterResource(R.drawable.baseline_visibility_off_24), "Toggle password visibility", tint = White.copy(alpha = 0.7f)) } }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = premiumTextFieldColors(primaryColor, textFieldBg), singleLine = true)
 
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            OutlinedTextField(value = selectedOptionText, onValueChange = {}, enabled = false, placeholder = {Text("Select Country")}, modifier = Modifier.weight(1f).clickable { expanded = true }, colors = OutlinedTextFieldDefaults.colors(disabledTextColor = White.copy(alpha = 0.9f), disabledContainerColor = textFieldBg, disabledBorderColor = Color.Transparent, disabledPlaceholderColor = White.copy(alpha = 0.6f)), trailingIcon = { Icon(Icons.Default.ArrowDropDown, "", tint = White.copy(alpha = 0.7f)) }, shape = RoundedCornerShape(16.dp))
-                            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, modifier = Modifier.background(cardBackground)) { options.forEach { option -> DropdownMenuItem(text = { Text(option, color = White) }, onClick = { selectedOptionText = option; expanded = false }) } }
-                            OutlinedTextField(value = selectedDate, onValueChange = {}, enabled = false, placeholder = { Text("Birth Date") }, modifier = Modifier.weight(1f).clickable { showDatePicker = true }, colors = OutlinedTextFieldDefaults.colors(disabledTextColor = White, disabledContainerColor = textFieldBg, disabledBorderColor = Color.Transparent, disabledPlaceholderColor = White.copy(alpha = 0.6f), disabledTrailingIconColor = White.copy(alpha = 0.7f)), trailingIcon = { Icon(Icons.Filled.DateRange, "Select Date") }, shape = RoundedCornerShape(16.dp))
+                            // Country Selector Fix
+                            Box(modifier = Modifier.weight(1f).clickable { expanded = true }) {
+                                OutlinedTextField(
+                                    value = selectedOptionText,
+                                    onValueChange = {},
+                                    enabled = false, // Prevents focus consumption
+                                    placeholder = { Text("Select Country") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        disabledTextColor = White,
+                                        disabledContainerColor = textFieldBg,
+                                        disabledBorderColor = Color.Transparent,
+                                        disabledPlaceholderColor = White.copy(alpha = 0.6f),
+                                        disabledTrailingIconColor = White.copy(alpha = 0.7f)
+                                    ),
+                                    trailingIcon = { Icon(Icons.Default.ArrowDropDown, "", tint = White.copy(alpha = 0.7f)) },
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                                // Dropdown should be anchored here
+                                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, modifier = Modifier.background(cardBackground)) {
+                                    options.forEach { option ->
+                                        DropdownMenuItem(
+                                            text = { Text(option, color = White) },
+                                            onClick = {
+                                                selectedOptionText = option
+                                                expanded = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Birth Date Fix
+                            Box(modifier = Modifier.weight(1f).clickable { showDatePicker = true }) {
+                                OutlinedTextField(
+                                    value = selectedDate,
+                                    onValueChange = {},
+                                    enabled = false, // Prevents focus consumption
+                                    placeholder = { Text("Birth Date") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        disabledTextColor = White,
+                                        disabledContainerColor = textFieldBg,
+                                        disabledBorderColor = Color.Transparent,
+                                        disabledPlaceholderColor = White.copy(alpha = 0.6f),
+                                        disabledTrailingIconColor = White.copy(alpha = 0.7f)
+                                    ),
+                                    trailingIcon = { Icon(Icons.Filled.DateRange, "Select Date", tint = White.copy(alpha = 0.7f)) },
+                                    shape = RoundedCornerShape(16.dp)
+                                )
+                            }
+                        }
+
+                        if (selectedOptionText == "Other") {
+                            OutlinedTextField(value = customCountry, onValueChange = { customCountry = it }, placeholder = { Text("Enter your country") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = premiumTextFieldColors(primaryColor, textFieldBg), singleLine = true)
                         }
 
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { terms = !terms }) {
@@ -213,22 +269,47 @@ fun RegisterBody() {
 
                         Box(modifier = Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(16.dp)).background(brush = Brush.horizontalGradient(
                             listOf(primaryColor, secondaryColor)
-                        )).clickable { /* Validation logic */ }, contentAlignment = Alignment.Center) {
-                            Text("Create Account", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, color = White))
+                        )).clickable {
+                            if (!terms) {
+                                Toast.makeText(context, "Please agree to terms", Toast.LENGTH_SHORT).show()
+                                return@clickable
+                            }
+                            if (password != confirmPassword) {
+                                Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
+                                return@clickable
+                            }
+                            val finalCountry = if (selectedOptionText == "Other") customCountry else selectedOptionText
+                            if (email.isEmpty() || password.isEmpty() || fullName.isEmpty() || selectedOptionText.isEmpty() || (selectedOptionText == "Other" && customCountry.isEmpty())) {
+                                Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                                return@clickable
+                            }
+
+                            isLoading = true
+                            viewModel?.register(email, password) { success, userId, message ->
+                                if (success) {
+                                    val userModel = UserModel(userId = userId, email = email, fullName = fullName, dob = selectedDate, country = finalCountry)
+                                    viewModel.addUserToDatabase(userId, userModel) { dbSuccess, dbMessage ->
+                                        isLoading = false
+                                        Toast.makeText(context, dbMessage, Toast.LENGTH_SHORT).show()
+                                    }
+                                } else {
+                                    isLoading = false
+                                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }, contentAlignment = Alignment.Center) {
+                            if (isLoading) CircularProgressIndicator(color = White, modifier = Modifier.size(24.dp))
+                            else Text("Create Account", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, color = White))
                         }
                     }
                 }
 
-                // Footer
                 Text(
                     buildAnnotatedString {
                         withStyle(SpanStyle(White.copy(alpha = 0.8f))) { append("Already have an account? ") }
                         withStyle(SpanStyle(secondaryColor, fontWeight = FontWeight.Bold)) { append("Sign In") }
                     },
-                    modifier = Modifier.clickable {
-                        // TODO: Uncomment when LoginActivity is pushed by team member
-                        // context.startActivity(Intent(context, LoginActivity::class.java))
-                    }
+                    modifier = Modifier.clickable { /* TODO: Navigate to Login */ }
                 )
             }
         }
@@ -239,27 +320,10 @@ fun RegisterBody() {
 fun CustomCheckbox(checked: Boolean) {
     val primaryColor = Color(0xFF6C63FF)
     Box(
-        modifier = Modifier
-            .size(20.dp)
-            .background(
-                color = if (checked) primaryColor else Color.Transparent,
-                shape = RoundedCornerShape(6.dp)
-            )
-            .border(
-                width = 2.dp,
-                color = if (checked) primaryColor else White.copy(alpha = 0.5f),
-                shape = RoundedCornerShape(6.dp)
-            ),
+        modifier = Modifier.size(20.dp).background(color = if (checked) primaryColor else Color.Transparent, shape = RoundedCornerShape(6.dp)).border(width = 2.dp, color = if (checked) primaryColor else White.copy(alpha = 0.5f), shape = RoundedCornerShape(6.dp)),
         contentAlignment = Alignment.Center
     ) {
-        if (checked) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                tint = White,
-                modifier = Modifier.size(14.dp)
-            )
-        }
+        if (checked) Icon(imageVector = Icons.Default.Check, contentDescription = null, tint = White, modifier = Modifier.size(14.dp))
     }
 }
 

@@ -1,0 +1,23 @@
+package com.example.travium.viewmodel
+
+import androidx.lifecycle.ViewModel
+import com.example.travium.model.UserModel
+import com.example.travium.repository.UserRepo
+
+class UserViewModel(private val repo: UserRepo) : ViewModel() {
+
+    fun register(
+        email: String, password: String,
+        callback: (Boolean, String, String) -> Unit
+    ) {
+        repo.register(email, password, callback)
+    }
+
+    fun addUserToDatabase(
+        userId: String,
+        userModel: UserModel,
+        callback: (Boolean, String) -> Unit
+    ){
+        repo.addUserToDatabase(userId, userModel, callback)
+    }
+}
