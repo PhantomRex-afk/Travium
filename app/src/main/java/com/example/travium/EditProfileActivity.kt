@@ -1,9 +1,15 @@
 package com.example.travium
 
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -28,10 +34,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.compose.rememberAsyncImagePainter
 
 class EditProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,6 +57,12 @@ fun EditProfileBody(){
     var bio by remember { mutableStateOf("Water Type Pokemon") }
     var username by remember { mutableStateOf("BigMan Blastoise") }
     var description by remember { mutableStateOf("Squirtle ko Hajurbau") }
+    var imageUri by remember { mutableStateOf<Uri?>(null) }
+
+    val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri -> imageUri = uri }
+    )
 
     Scaffold {
             padding->
@@ -75,10 +90,24 @@ fun EditProfileBody(){
                             shape = CircleShape,
                             modifier = Modifier
                                 .padding(4.dp)
-                                .fillMaxSize(),
+                                .fillMaxSize()
+                                .clickable {
+                                    singlePhotoPickerLauncher.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                                    )
+                                },
                             colors = CardDefaults.cardColors(containerColor = Color.LightGray)
                         ) {
-                            // This is the empty placeholder
+                            Image(
+                                painter = rememberAsyncImagePainter(
+                                    model = imageUri ?: R.drawable.blastoise
+                                ),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
                         }
                     }
                 }

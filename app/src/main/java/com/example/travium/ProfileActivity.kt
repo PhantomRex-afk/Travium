@@ -8,33 +8,15 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,166 +31,171 @@ import androidx.compose.ui.window.Dialog
 import coil.compose.rememberAsyncImagePainter
 
 @Composable
-fun PrototypeBody(){
+fun ProfileBody() {
+
     var imageUri by remember { mutableStateOf<Uri?>(null) }
-    val singlePhotoPickerLauncher = rememberLauncherForActivityResult(
+    var showDialog by remember { mutableStateOf(false) }
+    var selectedEvent by remember { mutableStateOf<String?>(null) }
+    var eventCount by remember { mutableIntStateOf(10) }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri -> imageUri = uri }
     )
-    var showDialog by remember { mutableStateOf(false) }
-    var selectedEvent by remember { mutableStateOf<String?>(null) }
-    var eventCount by remember { mutableStateOf(10) }
 
-    Scaffold {
-            padding->
-        Column (
+    Scaffold { padding ->
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(2),
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-        )
-        {
-            Row (
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ){
-                Icon(
-                    painter = painterResource(R.drawable.arrow_left),
-                    contentDescription = "Back"
-                )
-                Icon(
-                    painter = painterResource(R.drawable.more_buttons),
-                    contentDescription = "More options"
-                )
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.blastoise),
-                    contentDescription = null,
+                .padding(padding),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(16.dp)
+        ) {
+            /* Top Bar */
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Row(
                     modifier = Modifier
-                        .height(100.dp)
-                        .width(100.dp)
-                        .clip(shape = CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-                Spacer(Modifier.width(16.dp))
-                Column(modifier = Modifier.weight(1f)) {
-                    Text("Blastoise", fontWeight = FontWeight.Bold)
-                    Text("Water Type Pokemon")
-                    Text("BigMan Blastoise")
-                    Text("Squirtle ko Hajurbau")
-                }
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceAround
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("714", fontWeight = FontWeight.Bold)
-                    Text("Posts")
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("10B", fontWeight = FontWeight.Bold)
-                    Text("Followers")
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("0", fontWeight = FontWeight.Bold)
-                    Text("Following")
-                }
-
-            }
-            Row (
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ){
-                Button(
-                    onClick = {},
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.weight(1f),
-                    border = BorderStroke(1.dp, Color.LightGray),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = Color.Black
-                    )
-
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Hire")
-                }
-                Button(
-                    onClick = {},
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.weight(1f),
-                    border = BorderStroke(1.dp, Color.LightGray),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = Color.Black
+                    Icon(
+                        painter = painterResource(R.drawable.arrow_left),
+                        contentDescription = "Back"
                     )
-
-                ) {
-                    Text("Message")
+                    Icon(
+                        painter = painterResource(R.drawable.more_buttons),
+                        contentDescription = "More"
+                    )
                 }
-
             }
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(eventCount) { i ->
-                    val eventTitle = "Event ${i + 1}"
-                    Box(
+
+            /* Profile Info */
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Row(
+                    modifier = Modifier.padding(bottom = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Image(
+                        painter = rememberAsyncImagePainter(
+                            imageUri ?: R.drawable.blastoise
+                        ),
+                        contentDescription = "Profile Image",
                         modifier = Modifier
-                            .aspectRatio(1f)
+                            .size(100.dp)
+                            .clip(CircleShape)
                             .clickable {
-                                selectedEvent = eventTitle
-                                showDialog = true
-                            }
-                    ) {
-                        StoryCard(
-                            R.drawable.blastoise,
-                            eventTitle
-                        )
+                                photoPickerLauncher.launch(
+                                    PickVisualMediaRequest(
+                                        ActivityResultContracts.PickVisualMedia.ImageOnly
+                                    )
+                                )
+                            },
+                        contentScale = ContentScale.Crop
+                    )
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column {
+                        Text("Blastoise", fontWeight = FontWeight.Bold)
+                        Text("Water Type Pokemon")
+                        Text("BigMan Blastoise")
+                        Text("Squirtle ko Hajurbau")
                     }
+                }
+            }
+
+            /* Stats */
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.SpaceAround
+                ) {
+                    ProfileStat("714", "Posts")
+                    ProfileStat("10B", "Followers")
+                    ProfileStat("0", "Following")
+                }
+            }
+
+            /* Buttons */
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Row(
+                    modifier = Modifier.padding(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    ProfileButton(text = "Hire", modifier = Modifier.weight(1f))
+                    ProfileButton(text = "Message", modifier = Modifier.weight(1f))
+                }
+            }
+
+            /* Events Grid Items */
+            items(count = eventCount) { index ->
+                val title = "Event ${index + 1}"
+                StoryCard(
+                    imageRes = R.drawable.blastoise,
+                    title = title
+                ) {
+                    selectedEvent = title
+                    showDialog = true
                 }
             }
         }
 
-        if (showDialog) {
-            selectedEvent?.let { event ->
-                EventDetailPopup(eventTitle = event) {
-                    showDialog = false
-                }
-            }
+        /* Dialog */
+        if (showDialog && selectedEvent != null) {
+            ProfileEventDetailPopup(
+                eventTitle = selectedEvent!!,
+                onDismiss = { showDialog = false }
+            )
         }
     }
 }
 
+/* ---------- Reusable Components ---------- */
+
 @Composable
-fun StoryCard(imageRes: Int, title: String, modifier: Modifier = Modifier) {
+fun ProfileStat(value: String, label: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, fontWeight = FontWeight.Bold)
+        Text(label)
+    }
+}
+
+@Composable
+fun ProfileButton(text: String, modifier: Modifier = Modifier) {
+    Button(
+        onClick = {},
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, Color.LightGray),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.White,
+            contentColor = Color.Black
+        )
+    ) {
+        Text(text)
+    }
+}
+
+@Composable
+fun StoryCard(
+    imageRes: Int,
+    title: String,
+    onClick: () -> Unit
+) {
     Card(
-        modifier = modifier.fillMaxSize(),
+        modifier = Modifier
+            .aspectRatio(1f)
+            .clickable { onClick() },
         shape = RoundedCornerShape(16.dp)
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box {
             Image(
-                painter = painterResource(id = imageRes),
+                painter = painterResource(imageRes),
                 contentDescription = title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
@@ -217,45 +204,52 @@ fun StoryCard(imageRes: Int, title: String, modifier: Modifier = Modifier) {
                 text = title,
                 color = Color.White,
                 fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
+                fontSize = 16.sp,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .background(
+                        Color.Black.copy(alpha = 0.5f),
+                        RoundedCornerShape(8.dp)
+                    )
                     .padding(8.dp)
-                    .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
             )
         }
     }
 }
 
 @Composable
-fun EventDetailPopup(eventTitle: String, onDismiss: () -> Unit) {
+fun ProfileEventDetailPopup(
+    eventTitle: String,
+    onDismiss: () -> Unit
+) {
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(0.5f),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(16.dp)
         ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.fillMaxSize()
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = "Details for $eventTitle", fontWeight = FontWeight.Bold)
-                    // Add more details here
-                    Spacer(modifier = Modifier.height(20.dp))
-                    Button(onClick = onDismiss) {
-                        Text("Close")
-                    }
+                Text(
+                    text = "Details for $eventTitle",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                Button(onClick = onDismiss) {
+                    Text("Close")
                 }
             }
         }
     }
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
-fun PrototypePreview(){
-    PrototypeBody()
+fun ProfilePreview() {
+    ProfileBody()
 }
