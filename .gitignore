@@ -19,6 +19,7 @@ local.properties
 *.iml
 *.iws
 *.ipr
+.idea/inspectionProfiles/Project_Default.xml
 
 # Gradle
 .gradle/
