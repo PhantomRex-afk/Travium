@@ -55,12 +55,12 @@
             android:label="@string/title_activity_register"
             android:theme="@style/Theme.Travium" />
         <activity
-            android:name=".MakePostActivity"
+            android:name=".view.MakePostActivity"
             android:exported="true"
             android:label="@string/title_activity_make_post"
             android:theme="@style/Theme.Travium" />
         <activity
-            android:name=".HomePageActivity"
+            android:name=".view,HomePageActivity"
             android:exported="true"
             android:label="@string/title_activity_home_page"
             android:theme="@style/Theme.Travium" />
