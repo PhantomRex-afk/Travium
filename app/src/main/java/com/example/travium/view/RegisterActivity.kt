@@ -1,5 +1,7 @@
 package com.example.travium.view
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -70,6 +72,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.travium.LoginActivity
 import com.example.travium.R
 import com.example.travium.model.UserModel
 import com.example.travium.repository.UserRepoImpl
@@ -291,6 +294,10 @@ fun RegisterBody(viewModel: UserViewModel? = null) {
                                     viewModel.addUserToDatabase(userId, userModel) { dbSuccess, dbMessage ->
                                         isLoading = false
                                         Toast.makeText(context, dbMessage, Toast.LENGTH_SHORT).show()
+                                        if (dbSuccess) {
+                                            context.startActivity(Intent(context, LoginActivity::class.java))
+                                            (context as? Activity)?.finish()
+                                        }
                                     }
                                 } else {
                                     isLoading = false
@@ -309,7 +316,7 @@ fun RegisterBody(viewModel: UserViewModel? = null) {
                         withStyle(SpanStyle(White.copy(alpha = 0.8f))) { append("Already have an account? ") }
                         withStyle(SpanStyle(secondaryColor, fontWeight = FontWeight.Bold)) { append("Sign In") }
                     },
-                    modifier = Modifier.clickable { /* TODO: Navigate to Login */ }
+                    modifier = Modifier.clickable { context.startActivity(Intent(context, LoginActivity::class.java)) }
                 )
             }
         }

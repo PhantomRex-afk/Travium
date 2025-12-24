@@ -1,6 +1,8 @@
 package com.example.travium
 
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -21,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -33,27 +36,31 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import android.content.Intent
-import androidx.compose.ui.platform.LocalContext
+import com.example.travium.repository.UserRepoImpl
+import com.example.travium.view.HomePageActivity
 import com.example.travium.view.RegisterActivity
+import com.example.travium.viewmodel.UserViewModel
 
 class LoginActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            LoginBody()
+            val userRepo = UserRepoImpl()
+            val userViewModel = UserViewModel(userRepo)
+            LoginBody(userViewModel)
         }
     }
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginBody() {
+fun LoginBody(viewModel: UserViewModel? = null) {
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var visibility by remember { mutableStateOf(false) }
     var rememberMe by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
 
@@ -199,10 +206,24 @@ fun LoginBody() {
                                     listOf(primaryColor, secondaryColor)
                                 )
                             )
-                            .clickable { },
+                            .clickable {
+                                 if (email.isEmpty() || password.isEmpty()) {
+                                    Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                                    return@clickable
+                                }
+                                isLoading = true
+                                viewModel?.login(email, password) { success, message ->
+                                    isLoading = false
+                                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                    if (success) {
+                                        context.startActivity(Intent(context, HomePageActivity::class.java))
+                                    }
+                                }
+                            },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
+                        if (isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                        else Text(
                             "Log In",
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
@@ -231,30 +252,6 @@ fun LoginBody() {
                     context.startActivity(Intent(context, RegisterActivity::class.java))
                 }
             )
-        }
-    }
-}
-
-@Composable
-fun SocialMediaCard(modifier: Modifier, image: Int, label: String) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(14.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Image(
-                painter = painterResource(image),
-                contentDescription = null,
-                modifier = Modifier.size(26.dp)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-            Text(label, color = Color.Black, fontWeight = FontWeight.SemiBold)
         }
     }
 }

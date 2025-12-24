@@ -1,6 +1,9 @@
 package com.example.travium
 
+import android.app.Activity
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -8,7 +11,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -18,29 +20,34 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.travium.repository.UserRepoImpl
+import com.example.travium.viewmodel.UserViewModel
 
 class ForgetPasswordActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ForgetPasswordBody()
+            val userRepo = UserRepoImpl()
+            val userViewModel = UserViewModel(userRepo)
+            ForgetPasswordBody(userViewModel)
         }
     }
 }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ForgetPasswordBody() {
+fun ForgetPasswordBody(viewModel: UserViewModel? = null) {
 
     var email by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
 
     val primaryColor = Color(0xFF6C63FF)
     val secondaryColor = Color(0xFF4ECDC4)
@@ -101,7 +108,6 @@ fun ForgetPasswordBody() {
                     modifier = Modifier.padding(22.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-
                     OutlinedTextField(
                         value = email,
                         onValueChange = { email = it },
@@ -111,7 +117,6 @@ fun ForgetPasswordBody() {
                         colors = loginTextFieldColors(primaryColor, textFieldBg),
                         singleLine = true
                     )
-
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -122,10 +127,27 @@ fun ForgetPasswordBody() {
                                 ),
                                 RoundedCornerShape(16.dp)
                             )
-                            .clickable { /* send reset email */ },
+                            .clickable { 
+                                if (email.isEmpty()) {
+                                    Toast.makeText(context, "Please enter your email", Toast.LENGTH_SHORT).show()
+                                    return@clickable
+                                }
+                                isLoading = true
+                                viewModel?.forgetPassword(email) { success, message ->
+                                    isLoading = false
+                                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                    if (success) {
+                                        Log.i("ForgetPasswordActivity", "Password reset email sent successfully to $email")
+                                        (context as? Activity)?.finish()
+                                    } else {
+                                        Log.e("ForgetPasswordActivity", "Password reset failed: $message")
+                                    }
+                                }
+                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
+                        if (isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                        else Text(
                             "Send Reset Link",
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
