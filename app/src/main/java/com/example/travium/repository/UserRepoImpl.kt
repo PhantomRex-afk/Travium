@@ -20,6 +20,37 @@ class UserRepoImpl : UserRepo {
             }
     }
 
+    override fun login(
+        email: String,
+        password: String,
+        callback: (Boolean, String) -> Unit
+    ) {
+        auth.signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener {
+                if(it.isSuccessful){
+                    callback(true, "Login Successfully")
+                }else{
+                    callback(false, "${it.exception?.message}")
+                }
+            }
+    }
+
+    override fun forgetPassword(
+        email: String,
+        callback: (Boolean, String) -> Unit
+    ) {
+        auth.sendPasswordResetEmail(email)
+            .addOnCompleteListener {
+                if (it.isSuccessful) {
+                    callback(true, "Link sent $email")
+                } else {
+                    callback(false, "${it.exception?.message}")
+                }
+            }
+    }
+
+
+
     override fun addUserToDatabase(userId: String, userModel: UserModel, callback: (Boolean, String) -> Unit) {
         db.child(userId).setValue(userModel)
             .addOnCompleteListener { task ->

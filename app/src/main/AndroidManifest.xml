@@ -11,22 +11,40 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Travium">
-        
+
         <activity
-            android:name=".view.RegisterActivity"
-            android:exported="true">
+            android:name=".ForgetPasswordActivity"
+            android:exported="true"
+            android:label="@string/title_activity_forget_password"
+            android:theme="@style/Theme.Travium">
+        </activity>
+        <activity
+            android:name=".SplashActivity"
+            android:exported="true"
+            android:label="@string/title_activity_splash"
+            android:theme="@style/Theme.Travium">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
+        <activity
+            android:name=".view.RegisterActivity"
+            android:exported="true"
+            android:label="@string/title_activity_register"
+            android:theme="@style/Theme.Travium" />
         <activity
             android:name=".view.MakePostActivity"
             android:exported="false"
             android:label="@string/title_activity_make_post"
             android:theme="@style/Theme.Travium" />
 
+        <activity
+            android:name=".LoginActivity"
+            android:exported="true"
+            android:label="@string/title_activity_login"
+            android:theme="@style/Theme.Travium">
+        </activity>
         <activity
             android:name=".view.HomePageActivity"
             android:exported="false"
@@ -37,8 +55,9 @@
             android:name=".view.MainActivity"
             android:exported="false"
             android:label="@string/app_name"
-            android:theme="@style/Theme.Travium" />
-            
+            android:theme="@style/Theme.Travium">
+        </activity>
+
     </application>
 
 </manifest>
