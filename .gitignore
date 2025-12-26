@@ -13,3 +13,34 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Android Studio
+.idea/
+*.iml
+*.iws
+*.ipr
+.idea/inspectionProfiles/Project_Default.xml
+
+# Gradle
+.gradle/
+build/
+.idea/
+out/
+
+# Local configuration
+local.properties
+.DS_Store
+
+# Generated files
+*.apk
+*.ap_
+
+# OS metadata
+Thumbs.db
+*.orig
+
+# Logs
+*.log
+
+# VS Code
+.vscode/

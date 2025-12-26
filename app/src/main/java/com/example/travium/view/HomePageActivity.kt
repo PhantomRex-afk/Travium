@@ -1,33 +1,39 @@
 package com.example.travium.view
 
-import android.app.Activity
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -54,11 +60,15 @@ fun HomeBody(){
     var selectedIndex by remember { mutableStateOf(0) }
 
 
+
+
     val listItems = listOf(
 
             NavItems("Home", R.drawable.outline_home_24),
-            NavItems("Post", R.drawable.addbox),
+
             NavItems("Guide", R.drawable.outline_map_pin_review_24),
+            NavItems("Post", R.drawable.addbox),
+            NavItems("ChatBox", icon = R.drawable.chatbox),
             NavItems("Profile", R.drawable.profile),
         )
 
@@ -85,9 +95,7 @@ fun HomeBody(){
                     Spacer(modifier = Modifier.width(20.dp))
 
 
-                    Icon(painter = painterResource(R.drawable.chatbox),
-                        contentDescription = null
-                    )
+
                 }
             )
         },
@@ -111,65 +119,27 @@ fun HomeBody(){
         }
     ) {
         padding ->
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)
-        ){
-            when(selectedIndex){
-                0 -> HomeScreenBody()
-                1 -> MakePostBody()
-                else -> HomeScreenBody()
-            }
+        Column(modifier = Modifier.padding(padding)) {
 
+            Box(modifier = Modifier
+                .fillMaxSize()
+            ){
+                when(selectedIndex){
+                    0 -> HomeScreenBody()
+                    1 -> HomeScreenBody()
+                    2 -> MakePostBody()
+
+                    else -> HomeScreenBody()
+                }
+
+            }
         }
     }
 }
 
 
 
-@Composable
-fun NavigationRow(){
-    val context = LocalContext.current
 
-    val activity = context as Activity
-
-
-
-
-    Icon(painter = painterResource(R.drawable.outline_home_24),
-        contentDescription = null,
-        modifier = Modifier.clickable{
-            val intent = Intent(context, HomePageActivity::class.java)
-            context.startActivity(intent)
-            activity.finish()
-        }
-    )
-
-
-
-    Icon(painter = painterResource(R.drawable.addbox),
-        contentDescription = null,
-        modifier = Modifier.clickable{
-            val intent = Intent(context, MakePostActivity::class.java)
-            context.startActivity(intent)
-            activity.finish()
-        }
-    )
-
-
-
-    Icon(painter = painterResource(R.drawable.outline_map_pin_review_24),
-        contentDescription = null
-    )
-
-
-
-    Icon(painter = painterResource(R.drawable.profile),
-        contentDescription = null
-    )
-
-
-}
 
 
 @Preview(showBackground = true)

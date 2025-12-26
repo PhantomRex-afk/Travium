@@ -19,9 +19,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +37,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.travium.R
 
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MakePostBody(){
 
@@ -44,7 +49,25 @@ fun MakePostBody(){
 
 
 
-    Scaffold { padding ->
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        "Create a Post", style = TextStyle(
+                            fontSize = 25.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                },
+                modifier = Modifier.height(70.dp),
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Gray,
+                ),
+
+            )
+        },
+    ) { padding ->
         Column(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -52,41 +75,9 @@ fun MakePostBody(){
                 .padding(20.dp)
                 .fillMaxSize()
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Start,
 
+                Spacer( modifier = Modifier.height(60.dp))
 
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(60.dp)
-                    .padding(10.dp)
-                    .background(color = Color.Gray)
-            ) {
-
-
-                Icon(painter = painterResource(R.drawable.cancel),
-                    contentDescription = null,
-                    modifier = Modifier.padding(10.dp).clickable{
-                        val intent = Intent(context, HomePageActivity::class.java)
-                        context.startActivity(intent)
-                        activity.finish()
-                    }
-                )
-
-                Spacer(modifier = Modifier.width(20.dp))
-
-                Text(
-                    "Create a Post", style = TextStyle(
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-            }
-            Column(
-                modifier = Modifier
-                    .height(700.dp)
-            ) {
                 Card(
 
                     modifier = Modifier
@@ -117,12 +108,12 @@ fun MakePostBody(){
                 ) {
                     Text(
                         "Add a caption", style = TextStyle(
-                            fontSize = 25.sp,
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold
                         ),
                         modifier = Modifier
                             .padding(10.dp)
-
+                            .clickable(onClick = {})
                             .fillMaxWidth()
                             .height(30.dp)
                     )
@@ -131,20 +122,22 @@ fun MakePostBody(){
                     colors = CardDefaults.cardColors(
                         containerColor = Color.Gray
                     ),
+
                     modifier = Modifier
                         .weight(1f)
                         .padding(10.dp)
+
 
                 ){
 
 
                     Text("Add location", style = TextStyle(
-                        fontSize = 25.sp,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold
                     ),
                         modifier = Modifier
                             .padding(10.dp)
-
+                            .clickable(onClick = {})
                             .fillMaxWidth()
                             .height(30.dp)
                     )
@@ -182,4 +175,3 @@ fun MakePostBody(){
 
         }
     }
-}
