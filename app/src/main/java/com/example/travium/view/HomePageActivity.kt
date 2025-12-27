@@ -41,6 +41,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.travium.R
+import com.example.travium.repository.ChatRepo
+import com.example.travium.repository.ChatRepoImpl
 
 class HomePageActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,6 +59,8 @@ class HomePageActivity : ComponentActivity() {
 fun HomeBody(){
 
     data class NavItems(val label : String, val icon: Int)
+    val chatRepo: ChatRepo = ChatRepoImpl()
+    val currentUserId = "user123" // replace with actual userId
     var selectedIndex by remember { mutableStateOf(0) }
 
 
@@ -128,6 +132,7 @@ fun HomeBody(){
                     0 -> HomeScreenBody()
                     1 -> HomeScreenBody()
                     2 -> MakePostBody()
+                    4 -> ChatFeatureScreen(chatRepo = chatRepo, currentUserId = currentUserId)
 
                     else -> HomeScreenBody()
                 }
