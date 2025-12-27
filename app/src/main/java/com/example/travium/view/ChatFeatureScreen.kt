@@ -3,6 +3,7 @@ package com.example.travium.view
 import androidx.compose.runtime.*
 import com.example.travium.model.ChatListItemModel
 import com.example.travium.repository.ChatRepo
+import com.example.travium.ui.chat.ChatListScreen
 import com.example.travium.ui.chat.ChatScreen
 
 @Composable
@@ -15,7 +16,10 @@ fun ChatFeatureScreen(
 
     if (selectedChat == null) {
         // Show the chat list
-        ChatListScreen(chatRepo = chatRepo, currentUserId = currentUserId) { chat ->
+        ChatListScreen(
+            chatRepo = chatRepo,
+            currentUserId = currentUserId
+        ) { chat ->
             selectedChat = chat
         }
     } else {
