@@ -128,6 +128,7 @@ fun HomeBody(){
                     0 -> HomeScreenBody()
                     1 -> HomeScreenBody()
                     2 -> MakePostBody()
+                    4 -> ChatListScreen(chatRepo = chatRepo, currentUserId = currentUserId) { }
 
                     else -> HomeScreenBody()
                 }
