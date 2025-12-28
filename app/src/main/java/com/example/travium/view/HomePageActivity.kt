@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import com.example.travium.R
 import com.example.travium.repository.ChatRepo
 import com.example.travium.repository.ChatRepoImpl
+import com.example.travium.ui.chat.ChatListScreen
 
 class HomePageActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -132,7 +133,7 @@ fun HomeBody(){
                     0 -> HomeScreenBody()
                     1 -> HomeScreenBody()
                     2 -> MakePostBody()
-                    4 -> ChatFeatureScreen(chatRepo = chatRepo, currentUserId = currentUserId)
+                    3 -> ChatFeatureScreen(chatRepo = chatRepo, currentUserId = currentUserId)
 
                     else -> HomeScreenBody()
                 }

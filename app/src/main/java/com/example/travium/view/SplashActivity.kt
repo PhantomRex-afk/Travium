@@ -1,4 +1,4 @@
-package com.example.travium
+package com.example.travium.view
 
 import android.app.Activity
 import android.content.Intent
@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color.Companion.Blue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.example.travium.R
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.seconds
 
