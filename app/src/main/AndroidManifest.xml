@@ -12,12 +12,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Travium">
         <activity
-            android:name=".ForgetPasswordActivity"
+            android:name=".view.ForgetPasswordActivity"
             android:exported="true"
             android:label="@string/title_activity_forget_password"
             android:theme="@style/Theme.Travium" />
         <activity
-            android:name=".SplashActivity"
+            android:name=".view.SplashActivity"
             android:exported="true"
             android:label="@string/title_activity_splash"
             android:theme="@style/Theme.Travium">
@@ -38,7 +38,7 @@
             android:label="@string/title_activity_make_post"
             android:theme="@style/Theme.Travium" />
         <activity
-            android:name=".LoginActivity"
+            android:name=".view.LoginActivity"
             android:exported="true"
             android:label="@string/title_activity_login"
             android:theme="@style/Theme.Travium" />
