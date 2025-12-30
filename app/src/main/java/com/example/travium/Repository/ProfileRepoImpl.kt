@@ -1,116 +1,113 @@
-import com.example.practice.repository.ProductRepo
+package com.example.travium.Repository
+
+import android.content.Context
+import android.database.Cursor
+import android.net.Uri
+import android.os.Handler
+import android.os.Looper
+import android.provider.OpenableColumns
+import com.cloudinary.Cloudinary
+import com.cloudinary.utils.ObjectUtils
 import com.example.travium.Model.ProfileModel
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
+import java.io.InputStream
+import java.util.concurrent.Executors
 
-class ProductRepoImpl : ProductRepo {
+class ProfileRepoImpl(private val context: Context) : ProfileRepo {
 
-    private val ref =
-        FirebaseDatabase.getInstance().getReference("products")
+    private val database: FirebaseDatabase = FirebaseDatabase.getInstance()
+    private val ref: DatabaseReference = database.getReference("profiles")
+    
+    private val cloudinary = Cloudinary(
+        mapOf(
+            "cloud_name" to "dxfulkeol",
+            "api_key" to "286323454348927",
+            "api_secret" to "a4KoE_o-XUHExIIvcgLYL1nbKec"
+        )
+    )
 
-    override fun addProduct(
-        model: ProductModel,
+    override fun updateProfile(
+        userId: String,
+        model: ProfileModel,
         callback: (Boolean, String) -> Unit
     ) {
-        val productId = ref.push().key ?: return
-        model.id = productId
-
-        ref.child(productId).setValue(model)
-            .addOnCompleteListener {
-                if (it.isSuccessful) {
-                    callback(true, "Product added successfully")
-                } else {
-                    callback(false, it.exception?.message ?: "Error")
-                }
+        ref.child(userId).setValue(model).addOnCompleteListener {
+            if (it.isSuccessful) {
+                callback(true, "Profile updated successfully")
+            } else {
+                callback(false, it.exception?.message ?: "Update failed")
             }
+        }
     }
 
-    override fun updateProduct(
-        model: ProductModel,
-        callback: (Boolean, String) -> Unit
+    override fun getProfile(
+        userId: String,
+        callback: (Boolean, String, ProfileModel?) -> Unit
     ) {
-        ref.child(model.id).updateChildren(model.toMap())
-            .addOnCompleteListener {
-                if (it.isSuccessful) {
-                    callback(true, "Product updated successfully")
-                } else {
-                    callback(false, it.exception?.message ?: "Error")
-                }
-            }
-    }
-
-    override fun deleteProduct(
-        productID: String,
-        callback: (Boolean, String) -> Unit
-    ) {
-        ref.child(productID).removeValue()
-            .addOnCompleteListener {
-                if (it.isSuccessful) {
-                    callback(true, "Product deleted successfully")
-                } else {
-                    callback(false, it.exception?.message ?: "Error")
-                }
-            }
-    }
-
-    override fun getAllProduct(
-        callback: (Boolean, String, List<ProductModel>) -> Unit
-    ) {
-        ref.addListenerForSingleValueEvent(object : ValueEventListener {
+        ref.child(userId).addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                val products = snapshot.children
-                    .mapNotNull { it.getValue(ProductModel::class.java) }
-
-                callback(true, "Fetched", products)
+                if (snapshot.exists()) {
+                    val model = snapshot.getValue(ProfileModel::class.java)
+                    callback(true, "Profile fetched", model)
+                } else {
+                    callback(false, "Profile not found", null)
+                }
             }
 
             override fun onCancelled(error: DatabaseError) {
-                callback(false, error.message, emptyList())
+                callback(false, error.message, null)
             }
         })
     }
 
-    override fun getProductById(
-        productID: String,
-        callback: (Boolean, String, ProductModel?) -> Unit
-    ) {
-        ref.child(productID)
-            .addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    val product =
-                        snapshot.getValue(ProductModel::class.java)
-                    callback(true, "Fetched", product)
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                    callback(false, error.message, null)
-                }
-            })
-    }
-
-    override fun getProductByCategory(
-        categoryId: String,
-        callback: (Boolean, String, List<ProductModel>) -> Unit
-    ) {
-        ref.orderByChild("categoryId")
-            .equalTo(categoryId)
-            .addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    val products = snapshot.children
-                        .mapNotNull { it.getValue(ProductModel::class.java) }
-
-                    callback(true, "Fetched", products)
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                    callback(false, error.message, emptyList())
-                }
-            })
-    }
-
-    override fun uploadImage(
-        context: Context,
+    override fun uploadProfileImage(
         imageUri: Uri,
         callback: (Boolean, String?) -> Unit
     ) {
-        // same as before – logic unchanged
+        val executor = Executors.newSingleThreadExecutor()
+        executor.execute {
+            try {
+                val inputStream: InputStream? = context.contentResolver.openInputStream(imageUri)
+                val fileName = getFileNameFromUri(imageUri)?.substringBeforeLast(".") ?: "profile_image"
+
+                val response = cloudinary.uploader().upload(
+                    inputStream, ObjectUtils.asMap(
+                        "public_id", fileName,
+                        "resource_type", "image"
+                    )
+                )
+
+                var imageUrl = response["url"] as String?
+                imageUrl = imageUrl?.replace("http://", "https://")
+
+                Handler(Looper.getMainLooper()).post {
+                    callback(true, imageUrl)
+                }
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Handler(Looper.getMainLooper()).post {
+                    callback(false, null)
+                }
+            }
+        }
+    }
+
+    private fun getFileNameFromUri(imageUri: Uri): String? {
+        var fileName: String? = null
+        val cursor: Cursor? = context.contentResolver.query(imageUri, null, null, null, null)
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (nameIndex != -1) {
+                    fileName = it.getString(nameIndex)
+                }
+            }
+        }
+        return fileName
     }
 }
