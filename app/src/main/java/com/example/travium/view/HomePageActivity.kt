@@ -64,7 +64,7 @@ fun HomeBody(){
     val currentUserId = "user123" // replace with actual userId
     var selectedIndex by remember { mutableStateOf(0) }
 
-
+    var search by remember { mutableStateOf("") }
 
 
     val listItems = listOf(
@@ -122,8 +122,7 @@ fun HomeBody(){
             }
 
         }
-    ) {
-        padding ->
+    ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
 
             Box(modifier = Modifier

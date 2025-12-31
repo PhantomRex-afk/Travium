@@ -1,8 +1,11 @@
 package com.example.travium.repository
 
+import com.example.travium.model.MakePostModel
+
 interface MakePostRepo {
-    fun register(
-        email : String, password: String,
-        callback:(Boolean, String, String)-> Unit
-    )
+    fun createPost(post: MakePostModel, callback: (Boolean, String) -> Unit)
+
+    fun getAllPost(callback: (Boolean, String, List<MakePostModel>?) -> Unit)
 }
+
+
