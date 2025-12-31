@@ -2,6 +2,7 @@ package com.example.travium.view
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -49,7 +50,10 @@ import com.example.travium.viewmodel.MakePostViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MakePostBody(){
+fun MakePostBody(
+    selectedImageUri: Uri?,
+    onPickImage: () -> Unit
+){
 
     val context = LocalContext.current
     val activity = context as Activity

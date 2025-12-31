@@ -1,5 +1,6 @@
 package com.example.travium.view
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,8 +16,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import coil.compose.rememberAsyncImagePainter
 import com.example.travium.model.MakePostModel
 import com.example.travium.repository.MakePostRepoImpl
 import com.example.travium.viewmodel.MakePostViewModel
@@ -25,9 +28,7 @@ import com.example.travium.viewmodel.MakePostViewModel
 fun HomeScreenBody() {
     val postViewModel = remember { MakePostViewModel(MakePostRepoImpl()) }
 
-
     val allPosts by postViewModel.allPosts.observeAsState(initial = emptyList())
-
 
     LaunchedEffect(Unit) {
         postViewModel.getAllPosts()
@@ -52,6 +53,17 @@ fun PostCard(post: MakePostModel) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
+            if (post.imageUrl.isNotEmpty()) {
+                Image(
+                    painter = rememberAsyncImagePainter(post.imageUrl),
+                    contentDescription = "Post image",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
             if (post.caption.isNotEmpty()) {
                 Text(text = post.caption)
                 Spacer(modifier = Modifier.height(4.dp))

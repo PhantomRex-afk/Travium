@@ -4,6 +4,7 @@ data class MakePostModel(
     val userId : String = "",
     val caption: String = "",
     val location : String = "",
+    val imageUrl: String = ""
 ){
 
 }

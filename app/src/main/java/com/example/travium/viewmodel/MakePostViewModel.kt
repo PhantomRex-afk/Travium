@@ -1,5 +1,7 @@
 package com.example.travium.viewmodel
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -20,5 +22,9 @@ class MakePostViewModel(private val MakePostRepo: MakePostRepo) : ViewModel() {
                 _allPosts.value = productList
             }
         }
+    }
+
+    fun uploadImage(context: Context, imageUri: Uri, callback: (String?) -> Unit) {
+        MakePostRepo.uploadImage(context, imageUri, callback)
     }
 }
