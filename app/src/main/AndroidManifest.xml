@@ -6,11 +6,23 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
+        android.icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Travium">
+        <activity
+            android:name=".view.DisplayTripGroupActivity"
+            android:exported="true"
+            android:label="@string/title_activity_display_trip_group"
+            android:theme="@style/Theme.Travium">
+        </activity>
+        <activity
+            android:name=".view.SetTripGroupActivity"
+            android:exported="true"
+            android:label="@string/title_activity_set_trip_group"
+            android:theme="@style/Theme.Travium">
+        </activity>
         <activity
             android:name=".view.ForgetPasswordActivity"
             android:exported="true"
