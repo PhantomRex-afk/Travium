@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +46,7 @@ import com.example.travium.R
 import com.example.travium.model.MakePostModel
 import com.example.travium.repository.MakePostRepoImpl
 import com.example.travium.viewmodel.MakePostViewModel
+import kotlinx.coroutines.launch
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,6 +59,7 @@ fun MakePostBody(
     val context = LocalContext.current
     val activity = context as Activity
     val makePostViewModel = remember { MakePostViewModel(MakePostRepoImpl()) }
+    val coroutineScope = rememberCoroutineScope()
 
 
     var caption by remember { mutableStateOf("") }
@@ -163,12 +166,36 @@ fun MakePostBody(
 
                 Button(
                     onClick = {
-                        // This needs to be updated to handle the image upload
-                        val post = MakePostModel(caption = caption, location = location)
-                        makePostViewModel.createPost(post) { success, message ->
-                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                        coroutineScope.launch {
+                            if (selectedImageUri != null) {
+                                makePostViewModel.uploadImage(context, selectedImageUri) { imageUrl ->
+                                    if (imageUrl != null) {
+                                        val post = MakePostModel(
+                                            caption = caption,
+                                            location = location,
+                                            imageUrl = imageUrl
+                                        )
+                                        makePostViewModel.createPost(post) { success, message ->
+                                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                            if (success) {
+                                                activity.finish()
+                                            }
+                                        }
+                                    } else {
+                                        Toast.makeText(context, "Image upload failed", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            } else {
+                                // Handle case where no image is selected
+                                val post = MakePostModel(caption = caption, location = location)
+                                makePostViewModel.createPost(post) { success, message ->
+                                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                    if (success) {
+                                        activity.finish()
+                                    }
+                                }
+                            }
                         }
-                        activity.finish()
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Blue,
