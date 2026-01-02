@@ -2,9 +2,10 @@
     <string name="app_name">Travium</string>
     <string name="title_activity_home_page">HomePageActivity</string>
     <string name="title_activity_make_post">MakePostActivity</string>
-    <string name="title_activity_login">LoginActivity</string>
-    <string name="title_activity_register">RegisterActivity</string>
-    <string name="title_activity_splash">SplashActivity</string>
-    <string name="title_activity_forget_password">ForgetPasswordActivity</string>
-    <string name="title_activity_chat">ChatActivity</string>
+    <string name="title_activity_main">MainActivity</string>
+    <string name="title_activity_chat_box">ChatBox</string>
+    <string name="title_activity_profile">ProfileActivity</string>
+    <string name="title_activity_edit_profile">EditProfileActivity</string>
+    <string name="title_activity_settings">SettingsActivity</string>
+    <string name="title_activity_report">ReportActivity</string>
 </resources>
