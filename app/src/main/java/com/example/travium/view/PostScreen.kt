@@ -46,6 +46,7 @@ import com.example.travium.R
 import com.example.travium.model.MakePostModel
 import com.example.travium.repository.MakePostRepoImpl
 import com.example.travium.viewmodel.MakePostViewModel
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
 
@@ -166,11 +167,18 @@ fun MakePostBody(
 
                 Button(
                     onClick = {
+                        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+                        if (userId.isEmpty()) {
+                            Toast.makeText(context, "You must be logged in to post", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+
                         coroutineScope.launch {
                             if (selectedImageUri != null) {
                                 makePostViewModel.uploadImage(context, selectedImageUri) { imageUrl ->
                                     if (imageUrl != null) {
                                         val post = MakePostModel(
+                                            userId = userId,
                                             caption = caption,
                                             location = location,
                                             imageUrl = imageUrl
@@ -187,7 +195,7 @@ fun MakePostBody(
                                 }
                             } else {
                                 // Handle case where no image is selected
-                                val post = MakePostModel(caption = caption, location = location)
+                                val post = MakePostModel(userId = userId, caption = caption, location = location)
                                 makePostViewModel.createPost(post) { success, message ->
                                     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                                     if (success) {

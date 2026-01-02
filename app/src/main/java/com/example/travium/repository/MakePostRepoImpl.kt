@@ -7,15 +7,17 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.provider.OpenableColumns
-import android.util.Log.e
+import android.util.Log
 import com.cloudinary.Cloudinary
 import com.cloudinary.utils.ObjectUtils
 import com.example.travium.model.MakePostModel
-import com.google.firebase.Firebase
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseException
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.MutableData
+import com.google.firebase.database.Transaction
 import com.google.firebase.database.ValueEventListener
 import java.io.InputStream
 import java.util.concurrent.Executors
@@ -41,7 +43,7 @@ class MakePostRepoImpl : MakePostRepo {
         callback: (Boolean, String) -> Unit
     ) {
         val postId = postsRef.push().key ?: ""
-        val newPost = post.copy(userId = postId)
+        val newPost = post.copy(postId = postId)
 
         postsRef.child(postId).setValue(newPost)
             .addOnCompleteListener { callback (true,"Created a post")}
@@ -56,8 +58,12 @@ class MakePostRepoImpl : MakePostRepo {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val productList = mutableListOf<MakePostModel>()
                 for (productSnapshot in snapshot.children) {
-                    val product = productSnapshot.getValue(MakePostModel::class.java)
-                    product?.let { productList.add(it) }
+                    try {
+                        val product = productSnapshot.getValue(MakePostModel::class.java)
+                        product?.let { productList.add(it) }
+                    } catch (e: DatabaseException) {
+                        Log.e("MakePostRepoImpl", "Failed to parse post: ${productSnapshot.key}", e)
+                    }
                 }
                 callback(true, "Products retrieved successfully", productList)
             }
@@ -116,5 +122,32 @@ class MakePostRepoImpl : MakePostRepo {
             }
         }
         return fileName
+    }
+
+    override fun likePost(postId: String, userId: String, callback: (Boolean) -> Unit) {
+        postsRef.child(postId).runTransaction(object : Transaction.Handler {
+            override fun doTransaction(currentData: MutableData): Transaction.Result {
+                val post = currentData.getValue(MakePostModel::class.java)
+                    ?: return Transaction.success(currentData)
+
+                val likes = post.likes.toMutableList()
+                if (likes.contains(userId)) {
+                    likes.remove(userId)
+                } else {
+                    likes.add(userId)
+                }
+
+                currentData.child("likes").value = likes
+                return Transaction.success(currentData)
+            }
+
+            override fun onComplete(
+                error: DatabaseError?,
+                committed: Boolean,
+                currentData: DataSnapshot?
+            ) {
+                callback(error == null && committed)
+            }
+        })
     }
 }

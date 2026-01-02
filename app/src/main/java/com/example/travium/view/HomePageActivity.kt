@@ -33,8 +33,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.travium.R
-import com.example.travium.repository.ChatRepo
-import com.example.travium.repository.ChatRepoImpl
 import com.example.travium.utils.ImageUtils
 
 class HomePageActivity : ComponentActivity() {
@@ -66,8 +64,6 @@ fun MainScreen(
 ) {
 
     data class NavItems(val label : String, val icon: Int)
-    val chatRepo: ChatRepo = ChatRepoImpl()
-    val currentUserId = "user123" // replace with actual userId
     var selectedIndex by remember { mutableStateOf(0) }
 
     val listItems = listOf(
@@ -122,7 +118,7 @@ fun MainScreen(
                     0 -> HomeScreenBody()
                     1 -> HomeScreenBody()
                     2 -> MakePostBody(selectedImageUri = selectedImageUri, onPickImage = onPickImage)
-                    3 -> ChatFeatureScreen(chatRepo = chatRepo, currentUserId = currentUserId)
+                    3 -> Text("Chat Feature Coming Soon!") // Placeholder to prevent crash
                     else -> HomeScreenBody()
                 }
             }
