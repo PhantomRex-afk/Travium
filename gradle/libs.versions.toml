@@ -12,9 +12,15 @@ googleGmsGoogleServices = "4.4.4"
 firebaseDatabase = "21.0.0"
 firebaseAuth = "23.2.0"
 firebaseAi = "17.7.0"
+firebaseBom = "32.3.0"
 coil = "2.6.0"
+cloudinaryAndroid = "2.1.0"
+firebaseStorage = "21.0.0"
 
 [libraries]
+firebase-storage = { group = "com.google.firebase", name = "firebase-storage-ktx", version.ref = "firebaseStorage" }
+firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
+cloudinary-android = { group = "com.cloudinary", name = "cloudinary-android", version.ref = "cloudinaryAndroid" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }

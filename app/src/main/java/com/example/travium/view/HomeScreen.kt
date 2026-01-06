@@ -19,7 +19,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -31,8 +33,11 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.example.travium.R
 import com.example.travium.model.MakePostModel
+import com.example.travium.model.UserModel
 import com.example.travium.repository.MakePostRepoImpl
+import com.example.travium.repository.UserRepoImpl
 import com.example.travium.viewmodel.MakePostViewModel
+import com.example.travium.viewmodel.UserViewModel
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
@@ -55,6 +60,20 @@ fun HomeScreenBody() {
 }
 
 @Composable
+fun PostAuthorHeader(userId: String) {
+    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+    var user by remember { mutableStateOf<UserModel?>(null) }
+
+    LaunchedEffect(userId) {
+        userViewModel.getUserById(userId) { fetchedUser ->
+            user = fetchedUser
+        }
+    }
+
+    Text(text = user?.fullName ?: "", fontWeight = FontWeight.Bold)
+}
+
+@Composable
 fun PostCard(post: MakePostModel, postViewModel: MakePostViewModel) {
     val context = LocalContext.current
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
@@ -67,8 +86,10 @@ fun PostCard(post: MakePostModel, postViewModel: MakePostViewModel) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
+            PostAuthorHeader(userId = post.userId)
+            Spacer(modifier = Modifier.height(8.dp))
             if (post.caption.isNotEmpty()) {
-                Text(text = post.caption, fontWeight = FontWeight.Bold)
+                Text(text = post.caption)
                 Spacer(modifier = Modifier.height(4.dp))
             }
             if (post.location.isNotEmpty()) {
