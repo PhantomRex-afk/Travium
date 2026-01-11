@@ -10,11 +10,14 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,6 +27,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -36,7 +41,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -51,7 +58,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.travium.R
+import com.example.travium.model.NotificationModel
+import com.example.travium.model.UserModel
+import com.example.travium.repository.MakePostRepoImpl
+import com.example.travium.repository.UserRepoImpl
 import com.example.travium.utils.ImageUtils
+import com.example.travium.viewmodel.MakePostViewModel
+import com.example.travium.viewmodel.UserViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 class HomePageActivity : ComponentActivity() {
 
@@ -74,23 +88,41 @@ class HomePageActivity : ComponentActivity() {
     }
 }
 
-// Dummy data for notifications
-data class Notification(val id: Int, val user: String, val message: String)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     selectedImageUri: Uri?,
     onPickImage: () -> Unit
 ) {
-
-    data class NavItems(val label : String, val icon: Int)
+    val postViewModel = remember { MakePostViewModel(MakePostRepoImpl()) }
+    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
+    
+    val notifications by postViewModel.notifications.observeAsState(initial = emptyList())
+    
     var selectedIndex by remember { mutableStateOf(0) }
     var showNotifications by remember { mutableStateOf(false) }
+    var hasUnreadNotifications by remember { mutableStateOf(false) }
 
-    // Start with an empty list to simulate not being logged in
-    val notifications = remember { emptyList<Notification>() }
+    LaunchedEffect(currentUserId) {
+        if (currentUserId.isNotEmpty()) {
+            postViewModel.getNotifications(currentUserId)
+        }
+    }
 
+    LaunchedEffect(notifications) {
+        if (notifications.isNotEmpty() && !showNotifications) {
+            hasUnreadNotifications = true
+        }
+    }
+
+    LaunchedEffect(showNotifications) {
+        if (showNotifications) {
+            hasUnreadNotifications = false
+        }
+    }
+
+    data class NavItems(val label : String, val icon: Int)
     val listItems = listOf(
         NavItems("Home", R.drawable.outline_home_24),
         NavItems("Guide", R.drawable.outline_map_pin_review_24),
@@ -116,12 +148,20 @@ fun MainScreen(
                     ),
                     actions = {
                         IconButton(onClick = { showNotifications = !showNotifications }) {
-                            Icon(
-                                painter = painterResource(R.drawable.notification),
-                                contentDescription = "Notifications"
-                            )
+                            BadgedBox(
+                                badge = {
+                                    if (hasUnreadNotifications) {
+                                        Badge(containerColor = Color.Red)
+                                    }
+                                }
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.notification),
+                                    contentDescription = "Notifications"
+                                )
+                            }
                         }
-                        Spacer(modifier = Modifier.width(8.dp)) // Adjust spacing
+                        Spacer(modifier = Modifier.width(8.dp))
                     }
                 )
             },
@@ -147,45 +187,59 @@ fun MainScreen(
                         0 -> HomeScreenBody()
                         1 -> HomeScreenBody()
                         2 -> MakePostBody(selectedImageUri = selectedImageUri, onPickImage = onPickImage)
-                        3 -> Text("Chat Feature Coming Soon!") // Placeholder to prevent crash
+                        3 -> Text("Chat Feature Coming Soon!")
                         else -> HomeScreenBody()
                     }
                 }
             }
         }
 
-        // Notification Panel Overlay
+        // Invisible overlay to detect clicks outside the notification box
+        if (showNotifications) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        showNotifications = false
+                    }
+            )
+        }
+
         AnimatedVisibility(
             visible = showNotifications,
             enter = slideInVertically(animationSpec = tween(durationMillis = 300)) { fullHeight -> -fullHeight },
             exit = slideOutVertically(animationSpec = tween(durationMillis = 300)) { fullHeight -> -fullHeight }
         ) {
-            NotificationPanel(notifications = notifications)
+            NotificationPanel(notifications = notifications, userViewModel = userViewModel)
         }
     }
 }
 
 @Composable
-fun NotificationPanel(notifications: List<Notification>) {
+fun NotificationPanel(notifications: List<NotificationModel>, userViewModel: UserViewModel) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 60.dp), // Adjust this padding to position below the TopAppBar
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            .fillMaxHeight(0.6f)
+            .padding(top = 64.dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { }, 
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         if (notifications.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("No new notifications")
             }
         } else {
             LazyColumn(modifier = Modifier.padding(8.dp)) {
                 items(notifications) { notification ->
-                    NotificationItem(notification)
+                    NotificationItem(notification, userViewModel)
                 }
             }
         }
@@ -193,26 +247,40 @@ fun NotificationPanel(notifications: List<Notification>) {
 }
 
 @Composable
-fun NotificationItem(notification: Notification) {
+fun NotificationItem(notification: NotificationModel, userViewModel: UserViewModel) {
+    var fromUser by remember { mutableStateOf<UserModel?>(null) }
+    
+    LaunchedEffect(notification.fromUserId) {
+        userViewModel.getUserById(notification.fromUserId) { user ->
+            fromUser = user
+        }
+    }
+
+    val message = when(notification.type) {
+        "like" -> "liked your post."
+        "comment" -> "commented: \"${notification.message}\""
+        else -> ""
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = 8.dp, horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            painter = painterResource(id = R.drawable.profile), // Replace with user profile pic
-            contentDescription = null,
+        Box(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(Color.Gray)
+                .background(Color.LightGray)
         )
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(text = "${notification.user} ${notification.message}")
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = "${fromUser?.fullName ?: "Someone"} $message",
+            fontSize = 14.sp
+        )
     }
 }
-
 
 @Preview(showBackground = true)
 @Composable

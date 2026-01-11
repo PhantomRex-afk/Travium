@@ -38,13 +38,10 @@ fun HomeScreenBody() {
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
     val allPosts by postViewModel.allPosts.observeAsState(initial = emptyList())
     
-    var selectedPost by remember { mutableStateOf<MakePostModel?>(null) }
+    // Change: Store the postId instead of the whole post object
+    var selectedPostId by remember { mutableStateOf<String?>(null) }
     var isSheetOpen by remember { mutableStateOf(false) }
-    
-    // Fix: Added skipPartiallyExpanded = true to ensure the sheet opens fully
-    val sheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true 
-    )
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     LaunchedEffect(Unit) {
         postViewModel.getAllPosts()
@@ -62,25 +59,29 @@ fun HomeScreenBody() {
                     postViewModel = postViewModel, 
                     userViewModel = userViewModel,
                     onCommentClick = {
-                        selectedPost = post
+                        selectedPostId = post.postId
                         isSheetOpen = true
                     }
                 )
             }
         }
 
-        if (isSheetOpen && selectedPost != null) {
-            ModalBottomSheet(
-                onDismissRequest = { isSheetOpen = false },
-                sheetState = sheetState,
-                // Ensure the sheet takes up most of the screen so keyboard doesn't hide input
-                modifier = Modifier.fillMaxHeight(0.9f) 
-            ) {
-                CommentSection(
-                    post = selectedPost!!, 
-                    postViewModel = postViewModel, 
-                    userViewModel = userViewModel
-                )
+        if (isSheetOpen && selectedPostId != null) {
+            // Find the latest version of the post from the real-time list
+            val latestPost = allPosts.find { it.postId == selectedPostId }
+            
+            if (latestPost != null) {
+                ModalBottomSheet(
+                    onDismissRequest = { isSheetOpen = false },
+                    sheetState = sheetState,
+                    modifier = Modifier.fillMaxHeight(0.9f)
+                ) {
+                    CommentSection(
+                        post = latestPost, 
+                        postViewModel = postViewModel, 
+                        userViewModel = userViewModel
+                    )
+                }
             }
         }
     }
@@ -185,7 +186,7 @@ fun CommentSection(post: MakePostModel, postViewModel: MakePostViewModel, userVi
         }
     }
 
-    Column(modifier = Modifier.padding(16.dp).imePadding()) { // Added imePadding
+    Column(modifier = Modifier.padding(16.dp).imePadding()) {
         Text("Comments", fontWeight = FontWeight.Bold, fontSize = 20.sp)
         Spacer(modifier = Modifier.height(16.dp))
         

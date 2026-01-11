@@ -7,12 +7,16 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.travium.model.Comment
 import com.example.travium.model.MakePostModel
+import com.example.travium.model.NotificationModel
 import com.example.travium.repository.MakePostRepo
 
 class MakePostViewModel(private val makePostRepo: MakePostRepo) : ViewModel() {
 
     private val _allPosts = MutableLiveData<List<MakePostModel>>()
     val allPosts: LiveData<List<MakePostModel>> = _allPosts
+
+    private val _notifications = MutableLiveData<List<NotificationModel>>()
+    val notifications: LiveData<List<NotificationModel>> = _notifications
 
     fun createPost(post: MakePostModel, callback: (Boolean, String) -> Unit){
         makePostRepo.createPost(post, callback)
@@ -36,5 +40,13 @@ class MakePostViewModel(private val makePostRepo: MakePostRepo) : ViewModel() {
 
     fun addComment(postId: String, comment: Comment, callback: (Boolean) -> Unit) {
         makePostRepo.addComment(postId, comment, callback)
+    }
+
+    fun getNotifications(userId: String) {
+        makePostRepo.getNotifications(userId) { success, message, notificationList ->
+            if (success) {
+                _notifications.value = notificationList
+            }
+        }
     }
 }

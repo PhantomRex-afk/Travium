@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import com.example.travium.model.Comment
 import com.example.travium.model.MakePostModel
+import com.example.travium.model.NotificationModel
 
 interface MakePostRepo {
     fun createPost(post: MakePostModel, callback: (Boolean, String) -> Unit)
@@ -17,4 +18,6 @@ interface MakePostRepo {
     fun likePost(postId: String, userId: String, callback: (Boolean) -> Unit)
 
     fun addComment(postId: String, comment: Comment, callback: (Boolean) -> Unit)
+
+    fun getNotifications(userId: String, callback: (Boolean, String, List<NotificationModel>?) -> Unit)
 }

@@ -12,6 +12,7 @@ import com.cloudinary.Cloudinary
 import com.cloudinary.utils.ObjectUtils
 import com.example.travium.model.Comment
 import com.example.travium.model.MakePostModel
+import com.example.travium.model.NotificationModel
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseException
@@ -120,12 +121,12 @@ class MakePostRepoImpl : MakePostRepo {
                     // Create notification for post owner
                     if (userId != post.userId) {
                         val notificationId = notificationsRef.child(post.userId).push().key ?: ""
-                        val notificationData = mapOf(
-                            "notificationId" to notificationId,
-                            "type" to "like",
-                            "fromUserId" to userId,
-                            "postId" to postId,
-                            "timestamp" to System.currentTimeMillis()
+                        val notificationData = NotificationModel(
+                            notificationId = notificationId,
+                            type = "like",
+                            fromUserId = userId,
+                            postId = postId,
+                            timestamp = System.currentTimeMillis()
                         )
                         notificationsRef.child(post.userId).child(notificationId).setValue(notificationData)
                     }
@@ -155,13 +156,13 @@ class MakePostRepoImpl : MakePostRepo {
                 // Create notification for post owner
                 if (comment.userId != post.userId) {
                     val notificationId = notificationsRef.child(post.userId).push().key ?: ""
-                    val notificationData = mapOf(
-                        "notificationId" to notificationId,
-                        "type" to "comment",
-                        "fromUserId" to comment.userId,
-                        "message" to comment.message,
-                        "postId" to postId,
-                        "timestamp" to System.currentTimeMillis()
+                    val notificationData = NotificationModel(
+                        notificationId = notificationId,
+                        type = "comment",
+                        fromUserId = comment.userId,
+                        message = comment.message,
+                        postId = postId,
+                        timestamp = System.currentTimeMillis()
                     )
                     notificationsRef.child(post.userId).child(notificationId).setValue(notificationData)
                 }
@@ -171,6 +172,29 @@ class MakePostRepoImpl : MakePostRepo {
 
             override fun onComplete(error: DatabaseError?, committed: Boolean, snapshot: DataSnapshot?) {
                 callback(error == null && committed)
+            }
+        })
+    }
+
+    override fun getNotifications(userId: String, callback: (Boolean, String, List<NotificationModel>?) -> Unit) {
+        notificationsRef.child(userId).addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val notificationList = mutableListOf<NotificationModel>()
+                for (notificationSnapshot in snapshot.children) {
+                    try {
+                        val notification = notificationSnapshot.getValue(NotificationModel::class.java)
+                        notification?.let { notificationList.add(it) }
+                    } catch (e: Exception) {
+                        Log.e("MakePostRepoImpl", "Failed to parse notification", e)
+                    }
+                }
+                // Sort by newest first
+                notificationList.sortByDescending { it.timestamp }
+                callback(true, "Notifications retrieved", notificationList)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                callback(false, error.message, null)
             }
         })
     }
