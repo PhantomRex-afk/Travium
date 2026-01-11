@@ -2,6 +2,7 @@ package com.example.travium.repository
 
 import android.content.Context
 import android.net.Uri
+import com.example.travium.model.Comment
 import com.example.travium.model.MakePostModel
 
 interface MakePostRepo {
@@ -14,6 +15,6 @@ interface MakePostRepo {
     fun getFileNameFromUri(context: Context, uri: Uri): String?
 
     fun likePost(postId: String, userId: String, callback: (Boolean) -> Unit)
+
+    fun addComment(postId: String, comment: Comment, callback: (Boolean) -> Unit)
 }
-
-
