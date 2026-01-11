@@ -44,6 +44,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -103,6 +104,9 @@ fun MainScreen(
     var selectedIndex by remember { mutableStateOf(0) }
     var showNotifications by remember { mutableStateOf(false) }
     var hasUnreadNotifications by remember { mutableStateOf(false) }
+    
+    // Fix: Keep track of the last known notification count
+    var lastNotificationCount by remember { mutableIntStateOf(-1) }
 
     LaunchedEffect(currentUserId) {
         if (currentUserId.isNotEmpty()) {
@@ -111,9 +115,11 @@ fun MainScreen(
     }
 
     LaunchedEffect(notifications) {
-        if (notifications.isNotEmpty() && !showNotifications) {
+        // Only trigger the badge if the count actually increases after the initial load
+        if (lastNotificationCount != -1 && notifications.size > lastNotificationCount && !showNotifications) {
             hasUnreadNotifications = true
         }
+        lastNotificationCount = notifications.size
     }
 
     LaunchedEffect(showNotifications) {
