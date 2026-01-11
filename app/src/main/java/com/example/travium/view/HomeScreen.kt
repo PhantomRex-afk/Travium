@@ -40,7 +40,11 @@ fun HomeScreenBody() {
     
     var selectedPost by remember { mutableStateOf<MakePostModel?>(null) }
     var isSheetOpen by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState()
+    
+    // Fix: Added skipPartiallyExpanded = true to ensure the sheet opens fully
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true 
+    )
 
     LaunchedEffect(Unit) {
         postViewModel.getAllPosts()
@@ -69,7 +73,8 @@ fun HomeScreenBody() {
             ModalBottomSheet(
                 onDismissRequest = { isSheetOpen = false },
                 sheetState = sheetState,
-                modifier = Modifier.fillMaxHeight(0.8f)
+                // Ensure the sheet takes up most of the screen so keyboard doesn't hide input
+                modifier = Modifier.fillMaxHeight(0.9f) 
             ) {
                 CommentSection(
                     post = selectedPost!!, 
@@ -180,7 +185,7 @@ fun CommentSection(post: MakePostModel, postViewModel: MakePostViewModel, userVi
         }
     }
 
-    Column(modifier = Modifier.padding(16.dp)) {
+    Column(modifier = Modifier.padding(16.dp).imePadding()) { // Added imePadding
         Text("Comments", fontWeight = FontWeight.Bold, fontSize = 20.sp)
         Spacer(modifier = Modifier.height(16.dp))
         
