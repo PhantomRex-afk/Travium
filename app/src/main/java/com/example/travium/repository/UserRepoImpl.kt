@@ -2,7 +2,10 @@ package com.example.travium.repository
 
 import com.example.travium.model.UserModel
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 
 class UserRepoImpl : UserRepo {
     private val auth = FirebaseAuth.getInstance()
@@ -60,5 +63,18 @@ class UserRepoImpl : UserRepo {
                     callback(false, task.exception?.message ?: "Failed to store user data")
                 }
             }
+    }
+
+    override fun getUserById(userId: String, callback: (UserModel?) -> Unit) {
+        db.child(userId).addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val user = snapshot.getValue(UserModel::class.java)
+                callback(user)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                callback(null)
+            }
+        })
     }
 }

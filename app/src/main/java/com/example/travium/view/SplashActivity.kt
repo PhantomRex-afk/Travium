@@ -26,7 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.travium.R
-import com.example.travium.view.ui.theme.TraviumTheme
+import com.example.travium.ui.theme.TraviumTheme
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.seconds
@@ -62,7 +62,7 @@ fun SplashBody() {
         activity.finish()
     }
 
-    Scaffold(containerColor = Color.White) { padding ->
+    Scaffold(containerColor = Color.Black) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

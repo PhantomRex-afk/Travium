@@ -19,4 +19,6 @@ interface UserRepo {
     fun forgetPassword(
         email: String,callback: (Boolean, String) -> Unit
     )
+
+    fun getUserById(userId: String, callback: (UserModel?) -> Unit)
 }

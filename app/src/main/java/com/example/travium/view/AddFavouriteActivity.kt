@@ -42,10 +42,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import coil3.compose.rememberAsyncImagePainter
+import coil.compose.rememberAsyncImagePainter
 import com.example.travium.model.FavouritePlace
 import com.example.travium.repository.FavouriteRepositoryImpl
-import com.example.travium.view.ui.theme.TraviumTheme
+import com.example.travium.ui.theme.TraviumTheme
 import com.example.travium.viewmodel.FavouriteViewModel
 import com.example.travium.viewmodel.FavouriteViewModelFactory
 import com.google.firebase.auth.ktx.auth

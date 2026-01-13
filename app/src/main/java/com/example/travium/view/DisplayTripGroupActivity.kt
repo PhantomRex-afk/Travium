@@ -11,7 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.travium.view.ui.theme.TraviumTheme
+import com.example.travium.ui.theme.TraviumTheme
 
 class DisplayTripGroupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
