@@ -1,6 +1,6 @@
-package com.example.travium.Repository
+package com.example.travium.repository
 
-import com.example.travium.Model.ReportModel
+import com.example.travium.model.ReportModel
 import com.google.firebase.database.FirebaseDatabase
 
 class ReportRepoImpl : ReportRepo {
