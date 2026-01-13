@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -22,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -29,119 +29,156 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import coil.compose.rememberAsyncImagePainter
+import com.example.travium.Model.ProfileModel
+import com.example.travium.Repository.ProfileRepoImpl
+import com.example.travium.view.ProfileViewModel
 
 @Composable
 fun ProfileBody() {
+    val context = LocalContext.current
+    val repository = remember { ProfileRepoImpl(context) }
+    val viewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(repository))
 
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var showDialog by remember { mutableStateOf(false) }
     var selectedEvent by remember { mutableStateOf<String?>(null) }
     var eventCount by remember { mutableIntStateOf(10) }
 
+    val profile by viewModel.profile.collectAsState()
+    val loading by viewModel.loading.collectAsState()
+
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
-        onResult = { uri -> imageUri = uri }
+        onResult = { uri ->
+            if (uri != null) {
+                imageUri = uri
+                viewModel.uploadImage(uri) { downloadUrl ->
+                    if (downloadUrl != null) {
+                        val currentProfile = profile ?: ProfileModel(
+                            username = "Blastoise",
+                            category = "Water Type Pokemon",
+                            bio = "BigMan Blastoise",
+                            subtitle = "Squirtle ko Hajurbau",
+                            postsCount = "714",
+                            followersCount = "10B",
+                            followingCount = "0",
+                            events = emptyList()
+                        )
+                        viewModel.updateProfile(
+                            userId = "user_123", // Replace with actual userId
+                            model = currentProfile.copy(profileImageUri = downloadUrl)
+                        )
+                    }
+                }
+            }
+        }
     )
 
     Scaffold { padding ->
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(16.dp)
-        ) {
-            /* Top Bar */
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.arrow_left),
-                        contentDescription = "Back"
-                    )
-                    Icon(
-                        painter = painterResource(R.drawable.more_buttons),
-                        contentDescription = "More"
-                    )
-                }
-            }
-
-            /* Profile Info */
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Row(
-                    modifier = Modifier.padding(bottom = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Image(
-                        painter = rememberAsyncImagePainter(
-                            imageUri ?: R.drawable.blastoise
-                        ),
-                        contentDescription = "Profile Image",
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(16.dp)
+            ) {
+                /* Top Bar */
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Row(
                         modifier = Modifier
-                            .size(100.dp)
-                            .clip(CircleShape)
-                            .clickable {
-                                photoPickerLauncher.launch(
-                                    PickVisualMediaRequest(
-                                        ActivityResultContracts.PickVisualMedia.ImageOnly
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.arrow_left),
+                            contentDescription = "Back"
+                        )
+                        Icon(
+                            painter = painterResource(R.drawable.more_buttons),
+                            contentDescription = "More"
+                        )
+                    }
+                }
+
+                /* Profile Info */
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Row(
+                        modifier = Modifier.padding(bottom = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            painter = rememberAsyncImagePainter(
+                                imageUri ?: profile?.profileImageUri ?: R.drawable.blastoise
+                            ),
+                            contentDescription = "Profile Image",
+                            modifier = Modifier
+                                .size(100.dp)
+                                .clip(CircleShape)
+                                .clickable {
+                                    photoPickerLauncher.launch(
+                                        PickVisualMediaRequest(
+                                            ActivityResultContracts.PickVisualMedia.ImageOnly
+                                        )
                                     )
-                                )
-                            },
-                        contentScale = ContentScale.Crop
-                    )
+                                },
+                            contentScale = ContentScale.Crop
+                        )
 
-                    Spacer(modifier = Modifier.width(16.dp))
+                        Spacer(modifier = Modifier.width(16.dp))
 
-                    Column {
-                        Text("Blastoise", fontWeight = FontWeight.Bold)
-                        Text("Water Type Pokemon")
-                        Text("BigMan Blastoise")
-                        Text("Squirtle ko Hajurbau")
+                        Column {
+                            Text(profile?.username ?: "Blastoise", fontWeight = FontWeight.Bold)
+                            Text(profile?.category ?: "Water Type Pokemon")
+                            Text(profile?.bio ?: "BigMan Blastoise")
+                            Text(profile?.subtitle ?: "Squirtle ko Hajurbau")
+                        }
+                    }
+                }
+
+                /* Stats */
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceAround
+                    ) {
+                        ProfileStat(profile?.postsCount ?: "714", "Posts")
+                        ProfileStat(profile?.followersCount ?: "10B", "Followers")
+                        ProfileStat(profile?.followingCount ?: "0", "Following")
+                    }
+                }
+
+                /* Buttons */
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Row(
+                        modifier = Modifier.padding(bottom = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        ProfileButton(text = "Hire", modifier = Modifier.weight(1f))
+                        ProfileButton(text = "Message", modifier = Modifier.weight(1f))
+                    }
+                }
+
+                /* Events Grid Items */
+                items(count = eventCount) { index ->
+                    val title = "Event ${index + 1}"
+                    StoryCard(
+                        imageRes = R.drawable.blastoise,
+                        title = title
+                    ) {
+                        selectedEvent = title
+                        showDialog = true
                     }
                 }
             }
 
-            /* Stats */
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceAround
-                ) {
-                    ProfileStat("714", "Posts")
-                    ProfileStat("10B", "Followers")
-                    ProfileStat("0", "Following")
-                }
-            }
-
-            /* Buttons */
-            item(span = { GridItemSpan(maxLineSpan) }) {
-                Row(
-                    modifier = Modifier.padding(bottom = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    ProfileButton(text = "Hire", modifier = Modifier.weight(1f))
-                    ProfileButton(text = "Message", modifier = Modifier.weight(1f))
-                }
-            }
-
-            /* Events Grid Items */
-            items(count = eventCount) { index ->
-                val title = "Event ${index + 1}"
-                StoryCard(
-                    imageRes = R.drawable.blastoise,
-                    title = title
-                ) {
-                    selectedEvent = title
-                    showDialog = true
-                }
+            if (loading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             }
         }
 
