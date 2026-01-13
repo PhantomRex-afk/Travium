@@ -1,7 +1,7 @@
-package com.example.travium.Repository
+package com.example.travium.repository
 
 import android.net.Uri
-import com.example.travium.Model.ProfileModel
+import com.example.travium.model.ProfileModel
 
 interface ProfileRepo {
     fun updateProfile(
