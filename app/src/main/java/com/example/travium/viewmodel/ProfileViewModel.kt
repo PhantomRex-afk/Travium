@@ -1,4 +1,4 @@
-package com.example.travium.view
+package com.example.travium.viewmodel
 
 import android.net.Uri
 import androidx.lifecycle.ViewModel
