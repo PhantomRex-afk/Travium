@@ -199,32 +199,35 @@ fun LoginBody(viewModel: UserViewModel? = null) {
                         singleLine = true
                     )
 
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        placeholder = { Text("Password") },
-                        visualTransformation =
-                        if (visibility) VisualTransformation.None
-                        else PasswordVisualTransformation(),
-                        trailingIcon = {
-                            IconButton(onClick = { visibility = !visibility }) {
-                                Icon(
-                                    painter = painterResource(
-                                        if (visibility)
-                                            R.drawable.baseline_visibility_24
-                                        else
-                                            R.drawable.baseline_visibility_off_24
-                                    ),
-                                    contentDescription = null,
-                                    tint = Color.White.copy(alpha = 0.7f)
-                                )
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = loginTextFieldColors(primaryColor, textFieldBg),
-                        singleLine = true
-                    )
+                    AnimatedVisibility(visible = selectedRole == "User") {
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            placeholder = { Text("Password") },
+                            visualTransformation =
+                            if (visibility) VisualTransformation.None
+                            else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                IconButton(onClick = { visibility = !visibility }) {
+                                    Icon(
+                                        painter = painterResource(
+                                            if (visibility)
+                                                R.drawable.baseline_visibility_24
+                                            else
+                                                R.drawable.baseline_visibility_off_24
+                                        ),
+                                        contentDescription = null,
+                                        tint = Color.White.copy(alpha = 0.7f)
+                                    )
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = loginTextFieldColors(primaryColor, textFieldBg),
+                            singleLine = true
+                        )
+                    }
+
                     AnimatedVisibility(
                         visible = selectedRole == "Admin",
                         enter = slideInVertically(animationSpec = tween(300)) { it } + fadeIn(tween(300)),
@@ -302,37 +305,26 @@ fun LoginBody(viewModel: UserViewModel? = null) {
                                 )
                             )
                             .clickable {
-                                if (email.isEmpty() || password.isEmpty()) {
-                                    Toast
-                                        .makeText(context, "Please fill all fields", Toast.LENGTH_SHORT)
-                                        .show()
-                                    return@clickable
-                                }
-
                                 if (selectedRole == "Admin") {
-                                    if (adminPassword.isEmpty()) {
-                                        Toast
-                                            .makeText(context, "Please enter Admin Password", Toast.LENGTH_SHORT)
-                                            .show()
+                                    if (email.isEmpty() || adminPassword.isEmpty()) {
+                                        Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
                                         return@clickable
                                     }
-                                    if (email == "admin@travium.com" && password == "admin123" && adminPassword == "admin123") {
-                                        Toast
-                                            .makeText(context, "Login Successful", Toast.LENGTH_SHORT)
-                                            .show()
-                                        //context.startActivity(Intent(context, AdminDashboardActivity::class.java))
+                                    if (email == "admin@travium.com" && adminPassword == "admin123") {
+                                        Toast.makeText(context, "Login Successful", Toast.LENGTH_SHORT).show()
+                                        context.startActivity(Intent(context, AdminDashboardActivity::class.java))
                                     } else {
-                                        Toast
-                                            .makeText(context, "Invalid Admin Credentials", Toast.LENGTH_SHORT)
-                                            .show()
+                                        Toast.makeText(context, "Invalid Admin Credentials", Toast.LENGTH_SHORT).show()
                                     }
-                                } else { // User role
+                                } else {
+                                    if (email.isEmpty() || password.isEmpty()) {
+                                        Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                                        return@clickable
+                                    }
                                     isLoading = true
                                     viewModel?.login(email, password) { success, message ->
                                         isLoading = false
-                                        Toast
-                                            .makeText(context, message, Toast.LENGTH_SHORT)
-                                            .show()
+                                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                                         if (success) {
                                             context.startActivity(Intent(context, HomePageActivity::class.java))
                                         }

@@ -1,8 +1,8 @@
 package com.example.travium.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.example.travium.Model.ReportModel
-import com.example.travium.Repository.ReportRepo
+import com.example.travium.model.ReportModel
+import com.example.travium.repository.ReportRepo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
