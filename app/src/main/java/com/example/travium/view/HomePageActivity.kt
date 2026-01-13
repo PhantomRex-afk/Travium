@@ -3,6 +3,7 @@ package com.example.travium.view
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
@@ -27,6 +28,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
@@ -37,6 +39,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -75,7 +78,14 @@ class HomePageActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        
+        // Fix: Explicitly set status bar to dark (which makes icons white)
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(
+                android.graphics.Color.TRANSPARENT
+            )
+        )
+        
         imageUtils = ImageUtils(this, this)
         imageUtils.registerLaunchers { uri ->
             selectedImageUri = uri
@@ -105,7 +115,6 @@ fun MainScreen(
     var showNotifications by remember { mutableStateOf(false) }
     var hasUnreadNotifications by remember { mutableStateOf(false) }
     
-    // Fix: Keep track of the last known notification count
     var lastNotificationCount by remember { mutableIntStateOf(-1) }
 
     LaunchedEffect(currentUserId) {
@@ -115,7 +124,6 @@ fun MainScreen(
     }
 
     LaunchedEffect(notifications) {
-        // Only trigger the badge if the count actually increases after the initial load
         if (lastNotificationCount != -1 && notifications.size > lastNotificationCount && !showNotifications) {
             hasUnreadNotifications = true
         }
@@ -137,33 +145,36 @@ fun MainScreen(
         NavItems("Profile", R.drawable.profile),
     )
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(TravelDeepNavy)) {
         Scaffold(
+            containerColor = TravelDeepNavy,
             topBar = {
                 CenterAlignedTopAppBar(
                     title = {
                         Text(
                             "Travium", style = TextStyle(
-                                fontSize = 35.sp,
-                                fontWeight = FontWeight.Bold
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White
                             )
                         )
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.LightGray
+                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                        containerColor = TravelDeepNavy
                     ),
                     actions = {
                         IconButton(onClick = { showNotifications = !showNotifications }) {
                             BadgedBox(
                                 badge = {
                                     if (hasUnreadNotifications) {
-                                        Badge(containerColor = Color.Red)
+                                        Badge(containerColor = TravelAccentTeal)
                                     }
                                 }
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.notification),
-                                    contentDescription = "Notifications"
+                                    contentDescription = "Notifications",
+                                    tint = Color.White
                                 )
                             }
                         }
@@ -172,16 +183,26 @@ fun MainScreen(
                 )
             },
             bottomBar = {
-                NavigationBar {
+                NavigationBar(
+                    containerColor = TravelDeepNavy,
+                    tonalElevation = 8.dp
+                ) {
                     listItems.forEachIndexed { index, item ->
                         NavigationBarItem(
                             icon = {
                                 Icon(painter = painterResource(item.icon),
                                     contentDescription = item.label)
                             },
-                            label = {Text(item.label)},
+                            label = { Text(item.label) },
                             selected = selectedIndex == index,
-                            onClick = {selectedIndex=index}
+                            onClick = { selectedIndex = index },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = TravelAccentTeal,
+                                selectedTextColor = TravelAccentTeal,
+                                unselectedIconColor = TravelSoftGray,
+                                unselectedTextColor = TravelSoftGray,
+                                indicatorColor = TravelCardNavy
+                            )
                         )
                     }
                 }
@@ -193,14 +214,15 @@ fun MainScreen(
                         0 -> HomeScreenBody()
                         1 -> HomeScreenBody()
                         2 -> MakePostBody(selectedImageUri = selectedImageUri, onPickImage = onPickImage)
-                        3 -> Text("Chat Feature Coming Soon!")
+                        3 -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Chat Feature Coming Soon!", color = TravelSoftGray)
+                        }
                         else -> HomeScreenBody()
                     }
                 }
             }
         }
 
-        // Invisible overlay to detect clicks outside the notification box
         if (showNotifications) {
             Box(
                 modifier = Modifier
@@ -235,15 +257,16 @@ fun NotificationPanel(notifications: List<NotificationModel>, userViewModel: Use
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             ) { }, 
-        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
+        colors = CardDefaults.cardColors(containerColor = TravelCardNavy),
+        shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
     ) {
         if (notifications.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No new notifications")
+                Text("No new notifications", color = TravelSoftGray)
             }
         } else {
-            LazyColumn(modifier = Modifier.padding(8.dp)) {
+            LazyColumn(modifier = Modifier.padding(16.dp)) {
                 items(notifications) { notification ->
                     NotificationItem(notification, userViewModel)
                 }
@@ -271,19 +294,28 @@ fun NotificationItem(notification: NotificationModel, userViewModel: UserViewMod
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp, horizontal = 12.dp),
+            .padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(40.dp)
+                .size(44.dp)
                 .clip(CircleShape)
-                .background(Color.LightGray)
-        )
-        Spacer(modifier = Modifier.width(12.dp))
+                .background(TravelDeepNavy),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = fromUser?.fullName?.take(1)?.uppercase() ?: "T",
+                color = TravelAccentTeal,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        Spacer(modifier = Modifier.width(14.dp))
         Text(
             text = "${fromUser?.fullName ?: "Someone"} $message",
-            fontSize = 14.sp
+            color = Color.White,
+            fontSize = 14.sp,
+            lineHeight = 18.sp
         )
     }
 }
