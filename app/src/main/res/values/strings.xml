@@ -10,5 +10,6 @@
     <string name="title_activity_report">ReportActivity</string>
 
     <string name="title_activity_splash">SplashActivity</string>
+    <string name="title_activity_admin_dashboard">AdminDashboardActivity</string>
 
 </resources>
