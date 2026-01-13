@@ -2,16 +2,23 @@ package com.example.travium.view
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -31,6 +38,12 @@ import com.example.travium.viewmodel.MakePostViewModel
 import com.example.travium.viewmodel.UserViewModel
 import com.google.firebase.auth.FirebaseAuth
 
+// Travel-themed dark colors
+val TravelDeepNavy = Color(0xFF0F172A)
+val TravelCardNavy = Color(0xFF1E293B)
+val TravelAccentTeal = Color(0xFF2DD4BF)
+val TravelSoftGray = Color(0xFF94A3B8)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreenBody() {
@@ -38,7 +51,6 @@ fun HomeScreenBody() {
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
     val allPosts by postViewModel.allPosts.observeAsState(initial = emptyList())
     
-    // Change: Store the postId instead of the whole post object
     var selectedPostId by remember { mutableStateOf<String?>(null) }
     var isSheetOpen by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -47,11 +59,16 @@ fun HomeScreenBody() {
         postViewModel.getAllPosts()
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(TravelDeepNavy)
+    ) {
         LazyColumn(
             modifier = Modifier
-                .padding(16.dp)
                 .fillMaxSize()
+                .padding(horizontal = 12.dp),
+            contentPadding = PaddingValues(vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(allPosts) { post ->
                 PostCard(
@@ -67,13 +84,14 @@ fun HomeScreenBody() {
         }
 
         if (isSheetOpen && selectedPostId != null) {
-            // Find the latest version of the post from the real-time list
             val latestPost = allPosts.find { it.postId == selectedPostId }
             
             if (latestPost != null) {
                 ModalBottomSheet(
                     onDismissRequest = { isSheetOpen = false },
                     sheetState = sheetState,
+                    containerColor = TravelCardNavy,
+                    dragHandle = { BottomSheetDefaults.DragHandle(color = TravelSoftGray) },
                     modifier = Modifier.fillMaxHeight(0.9f)
                 ) {
                     CommentSection(
@@ -97,7 +115,37 @@ fun PostAuthorHeader(userId: String, userViewModel: UserViewModel) {
         }
     }
 
-    Text(text = user?.fullName ?: "Loading...", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        // Placeholder for user avatar
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(TravelAccentTeal, Color(0xFF3B82F6))
+                    )
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = (user?.fullName?.take(1) ?: "T").uppercase(),
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp
+            )
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = user?.fullName ?: "Traveler",
+            color = Color.White,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 15.sp
+        )
+    }
 }
 
 @Composable
@@ -113,35 +161,62 @@ fun PostCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = TravelCardNavy)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(12.dp)
         ) {
             PostAuthorHeader(userId = post.userId, userViewModel = userViewModel)
-            Spacer(modifier = Modifier.height(8.dp))
+            
+            Spacer(modifier = Modifier.height(12.dp))
             
             if (post.caption.isNotEmpty()) {
-                Text(text = post.caption, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = post.caption,
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    lineHeight = 20.sp
+                )
+                Spacer(modifier = Modifier.height(6.dp))
             }
+            
             if (post.location.isNotEmpty()) {
-                Text(text = post.location, color = Color.Gray, fontSize = 12.sp)
-                Spacer(modifier = Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = null,
+                        tint = TravelAccentTeal,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = post.location,
+                        color = TravelSoftGray,
+                        fontSize = 13.sp
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
             }
+
             if (post.imageUrl.isNotEmpty()) {
                 Image(
                     painter = rememberAsyncImagePainter(post.imageUrl),
                     contentDescription = "Post image",
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(250.dp),
+                        .height(300.dp)
+                        .clip(RoundedCornerShape(12.dp)),
                     contentScale = ContentScale.Crop
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
             }
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 IconButton(onClick = { 
                     if (currentUserId.isNotEmpty()) {
                         postViewModel.likePost(post.postId, currentUserId) { success ->
@@ -150,23 +225,37 @@ fun PostCard(
                             }
                         }
                     } else {
-                        Toast.makeText(context, "Please log in to like", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Login to interact", Toast.LENGTH_SHORT).show()
                     }
                 }) {
                     Icon(
                         painter = painterResource(id = R.drawable.heart),
                         contentDescription = "Like",
-                        tint = if (post.likes.contains(currentUserId)) Color.Red else Color.Gray
+                        tint = if (post.likes.contains(currentUserId)) Color.Red else Color.White.copy(alpha = 0.7f),
+                        modifier = Modifier.size(24.dp)
                     )
                 }
-                Text(text = "${post.likes.size}")
+                Text(
+                    text = "${post.likes.size}",
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 14.sp
+                )
                 
                 Spacer(modifier = Modifier.width(16.dp))
                 
                 IconButton(onClick = onCommentClick) {
-                    Icon(painter = painterResource(id = R.drawable.comment), contentDescription = "Comment")
+                    Icon(
+                        painter = painterResource(id = R.drawable.comment),
+                        contentDescription = "Comment",
+                        tint = Color.White.copy(alpha = 0.7f),
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
-                Text(text = "${post.comments.size}")
+                Text(
+                    text = "${post.comments.size}",
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 14.sp
+                )
             }
         }
     }
@@ -186,16 +275,52 @@ fun CommentSection(post: MakePostModel, postViewModel: MakePostViewModel, userVi
         }
     }
 
-    Column(modifier = Modifier.padding(16.dp).imePadding()) {
-        Text("Comments", fontWeight = FontWeight.Bold, fontSize = 20.sp)
+    Column(modifier = Modifier
+        .padding(16.dp)
+        .imePadding()
+    ) {
+        Text(
+            "Comments",
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp
+        )
         Spacer(modifier = Modifier.height(16.dp))
         
-        LazyColumn(modifier = Modifier.weight(1f)) {
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             items(post.comments) { comment ->
-                Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                    Text(text = comment.fullName, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Text(text = comment.message, fontSize = 14.sp)
-                    HorizontalDivider(modifier = Modifier.padding(top = 4.dp), thickness = 0.5.dp, color = Color.LightGray)
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = comment.fullName.take(1).uppercase(),
+                            color = TravelAccentTeal,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = comment.fullName,
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            text = comment.message,
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontSize = 14.sp
+                        )
+                    }
                 }
             }
         }
@@ -203,29 +328,42 @@ fun CommentSection(post: MakePostModel, postViewModel: MakePostViewModel, userVi
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp), 
+                .padding(top = 12.dp), 
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedTextField(
                 value = newCommentText,
                 onValueChange = { newCommentText = it },
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("Add a comment...") }
+                placeholder = { Text("Share your thoughts...", color = TravelSoftGray) },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    focusedBorderColor = TravelAccentTeal,
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                    focusedContainerColor = Color.White.copy(alpha = 0.05f),
+                    unfocusedContainerColor = Color.White.copy(alpha = 0.05f)
+                ),
+                shape = RoundedCornerShape(24.dp)
             )
-            IconButton(onClick = { 
-                if (currentUserId.isNotEmpty() && newCommentText.isNotBlank()) {
-                    val comment = Comment(
-                        userId = currentUserId,
-                        fullName = currentUserProfile?.fullName ?: "User",
-                        message = newCommentText
-                    )
-                    postViewModel.addComment(post.postId, comment) { success ->
-                        if (success) {
-                            newCommentText = ""
+            Spacer(modifier = Modifier.width(8.dp))
+            IconButton(
+                onClick = { 
+                    if (currentUserId.isNotEmpty() && newCommentText.isNotBlank()) {
+                        val comment = Comment(
+                            userId = currentUserId,
+                            fullName = currentUserProfile?.fullName ?: "Explorer",
+                            message = newCommentText
+                        )
+                        postViewModel.addComment(post.postId, comment) { success ->
+                            if (success) {
+                                newCommentText = ""
+                            }
                         }
                     }
-                }
-            }) {
+                },
+                colors = IconButtonDefaults.iconButtonColors(contentColor = TravelAccentTeal)
+            ) {
                 Icon(Icons.Default.Send, contentDescription = "Send")
             }
         }
