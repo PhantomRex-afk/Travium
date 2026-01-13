@@ -175,6 +175,11 @@ fun MakePostBody(
             // Post Button
             Button(
                 onClick = {
+                    if (selectedImageUri == null && caption.isBlank()) {
+                        Toast.makeText(context, "Please add a photo or a caption", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+
                     val userId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
                     if (userId.isEmpty()) {
                         Toast.makeText(context, "Please log in to post", Toast.LENGTH_SHORT).show()
