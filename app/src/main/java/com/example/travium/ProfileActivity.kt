@@ -37,7 +37,8 @@ import com.example.travium.view.ProfileViewModel
 fun ProfileBody() {
     val context = LocalContext.current
     val repository = remember { ProfileRepoImpl(context) }
-    val viewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(repository))
+    // Using remember for ViewModel to match your existing style
+    val viewModel = remember { ProfileViewModel(repository) }
 
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var showDialog by remember { mutableStateOf(false) }
@@ -52,8 +53,9 @@ fun ProfileBody() {
         onResult = { uri ->
             if (uri != null) {
                 imageUri = uri
-                viewModel.uploadImage(uri) { downloadUrl ->
-                    if (downloadUrl != null) {
+                // Updated to match the viewModel's uploadImage signature
+                viewModel.uploadImage(context, uri) { success, downloadUrl ->
+                    if (success && downloadUrl != null) {
                         val currentProfile = profile ?: ProfileModel(
                             username = "Blastoise",
                             category = "Water Type Pokemon",
