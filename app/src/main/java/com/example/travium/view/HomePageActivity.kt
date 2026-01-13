@@ -35,6 +35,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
@@ -79,7 +80,6 @@ class HomePageActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Fix: Explicitly set status bar to dark (which makes icons white)
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(
                 android.graphics.Color.TRANSPARENT
@@ -149,61 +149,67 @@ fun MainScreen(
         Scaffold(
             containerColor = TravelDeepNavy,
             topBar = {
-                CenterAlignedTopAppBar(
-                    title = {
-                        Text(
-                            "Travium", style = TextStyle(
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = Color.White
-                            )
-                        )
-                    },
-                    colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                        containerColor = TravelDeepNavy
-                    ),
-                    actions = {
-                        IconButton(onClick = { showNotifications = !showNotifications }) {
-                            BadgedBox(
-                                badge = {
-                                    if (hasUnreadNotifications) {
-                                        Badge(containerColor = TravelAccentTeal)
-                                    }
-                                }
-                            ) {
-                                Icon(
-                                    painter = painterResource(R.drawable.notification),
-                                    contentDescription = "Notifications",
-                                    tint = Color.White
+                Column {
+                    CenterAlignedTopAppBar(
+                        title = {
+                            Text(
+                                "Travium", style = TextStyle(
+                                    fontSize = 28.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = Color.White
                                 )
+                            )
+                        },
+                        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                            containerColor = TravelCardNavy
+                        ),
+                        actions = {
+                            IconButton(onClick = { showNotifications = !showNotifications }) {
+                                BadgedBox(
+                                    badge = {
+                                        if (hasUnreadNotifications) {
+                                            Badge(containerColor = TravelAccentTeal)
+                                        }
+                                    }
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.notification),
+                                        contentDescription = "Notifications",
+                                        tint = Color.White
+                                    )
+                                }
                             }
+                            Spacer(modifier = Modifier.width(8.dp))
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
-                )
+                    )
+                    HorizontalDivider(color = Color.White.copy(alpha = 0.1f), thickness = 0.5.dp)
+                }
             },
             bottomBar = {
-                NavigationBar(
-                    containerColor = TravelDeepNavy,
-                    tonalElevation = 8.dp
-                ) {
-                    listItems.forEachIndexed { index, item ->
-                        NavigationBarItem(
-                            icon = {
-                                Icon(painter = painterResource(item.icon),
-                                    contentDescription = item.label)
-                            },
-                            label = { Text(item.label) },
-                            selected = selectedIndex == index,
-                            onClick = { selectedIndex = index },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = TravelAccentTeal,
-                                selectedTextColor = TravelAccentTeal,
-                                unselectedIconColor = TravelSoftGray,
-                                unselectedTextColor = TravelSoftGray,
-                                indicatorColor = TravelCardNavy
+                Column {
+                    HorizontalDivider(color = Color.White.copy(alpha = 0.1f), thickness = 0.5.dp)
+                    NavigationBar(
+                        containerColor = TravelCardNavy,
+                        tonalElevation = 8.dp
+                    ) {
+                        listItems.forEachIndexed { index, item ->
+                            NavigationBarItem(
+                                icon = {
+                                    Icon(painter = painterResource(item.icon),
+                                        contentDescription = item.label)
+                                },
+                                label = { Text(item.label) },
+                                selected = selectedIndex == index,
+                                onClick = { selectedIndex = index },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = TravelAccentTeal,
+                                    selectedTextColor = TravelAccentTeal,
+                                    unselectedIconColor = TravelSoftGray,
+                                    unselectedTextColor = TravelSoftGray,
+                                    indicatorColor = TravelAccentTeal.copy(alpha = 0.1f)
+                                )
                             )
-                        )
+                        }
                     }
                 }
             }
