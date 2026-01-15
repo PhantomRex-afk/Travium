@@ -12,6 +12,17 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Travium">
         <activity
+            android:name=".MainActivity2"
+            android:exported="true"
+            android:label="@string/title_activity_main2"
+            android:theme="@style/Theme.Travium">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".ReportActivity"
             android:exported="true"
             android:label="@string/title_activity_report"
