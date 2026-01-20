@@ -7,7 +7,5 @@ data class MakePostModel(
     val location : String = "",
     val imageUrl: String = "",
     val likes: List<String> = emptyList(),
-    val comments: List<String> = emptyList()
-){
-
-}
+    val comments: List<Comment> = emptyList()
+)
