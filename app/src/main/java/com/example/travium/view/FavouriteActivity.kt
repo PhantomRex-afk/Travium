@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
@@ -80,6 +81,10 @@ fun FavouriteScreen(modifier: Modifier = Modifier) {
     var favouritePlaces by remember { mutableStateOf<List<FavouritePlace>>(emptyList()) }
     val context = LocalContext.current
 
+    val midnightBlue = Color(0xFF003366)
+    val darkNavy = Color(0xFF000033)
+    val cyanAccent = Color(0xFF00FFFF)
+
     LaunchedEffect(Unit) {
         val user = Firebase.auth.currentUser
         if (user != null) {
@@ -105,27 +110,32 @@ fun FavouriteScreen(modifier: Modifier = Modifier) {
     }
 
     Scaffold(
+        containerColor = darkNavy,
         modifier = modifier.fillMaxSize(),
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Favorite memories", color = Color.Blue) },
+                title = { Text("Favorite memories", color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = { /* TODO: Handle back navigation */ }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                     }
                 },
                 actions = {
                     IconButton(onClick = { /* TODO: Handle search */ }) {
-                        Icon(Icons.Default.Search, contentDescription = "Search")
+                        Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = midnightBlue
                 )
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { context.startActivity(Intent(context, AddFavouriteActivity::class.java)) }) {
+            FloatingActionButton(
+                onClick = { context.startActivity(Intent(context, AddFavouriteActivity::class.java)) },
+                containerColor = cyanAccent,
+                contentColor = darkNavy
+            ) {
                 Icon(Icons.Default.Add, contentDescription = "Add a new memory")
             }
         }
@@ -133,7 +143,7 @@ fun FavouriteScreen(modifier: Modifier = Modifier) {
         LazyColumn(
             modifier = Modifier.padding(innerPadding),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(favouritePlaces) { place ->
                 FavouritePlaceCard(
@@ -164,51 +174,62 @@ fun FavouriteScreen(modifier: Modifier = Modifier) {
 @Composable
 fun FavouritePlaceCard(place: FavouritePlace, modifier: Modifier = Modifier, onEdit: () -> Unit, onDelete: () -> Unit) {
     var expanded by remember { mutableStateOf(false) }
+    val midnightBlue = Color(0xFF003366)
+    val cyanAccent = Color(0xFF00FFFF)
 
     Card(
         modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = midnightBlue)
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.fillMaxWidth()
         ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(place.name ?: "", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium, color = Color.White)
+                    Text(place.description ?: "", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
+                }
+                Box {
+                    IconButton(onClick = { expanded = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "More options", tint = Color.White)
+                    }
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Edit") },
+                            onClick = {
+                                onEdit()
+                                expanded = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Delete") },
+                            onClick = {
+                                onDelete()
+                                expanded = false
+                            }
+                        )
+                    }
+                }
+            }
+
             Image(
                 painter = rememberAsyncImagePainter(place.imageUrl),
                 contentDescription = place.name,
-                modifier = Modifier.size(64.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp),
                 contentScale = ContentScale.Crop
             )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(place.name ?: "", fontWeight = FontWeight.Bold)
-                Text(place.description ?: "", style = MaterialTheme.typography.bodySmall)
-            }
-            Box {
-                IconButton(onClick = { expanded = true }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "More options")
-                }
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Edit") },
-                        onClick = {
-                            onEdit()
-                            expanded = false
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text("Delete") },
-                        onClick = {
-                            onDelete()
-                            expanded = false
-                        }
-                    )
-                }
-            }
         }
     }
 }

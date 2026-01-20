@@ -24,6 +24,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -105,18 +106,16 @@ fun AddFavouriteScreen(
         }
     )
 
-    val scaffoldBg = Color(0xFFF7F7F7)
-    val cardBg = Color.White
-    val accentColor = Color(0xFF007AFF)
-    val textColor = Color.Black
-    val secondaryTextColor = Color.Gray
+    val midnightBlue = Color(0xFF003366)
+    val darkNavy = Color(0xFF000033)
+    val cyanAccent = Color(0xFF00FFFF)
 
     Scaffold(
-        containerColor = scaffoldBg,
+        containerColor = darkNavy,
         modifier = modifier.fillMaxSize(),
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(if (initialId == null) "Add a New Memory" else "Edit Memory", color = textColor) },
+                title = { Text(if (initialId == null) "Add a New Memory" else "Edit Memory", color = Color.White) },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = Color.Transparent
                 )
@@ -132,13 +131,13 @@ fun AddFavouriteScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             if (isUploading) {
-                CircularProgressIndicator(color = accentColor)
+                CircularProgressIndicator(color = cyanAccent)
             } else {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = cardBg)
+                    colors = CardDefaults.cardColors(containerColor = midnightBlue)
                 ) {
                     Column(
                         modifier = Modifier.padding(24.dp),
@@ -157,14 +156,14 @@ fun AddFavouriteScreen(
                             Image(
                                 painter = it,
                                 contentDescription = "Selected image",
-                                modifier = Modifier.size(120.dp),
+                                modifier = Modifier.size(150.dp),
                                 contentScale = ContentScale.Crop
                             )
                         }
 
                         Button(
                             onClick = { imagePickerLauncher.launch("image/*") },
-                            colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)
+                            colors = ButtonDefaults.buttonColors(containerColor = cyanAccent, contentColor = darkNavy)
                         ) {
                             Text("Select Image")
                         }
@@ -172,25 +171,25 @@ fun AddFavouriteScreen(
                         TextField(
                             value = name,
                             onValueChange = { name = it },
-                            label = { Text("Name", color = secondaryTextColor) },
+                            label = { Text("Name", color = Color.White.copy(alpha = 0.7f)) },
                             modifier = Modifier.fillMaxWidth(),
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = Color.Transparent,
                                 unfocusedContainerColor = Color.Transparent,
                                 disabledContainerColor = Color.Transparent,
-                                cursorColor = accentColor,
-                                focusedIndicatorColor = accentColor,
-                                unfocusedIndicatorColor = secondaryTextColor.copy(alpha = 0.5f),
-                                focusedTextColor = textColor,
-                                unfocusedTextColor = textColor
+                                cursorColor = cyanAccent,
+                                focusedIndicatorColor = cyanAccent,
+                                unfocusedIndicatorColor = Color.White.copy(alpha = 0.5f),
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White
                             ),
-                            textStyle = TextStyle(color = textColor)
+                            textStyle = TextStyle(color = Color.White)
                         )
 
                         TextField(
                             value = description,
                             onValueChange = { description = it },
-                            label = { Text("Description", color = secondaryTextColor) },
+                            label = { Text("Description", color = Color.White.copy(alpha = 0.7f)) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(120.dp),
@@ -198,13 +197,13 @@ fun AddFavouriteScreen(
                                 focusedContainerColor = Color.Transparent,
                                 unfocusedContainerColor = Color.Transparent,
                                 disabledContainerColor = Color.Transparent,
-                                cursorColor = accentColor,
-                                focusedIndicatorColor = accentColor,
-                                unfocusedIndicatorColor = secondaryTextColor.copy(alpha = 0.5f),
-                                focusedTextColor = textColor,
-                                unfocusedTextColor = textColor
+                                cursorColor = cyanAccent,
+                                focusedIndicatorColor = cyanAccent,
+                                unfocusedIndicatorColor = Color.White.copy(alpha = 0.5f),
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White
                             ),
-                            textStyle = TextStyle(color = textColor)
+                            textStyle = TextStyle(color = Color.White)
                         )
 
                         Spacer(modifier = Modifier.height(16.dp))
@@ -239,7 +238,7 @@ fun AddFavouriteScreen(
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = Color.White)
+                            colors = ButtonDefaults.buttonColors(containerColor = cyanAccent, contentColor = darkNavy)
                         ) {
                             Text(if (initialId == null) "Save Memory" else "Update Memory")
                         }
