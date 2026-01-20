@@ -1,4 +1,201 @@
 package com.example.travium.repository
 
-class MakePostRepoImpl {
+
+import android.content.Context
+import android.database.Cursor
+import android.net.Uri
+import android.os.Handler
+import android.os.Looper
+import android.provider.OpenableColumns
+import android.util.Log
+import com.cloudinary.Cloudinary
+import com.cloudinary.utils.ObjectUtils
+import com.example.travium.model.Comment
+import com.example.travium.model.MakePostModel
+import com.example.travium.model.NotificationModel
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.DatabaseException
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.MutableData
+import com.google.firebase.database.Transaction
+import com.google.firebase.database.ValueEventListener
+import java.io.InputStream
+import java.util.concurrent.Executors
+
+class MakePostRepoImpl : MakePostRepo {
+
+    private val database: FirebaseDatabase = FirebaseDatabase.getInstance()
+    private val postsRef: DatabaseReference = database.getReference("posts")
+    private val notificationsRef: DatabaseReference = database.getReference("notifications")
+
+    private val cloudinary = Cloudinary(
+        mapOf(
+            "cloud_name" to "dh1lppcqa",
+            "api_key" to "776547271472658",
+            "api_secret" to "7P4Yg51yr6lWM6mtKsTvGOdGojs"
+        )
+    )
+
+    override fun createPost(post: MakePostModel, callback: (Boolean, String) -> Unit) {
+        val postId = postsRef.push().key ?: ""
+        val newPost = post.copy(postId = postId)
+
+        postsRef.child(postId).setValue(newPost)
+            .addOnCompleteListener { callback (true,"Created a post")}
+            .addOnFailureListener { callback(false, it.message ?: "Unknown error occurred") }
+    }
+
+    override fun getAllPost(callback: (Boolean, String, List<MakePostModel>?) -> Unit) {
+        postsRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val productList = mutableListOf<MakePostModel>()
+                for (productSnapshot in snapshot.children) {
+                    try {
+                        val product = productSnapshot.getValue(MakePostModel::class.java)
+                        product?.let { productList.add(it) }
+                    } catch (e: DatabaseException) {
+                        Log.e("MakePostRepoImpl", "Failed to parse post: ${productSnapshot.key}", e)
+                    }
+                }
+                callback(true, "Products retrieved successfully", productList)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                callback(false, error.message, null)
+            }
+        })
+    }
+
+    override fun uploadImage(context: Context, imageUri: Uri, callback: (String?) -> Unit) {
+        val executor = Executors.newSingleThreadExecutor()
+        executor.execute {
+            try {
+                val inputStream: InputStream? = context.contentResolver.openInputStream(imageUri)
+                var fileName = getFileNameFromUri(context, imageUri)
+                fileName = fileName?.substringBeforeLast(".") ?: "uploaded_image"
+
+                val response = cloudinary.uploader().upload(
+                    inputStream, ObjectUtils.asMap(
+                        "public_id", fileName,
+                        "resource_type", "image"
+                    )
+                )
+
+                var imageUrl = response["url"] as String?
+                imageUrl = imageUrl?.replace("http://", "https://")
+
+                Handler(Looper.getMainLooper()).post { callback(imageUrl) }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Handler(Looper.getMainLooper()).post { callback(null) }
+            }
+        }
+    }
+
+    override fun getFileNameFromUri(context: Context, uri: Uri): String? {
+        var fileName: String? = null
+        val cursor: Cursor? = context.contentResolver.query(uri, null, null, null, null)
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (nameIndex != -1) {
+                    fileName = it.getString(nameIndex)
+                }
+            }
+        }
+        return fileName
+    }
+
+    override fun likePost(postId: String, userId: String, callback: (Boolean) -> Unit) {
+        postsRef.child(postId).runTransaction(object : Transaction.Handler {
+            override fun doTransaction(currentData: MutableData): Transaction.Result {
+                val post = currentData.getValue(MakePostModel::class.java) ?: return Transaction.success(currentData)
+                val likes = post.likes.toMutableList()
+                
+                if (likes.contains(userId)) {
+                    likes.remove(userId)
+                } else {
+                    likes.add(userId)
+                    // Create notification for post owner
+                    if (userId != post.userId) {
+                        val notificationId = notificationsRef.child(post.userId).push().key ?: ""
+                        val notificationData = NotificationModel(
+                            notificationId = notificationId,
+                            type = "like",
+                            fromUserId = userId,
+                            postId = postId,
+                            timestamp = System.currentTimeMillis()
+                        )
+                        notificationsRef.child(post.userId).child(notificationId).setValue(notificationData)
+                    }
+                }
+                currentData.child("likes").value = likes
+                return Transaction.success(currentData)
+            }
+
+            override fun onComplete(error: DatabaseError?, committed: Boolean, snapshot: DataSnapshot?) {
+                callback(error == null && committed)
+            }
+        })
+    }
+
+    override fun addComment(postId: String, comment: Comment, callback: (Boolean) -> Unit) {
+        postsRef.child(postId).runTransaction(object : Transaction.Handler {
+            override fun doTransaction(currentData: MutableData): Transaction.Result {
+                val post = currentData.getValue(MakePostModel::class.java) ?: return Transaction.success(currentData)
+                val comments = post.comments.toMutableList()
+                
+                val newCommentId = postsRef.child(postId).child("comments").push().key ?: ""
+                val newComment = comment.copy(commentId = newCommentId)
+                comments.add(newComment)
+                
+                currentData.child("comments").value = comments
+
+                // Create notification for post owner
+                if (comment.userId != post.userId) {
+                    val notificationId = notificationsRef.child(post.userId).push().key ?: ""
+                    val notificationData = NotificationModel(
+                        notificationId = notificationId,
+                        type = "comment",
+                        fromUserId = comment.userId,
+                        message = comment.message,
+                        postId = postId,
+                        timestamp = System.currentTimeMillis()
+                    )
+                    notificationsRef.child(post.userId).child(notificationId).setValue(notificationData)
+                }
+                
+                return Transaction.success(currentData)
+            }
+
+            override fun onComplete(error: DatabaseError?, committed: Boolean, snapshot: DataSnapshot?) {
+                callback(error == null && committed)
+            }
+        })
+    }
+
+    override fun getNotifications(userId: String, callback: (Boolean, String, List<NotificationModel>?) -> Unit) {
+        notificationsRef.child(userId).addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val notificationList = mutableListOf<NotificationModel>()
+                for (notificationSnapshot in snapshot.children) {
+                    try {
+                        val notification = notificationSnapshot.getValue(NotificationModel::class.java)
+                        notification?.let { notificationList.add(it) }
+                    } catch (e: Exception) {
+                        Log.e("MakePostRepoImpl", "Failed to parse notification", e)
+                    }
+                }
+                // Sort by newest first
+                notificationList.sortByDescending { it.timestamp }
+                callback(true, "Notifications retrieved", notificationList)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                callback(false, error.message, null)
+            }
+        })
+    }
 }
