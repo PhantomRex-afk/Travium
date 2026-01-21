@@ -2,10 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -14,18 +10,11 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Travium"
-        android:allowNativeHeapPointerTagging="false"
-        tools:replace="android:fullBackupContent">
+        android:theme="@style/Theme.Travium">
         <activity
-            android:name=".view.ForgetPasswordActivity"
+            android:name=".MainActivity2"
             android:exported="true"
-            android:label="@string/title_activity_forget_password"
-            android:theme="@style/Theme.Travium" />
-        <activity
-            android:name=".view.SplashActivity"
-            android:exported="true"
-            android:label="@string/title_activity_splash"
+            android:label="@string/title_activity_main2"
             android:theme="@style/Theme.Travium">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -34,27 +23,92 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".view.RegisterActivity"
+            android:name=".ReportActivity"
             android:exported="true"
-            android:label="@string/title_activity_register"
-            android:theme="@style/Theme.Travium" />
-
-        <activity
-            android:name=".view.LoginActivity"
-            android:exported="true"
-            android:label="@string/title_activity_login"
-            android:theme="@style/Theme.Travium" />
-        <activity
-            android:name=".view.HomePageActivity"
-            android:exported="true"
-            android:label="@string/title_activity_home_page"
+            android:label="@string/title_activity_report"
             android:theme="@style/Theme.Travium">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
         </activity>
         <activity
-            android:name=".view.MainActivity"
-            android:exported="false"
-            android:label="@string/app_name"
+            android:name=".SettingsActivity"
+            android:exported="true"
+            android:label="@string/title_activity_settings"
+            android:theme="@style/Theme.Travium">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".EditProfileActivity"
+            android:exported="true"
+            android:label="@string/title_activity_edit_profile"
+            android:theme="@style/Theme.Travium">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".ProfileActivity"
+            android:exported="true"
+            android:label="@string/title_activity_profile"
+            android:theme="@style/Theme.Travium">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".ChatBox"
+            android:exported="true"
+            android:label="@string/title_activity_chat_box"
+            android:theme="@style/Theme.Travium">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".ui.theme.MainActivity"
+            android:exported="true"
+            android:label="@string/title_activity_main"
+            android:theme="@style/Theme.Travium">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".MakePostActivity"
+            android:exported="true"
+            android:label="@string/title_activity_make_post"
             android:theme="@style/Theme.Travium" />
+        <activity
+            android:name=".HomePageActivity"
+            android:exported="true"
+            android:label="@string/title_activity_home_page"
+            android:theme="@style/Theme.Travium" />
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.Travium">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

@@ -1,5 +1,6 @@
 package com.example.travium.view
 
+import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import com.example.travium.Model.ProfileModel
@@ -41,16 +42,11 @@ class ProfileViewModel(private val repository: ProfileRepo) : ViewModel() {
         }
     }
 
-    fun uploadImage(uri: Uri, onComplete: (String?) -> Unit) {
+    fun uploadImage(context: Context, imageUri: Uri, callback: (Boolean, String?) -> Unit) {
         _loading.value = true
-        repository.uploadProfileImage(uri) { success, url ->
+        repository.uploadProfileImage(imageUri) { success, url ->
             _loading.value = false
-            if (success) {
-                onComplete(url)
-            } else {
-                _message.value = "Image upload failed"
-                onComplete(null)
-            }
+            callback(success, url)
         }
     }
 }

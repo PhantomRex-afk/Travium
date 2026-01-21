@@ -54,4 +54,10 @@ class SettingViewModel(private val repository: SettingRepo) : ViewModel() {
         val updatedSettings = currentSettings.copy(darkModeEnabled = enabled)
         saveSettings(userId, updatedSettings)
     }
+
+    fun updateProfileVisibility(userId: String, isPublic: Boolean) {
+        val currentSettings = _settings.value ?: SettingModel(userId = userId)
+        val updatedSettings = currentSettings.copy(isProfilePublic = isPublic)
+        saveSettings(userId, updatedSettings)
+    }
 }
