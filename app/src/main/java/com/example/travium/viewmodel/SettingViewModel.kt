@@ -1,4 +1,4 @@
-package com.example.travium.view
+package com.example.travium.viewmodel
 
 import androidx.lifecycle.ViewModel
 import com.example.travium.Model.SettingModel
@@ -52,12 +52,6 @@ class SettingViewModel(private val repository: SettingRepo) : ViewModel() {
     fun updateDarkModeSetting(userId: String, enabled: Boolean) {
         val currentSettings = _settings.value ?: SettingModel(userId = userId)
         val updatedSettings = currentSettings.copy(darkModeEnabled = enabled)
-        saveSettings(userId, updatedSettings)
-    }
-
-    fun updateProfileVisibility(userId: String, isPublic: Boolean) {
-        val currentSettings = _settings.value ?: SettingModel(userId = userId)
-        val updatedSettings = currentSettings.copy(isProfilePublic = isPublic)
         saveSettings(userId, updatedSettings)
     }
 }

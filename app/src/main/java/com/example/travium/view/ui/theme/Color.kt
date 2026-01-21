@@ -1,4 +1,4 @@
-package com.example.travium.ui.theme.ui.theme
+package com.example.travium.view.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

@@ -8,5 +8,8 @@
     <string name="title_activity_edit_profile">EditProfileActivity</string>
     <string name="title_activity_settings">SettingsActivity</string>
     <string name="title_activity_report">ReportActivity</string>
-    <string name="title_activity_main2">MainActivity2</string>
+
+    <string name="title_activity_splash">SplashActivity</string>
+    <string name="title_activity_admin_dashboard">AdminDashboardActivity</string>
+
 </resources>

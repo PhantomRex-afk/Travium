@@ -1,10 +1,10 @@
-package com.example.travium.view
+package com.example.travium.viewmodel
 
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
-import com.example.travium.Model.ProfileModel
-import com.example.travium.Repository.ProfileRepo
+import com.example.travium.model.ProfileModel
+import com.example.travium.repository.ProfileRepo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

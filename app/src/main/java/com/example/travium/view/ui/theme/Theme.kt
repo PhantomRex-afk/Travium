@@ -1,4 +1,4 @@
-package com.example.travium.ui.theme.ui.theme
+package com.example.travium.view.ui.theme
 
 import android.app.Activity
 import android.os.Build

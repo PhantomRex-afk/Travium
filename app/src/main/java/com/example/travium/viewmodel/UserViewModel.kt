@@ -33,4 +33,8 @@ class UserViewModel(private val repo: UserRepo) : ViewModel() {
     ){
         repo.addUserToDatabase(userId, userModel, callback)
     }
+
+    fun getUserById(userId: String, callback: (UserModel?) -> Unit) {
+        repo.getUserById(userId, callback)
+    }
 }
