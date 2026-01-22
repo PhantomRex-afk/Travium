@@ -69,13 +69,22 @@ class AdminDashboardActivity : ComponentActivity() {
                     Column {
                         CenterAlignedTopAppBar(
                             title = {
-                                Text(
-                                    "Travium Admin", style = TextStyle(
-                                        fontSize = 28.sp,
-                                        fontWeight = FontWeight.ExtraBold,
-                                        color = Color.White
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        "Travium", style = TextStyle(
+                                            fontSize = 28.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = Color.White
+                                        )
                                     )
-                                )
+                                    Text(
+                                        "Admin Dashboard", style = TextStyle(
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = AdminSoftGray
+                                        )
+                                    )
+                                }
                             },
                             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                                 containerColor = AdminCardNavy
