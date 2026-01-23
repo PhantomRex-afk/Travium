@@ -21,4 +21,6 @@ interface UserRepo {
     )
 
     fun getUserById(userId: String, callback: (UserModel?) -> Unit)
+
+    fun getAllUsers(callback: (Boolean, String, List<UserModel>?) -> Unit)
 }

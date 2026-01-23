@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -119,7 +120,7 @@ class AdminDashboardActivity : ComponentActivity() {
                             val items = listOf(
                                 Triple("Home", R.drawable.outline_home_24, "Home"),
                                 Triple("Add Guide", R.drawable.addbox, "Add Guide"),
-                                Triple("Users", R.drawable.profile, "Banned")
+                                Triple("Users", R.drawable.profile, "Users List")
                             )
                             
                             items.forEachIndexed { index, item ->
@@ -145,7 +146,7 @@ class AdminDashboardActivity : ComponentActivity() {
                     when(selectedIndex) {
                         0 -> AdminHomeFeed(postViewModel, userViewModel)
                         1 -> AdminPlaceholderScreen(title = "Add New Guide")
-                        2 -> AdminPlaceholderScreen(title = "Banned Users List")
+                        2 -> AdminUsersList(userViewModel)
                     }
                 }
             }
@@ -168,6 +169,79 @@ fun AdminHomeFeed(postViewModel: MakePostViewModel, userViewModel: UserViewModel
     ) {
         items(allPosts) { post ->
             AdminPostCard(post = post, postViewModel = postViewModel, userViewModel = userViewModel)
+        }
+    }
+}
+
+@Composable
+fun AdminUsersList(userViewModel: UserViewModel) {
+    val allUsers by userViewModel.allUsers.observeAsState(initial = emptyList())
+
+    LaunchedEffect(Unit) {
+        userViewModel.getAllUsers()
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items(allUsers) { user ->
+            UserCard(user)
+        }
+    }
+}
+
+@Composable
+fun UserCard(user: UserModel) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = AdminCardNavy)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(Brush.linearGradient(colors = listOf(AdminAccentTeal, Color(0xFF3B82F6)))),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = user.fullName.take(1).uppercase(),
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(
+                    text = user.fullName,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Email,
+                        contentDescription = null,
+                        tint = AdminSoftGray,
+                        modifier = Modifier.size(14.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = user.email,
+                        color = AdminSoftGray,
+                        fontSize = 14.sp
+                    )
+                }
+            }
         }
     }
 }
@@ -240,7 +314,6 @@ fun AdminPostCard(post: MakePostModel, postViewModel: MakePostViewModel, userVie
         colors = CardDefaults.cardColors(containerColor = AdminCardNavy)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            // Author Header with Delete Action
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
