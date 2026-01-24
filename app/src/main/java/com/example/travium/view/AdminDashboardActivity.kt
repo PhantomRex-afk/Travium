@@ -15,10 +15,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
@@ -176,24 +180,62 @@ fun AdminHomeFeed(postViewModel: MakePostViewModel, userViewModel: UserViewModel
 @Composable
 fun AdminUsersList(userViewModel: UserViewModel) {
     val allUsers by userViewModel.allUsers.observeAsState(initial = emptyList())
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    val tabs = listOf("Current Users", "Banned Users")
 
     LaunchedEffect(Unit) {
         userViewModel.getAllUsers()
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items(allUsers) { user ->
-            UserCard(user)
+    Column(modifier = Modifier.fillMaxSize()) {
+        TabRow(
+            selectedTabIndex = selectedTabIndex,
+            containerColor = AdminDeepNavy,
+            contentColor = AdminAccentTeal,
+            indicator = { tabPositions ->
+                SecondaryIndicator(
+                    Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                    color = AdminAccentTeal
+                )
+            },
+            divider = { HorizontalDivider(color = Color.White.copy(alpha = 0.1f)) }
+        ) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTabIndex == index,
+                    onClick = { selectedTabIndex = index },
+                    text = {
+                        Text(
+                            text = title,
+                            style = TextStyle(
+                                fontSize = 14.sp,
+                                fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal
+                            )
+                        )
+                    },
+                    unselectedContentColor = AdminSoftGray
+                )
+            }
+        }
+
+        // Fix: Make banned users list empty as requested
+        val filteredUsers = if (selectedTabIndex == 0) allUsers else emptyList<UserModel>()
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(filteredUsers) { user ->
+                UserCard(user, isBannedView = selectedTabIndex == 1)
+            }
         }
     }
 }
 
 @Composable
-fun UserCard(user: UserModel) {
+fun UserCard(user: UserModel, isBannedView: Boolean) {
+    val context = LocalContext.current
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -203,44 +245,60 @@ fun UserCard(user: UserModel) {
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(Brush.linearGradient(colors = listOf(AdminAccentTeal, Color(0xFF3B82F6)))),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = user.fullName.take(1).uppercase(),
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Text(
-                    text = user.fullName,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Email,
-                        contentDescription = null,
-                        tint = AdminSoftGray,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(Brush.linearGradient(colors = listOf(AdminAccentTeal, Color(0xFF3B82F6)))),
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(
-                        text = user.email,
-                        color = AdminSoftGray,
-                        fontSize = 14.sp
+                        text = user.fullName.take(1).uppercase(),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
                     )
                 }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = user.fullName,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Email,
+                            contentDescription = null,
+                            tint = AdminSoftGray,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = user.email,
+                            color = AdminSoftGray,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
+            
+            IconButton(
+                onClick = { 
+                    val action = if (isBannedView) "Unban" else "Ban"
+                    Toast.makeText(context, "$action user logic here", Toast.LENGTH_SHORT).show() 
+                }
+            ) {
+                Icon(
+                    imageVector = if (isBannedView) Icons.Default.CheckCircle else Icons.Default.Block,
+                    contentDescription = if (isBannedView) "Unban" else "Ban",
+                    tint = if (isBannedView) AdminAccentTeal else AdminAlertRed
+                )
             }
         }
     }
