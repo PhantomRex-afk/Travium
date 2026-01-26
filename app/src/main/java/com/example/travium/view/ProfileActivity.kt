@@ -1,6 +1,5 @@
 package com.example.travium.view
 
-import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -26,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -36,12 +34,6 @@ import androidx.compose.ui.window.Dialog
 import coil.compose.rememberAsyncImagePainter
 import com.example.travium.R
 import com.example.travium.ui.theme.TraviumTheme
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.ktx.database
-import com.google.firebase.ktx.Firebase
 
 class ProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,44 +49,18 @@ class ProfileActivity : ComponentActivity() {
 
 @Composable
 fun ProfileBody() {
-    val context = LocalContext.current
-    // Database State
-    var userName by remember { mutableStateOf("Loading...") }
-    var bio by remember { mutableStateOf("") }
-    var profileImageUrl by remember { mutableStateOf<String?>(null) }
 
     var imageUri by remember { mutableStateOf<Uri?>(null) }
     var showDialog by remember { mutableStateOf(false) }
     var selectedEvent by remember { mutableStateOf<String?>(null) }
     var eventCount by remember { mutableIntStateOf(10) }
 
-    val darkNavy = Color(0xFF000033)
-    val midnightBlue = Color(0xFF003366)
-    val cyanAccent = Color(0xFF00FFFF)
-
-    // Fetch user data from Firebase
-    LaunchedEffect(Unit) {
-        val user = Firebase.auth.currentUser
-        if (user != null) {
-            val database = Firebase.database
-            val userRef = database.getReference("users").child(user.uid)
-            userRef.addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    userName = snapshot.child("name").getValue(String::class.java) ?: "User"
-                    bio = snapshot.child("bio").getValue(String::class.java) ?: "No bio yet"
-                    profileImageUrl = snapshot.child("profileImageUrl").getValue(String::class.java)
-                }
-                override fun onCancelled(error: DatabaseError) {}
-            })
-        }
-    }
-
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
         onResult = { uri -> imageUri = uri }
     )
 
-    Scaffold(containerColor = darkNavy) { padding ->
+    Scaffold { padding ->
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             modifier = Modifier
@@ -114,13 +80,11 @@ fun ProfileBody() {
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.arrow_left),
-                        contentDescription = "Back",
-                        tint = Color.White
+                        contentDescription = "Back"
                     )
                     Icon(
                         painter = painterResource(R.drawable.more_buttons),
-                        contentDescription = "More",
-                        tint = Color.White
+                        contentDescription = "More"
                     )
                 }
             }
@@ -131,36 +95,31 @@ fun ProfileBody() {
                     modifier = Modifier.padding(bottom = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Surface(
-                        shape = CircleShape,
-                        border = BorderStroke(2.dp, cyanAccent),
-                        color = Color.Transparent,
-                        modifier = Modifier.size(100.dp)
-                    ) {
-                        Image(
-                            painter = rememberAsyncImagePainter(
-                                imageUri ?: profileImageUrl ?: R.drawable.blastoise
-                            ),
-                            contentDescription = "Profile Image",
-                            modifier = Modifier
-                                .padding(4.dp)
-                                .clip(CircleShape)
-                                .clickable {
-                                    photoPickerLauncher.launch(
-                                        PickVisualMediaRequest(
-                                            ActivityResultContracts.PickVisualMedia.ImageOnly
-                                        )
+                    Image(
+                        painter = rememberAsyncImagePainter(
+                            imageUri ?: R.drawable.blastoise
+                        ),
+                        contentDescription = "Profile Image",
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(CircleShape)
+                            .clickable {
+                                photoPickerLauncher.launch(
+                                    PickVisualMediaRequest(
+                                        ActivityResultContracts.PickVisualMedia.ImageOnly
                                     )
-                                },
-                            contentScale = ContentScale.Crop
-                        )
-                    }
+                                )
+                            },
+                        contentScale = ContentScale.Crop
+                    )
 
                     Spacer(modifier = Modifier.width(16.dp))
 
                     Column {
-                        Text(userName, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp)
-                        Text(bio, color = Color.White.copy(alpha = 0.7f))
+                        Text("Blastoise", fontWeight = FontWeight.Bold)
+                        Text("Water Type Pokemon")
+                        Text("BigMan Blastoise")
+                        Text("Squirtle ko Hajurbau")
                     }
                 }
             }
@@ -173,9 +132,9 @@ fun ProfileBody() {
                         .padding(bottom = 16.dp),
                     horizontalArrangement = Arrangement.SpaceAround
                 ) {
-                    ProfileStat("714", "Posts", cyanAccent)
-                    ProfileStat("10B", "Followers", cyanAccent)
-                    ProfileStat("0", "Following", cyanAccent)
+                    ProfileStat("714", "Posts")
+                    ProfileStat("10B", "Followers")
+                    ProfileStat("0", "Following")
                 }
             }
 
@@ -183,18 +142,10 @@ fun ProfileBody() {
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Row(
                     modifier = Modifier.padding(bottom = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    ProfileButton(
-                        text = "Edit Profile",
-                        modifier = Modifier.weight(1f),
-                        cyanAccent,
-                        darkNavy,
-                        onClick = {
-                            context.startActivity(Intent(context, EditProfileActivity::class.java))
-                        }
-                    )
-                    ProfileButton(text = "Message", modifier = Modifier.weight(1f), cyanAccent, darkNavy)
+                    ProfileButton(text = "Hire", modifier = Modifier.weight(1f))
+                    ProfileButton(text = "Message", modifier = Modifier.weight(1f))
                 }
             }
 
@@ -203,8 +154,7 @@ fun ProfileBody() {
                 val title = "Event ${index + 1}"
                 StoryCard(
                     imageRes = R.drawable.blastoise,
-                    title = title,
-                    containerColor = midnightBlue
+                    title = title
                 ) {
                     selectedEvent = title
                     showDialog = true
@@ -216,8 +166,6 @@ fun ProfileBody() {
         if (showDialog && selectedEvent != null) {
             ProfileEventDetailPopup(
                 eventTitle = selectedEvent!!,
-                containerColor = midnightBlue,
-                accentColor = cyanAccent,
                 onDismiss = { showDialog = false }
             )
         }
@@ -227,25 +175,26 @@ fun ProfileBody() {
 /* ---------- Reusable Components ---------- */
 
 @Composable
-fun ProfileStat(value: String, label: String, accentColor: Color) {
+fun ProfileStat(value: String, label: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, fontWeight = FontWeight.Bold, color = accentColor, fontSize = 16.sp)
-        Text(label, color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
+        Text(value, fontWeight = FontWeight.Bold)
+        Text(label)
     }
 }
 
 @Composable
-fun ProfileButton(text: String, modifier: Modifier = Modifier, accentColor: Color, darkNavy: Color, onClick: () -> Unit = {}) {
+fun ProfileButton(text: String, modifier: Modifier = Modifier) {
     Button(
-        onClick = onClick,
-        modifier = modifier.height(48.dp),
-        shape = RoundedCornerShape(12.dp),
+        onClick = {},
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp),
+        border = BorderStroke(1.dp, Color.LightGray),
         colors = ButtonDefaults.buttonColors(
-            containerColor = accentColor,
-            contentColor = darkNavy
+            containerColor = Color.White,
+            contentColor = Color.Black
         )
     ) {
-        Text(text, fontWeight = FontWeight.Bold)
+        Text(text)
     }
 }
 
@@ -253,15 +202,13 @@ fun ProfileButton(text: String, modifier: Modifier = Modifier, accentColor: Colo
 fun StoryCard(
     imageRes: Int,
     title: String,
-    containerColor: Color,
     onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .aspectRatio(1f)
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = containerColor)
+        shape = RoundedCornerShape(16.dp)
     ) {
         Box {
             Image(
@@ -274,11 +221,13 @@ fun StoryCard(
                 text = title,
                 color = Color.White,
                 fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
+                fontSize = 16.sp,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .background(Color.Black.copy(alpha = 0.6f))
+                    .background(
+                        Color.Black.copy(alpha = 0.5f),
+                        RoundedCornerShape(8.dp)
+                    )
                     .padding(8.dp)
             )
         }
@@ -288,36 +237,28 @@ fun StoryCard(
 @Composable
 fun ProfileEventDetailPopup(
     eventTitle: String,
-    containerColor: Color,
-    accentColor: Color,
     onDismiss: () -> Unit
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(300.dp),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = containerColor)
+                .fillMaxHeight(0.5f),
+            shape = RoundedCornerShape(16.dp)
         ) {
             Column(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
+                modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
                     text = "Details for $eventTitle",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp,
-                    color = Color.White
+                    fontSize = 18.sp
                 )
-                Spacer(modifier = Modifier.height(24.dp))
-                Button(
-                    onClick = onDismiss,
-                    colors = ButtonDefaults.buttonColors(containerColor = accentColor, contentColor = containerColor),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Close", fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(20.dp))
+                Button(onClick = onDismiss) {
+                    Text("Close")
                 }
             }
         }

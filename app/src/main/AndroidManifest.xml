@@ -16,60 +16,59 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Travium"
         tools:replace="android:fullBackupContent">
+        <activity
+            android:name=".view.ChangePasswordActivity"
+            android:exported="true"
+            android:label="@string/title_activity_change_password"
+            android:theme="@style/Theme.Travium">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
 
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
         <activity
             android:name=".view.SplashActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
             android:name=".view.LoginActivity"
             android:exported="true" />
-
         <activity
             android:name=".view.RegisterActivity"
             android:exported="true" />
-
         <activity
             android:name=".view.HomePageActivity"
             android:exported="false" />
-
         <activity
             android:name=".view.MainActivity"
             android:exported="false" />
-
         <activity
             android:name=".view.ProfileActivity"
             android:exported="true" />
-
         <activity
             android:name=".view.SettingsActivity"
             android:exported="true" />
-
         <activity
             android:name=".view.EditProfileActivity"
             android:exported="true" />
-
         <activity
             android:name=".view.FavouriteActivity"
             android:exported="true" />
-
         <activity
             android:name=".view.AddFavouriteActivity"
             android:exported="true" />
-
         <activity
             android:name=".view.AdminDashboardActivity"
             android:exported="true" />
-
         <activity
             android:name=".view.ReportActivity"
             android:exported="true" />
-
         <activity
             android:name=".view.ForgetPasswordActivity"
             android:exported="true" />

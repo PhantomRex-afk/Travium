@@ -1,7 +1,9 @@
 package com.example.travium.view
 
+import android.app.Activity
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -23,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -31,15 +34,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.example.travium.R
+import com.example.travium.model.UserModel
+import com.example.travium.repository.ProfileRepoImpl
+import com.example.travium.repository.UserRepoImpl
 import com.example.travium.ui.theme.TraviumTheme
+import com.example.travium.viewmodel.UserViewModel
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.database.ktx.database
+import com.google.firebase.ktx.Firebase
 
 class EditProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            val userRepo = UserRepoImpl()
+            val userViewModel = UserViewModel(userRepo)
             TraviumTheme {
-                EditProfileBody()
+                EditProfileBody(userViewModel)
             }
         }
     }
@@ -47,12 +59,19 @@ class EditProfileActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditProfileBody() {
+fun EditProfileBody(viewModel: UserViewModel? = null) {
+    val context = LocalContext.current
+    val currentUser = Firebase.auth.currentUser
+    val profileRepo = remember { ProfileRepoImpl(context) }
+    
     var name by remember { mutableStateOf("") }
-    var bio by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
+    var bio by remember { mutableStateOf("") }
+    var dob by remember { mutableStateOf("") }
+    var country by remember { mutableStateOf("") }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
+    var profileImageUrl by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
 
     val darkNavy = Color(0xFF000033)
     val midnightBlue = Color(0xFF003366)
@@ -63,7 +82,28 @@ fun EditProfileBody() {
         onResult = { uri -> imageUri = uri }
     )
 
+    // Load current user data
+    LaunchedEffect(currentUser?.uid) {
+        if (currentUser != null) {
+            val database = Firebase.database.getReference("users").child(currentUser.uid)
+            database.get().addOnSuccessListener { snapshot ->
+                name = snapshot.child("fullName").getValue(String::class.java) ?: ""
+                username = snapshot.child("username").getValue(String::class.java) ?: ""
+                bio = snapshot.child("bio").getValue(String::class.java) ?: ""
+                dob = snapshot.child("dob").getValue(String::class.java) ?: ""
+                country = snapshot.child("country").getValue(String::class.java) ?: ""
+                profileImageUrl = snapshot.child("profileImageUrl").getValue(String::class.java)
+            }
+        }
+    }
+
     Scaffold(containerColor = darkNavy) { padding ->
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = cyanAccent)
+            }
+        }
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -86,7 +126,7 @@ fun EditProfileBody() {
                     ) {
                         Image(
                             painter = rememberAsyncImagePainter(
-                                model = imageUri ?: R.drawable.blastoise
+                                model = imageUri ?: profileImageUrl ?: R.drawable.blastoise
                             ),
                             contentDescription = "Profile Image",
                             modifier = Modifier
@@ -118,20 +158,63 @@ fun EditProfileBody() {
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        ModernEditField(label = "Name", value = name) { name = it }
-                        Spacer(Modifier.height(12.dp))
-                        ModernEditField(label = "Bio", value = bio) { bio = it }
+                        ModernEditField(label = "Full Name", value = name) { name = it }
                         Spacer(Modifier.height(12.dp))
                         ModernEditField(label = "Username", value = username) { username = it }
                         Spacer(Modifier.height(12.dp))
-                        ModernEditField(label = "Description", value = description) { description = it }
+                        ModernEditField(label = "Bio", value = bio) { bio = it }
+                        Spacer(Modifier.height(12.dp))
+                        ModernEditField(label = "Country", value = country) { country = it }
+                        Spacer(Modifier.height(12.dp))
+                        ModernEditField(label = "Date of Birth", value = dob) { dob = it }
                     }
                 }
 
                 Spacer(Modifier.height(32.dp))
 
                 Button(
-                    onClick = { /* Handle save here */ },
+                    onClick = {
+                        if (currentUser == null) return@Button
+                        isLoading = true
+                        
+                        val updateProfile = { imageUrl: String? ->
+                            val updatedUser = hashMapOf(
+                                "fullName" to name,
+                                "username" to username,
+                                "bio" to bio,
+                                "country" to country,
+                                "dob" to dob
+                            )
+                            if (imageUrl != null) {
+                                updatedUser["profileImageUrl"] = imageUrl
+                            }
+                            
+                            Firebase.database.getReference("users").child(currentUser.uid)
+                                .updateChildren(updatedUser as Map<String, Any>)
+                                .addOnCompleteListener { task ->
+                                    isLoading = false
+                                    if (task.isSuccessful) {
+                                        Toast.makeText(context, "Profile Updated", Toast.LENGTH_SHORT).show()
+                                        (context as? Activity)?.finish()
+                                    } else {
+                                        Toast.makeText(context, "Update Failed: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                        }
+
+                        if (imageUri != null) {
+                            profileRepo.uploadProfileImage(imageUri!!) { success, imageUrl ->
+                                if (success && imageUrl != null) {
+                                    updateProfile(imageUrl)
+                                } else {
+                                    isLoading = false
+                                    Toast.makeText(context, "Image Upload Failed", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        } else {
+                            updateProfile(null)
+                        }
+                    },
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
