@@ -1,17 +1,23 @@
 package com.example.travium.view
 
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -185,8 +191,12 @@ fun AdminHomeFeed(postViewModel: MakePostViewModel, userViewModel: UserViewModel
 fun AddGuideScreen() {
     var placeName by remember { mutableStateOf("") }
     var accommodations by remember { mutableStateOf("") }
-    // Placeholder for multiple images
-    val selectedImagesCount by remember { mutableIntStateOf(0) }
+    var selectedImageUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickMultipleVisualMedia(),
+        onResult = { uris -> selectedImageUris = uris }
+    )
 
     Column(
         modifier = Modifier
@@ -220,7 +230,7 @@ fun AddGuideScreen() {
             shape = RoundedCornerShape(12.dp)
         )
 
-        // Multiple Images Placeholder
+        // Multiple Images Picker
         Column {
             Text(
                 text = "Pictures of the Place",
@@ -233,10 +243,12 @@ fun AddGuideScreen() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(160.dp)
-                    .clickable { /* Future: Logic to select multiple images */ },
+                    .clickable { 
+                        launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    },
                 colors = CardDefaults.cardColors(containerColor = AdminCardNavy),
                 shape = RoundedCornerShape(16.dp),
-                border = Box(modifier = Modifier.border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))).let { null } // Just for visual consistency
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -251,9 +263,28 @@ fun AddGuideScreen() {
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = if (selectedImagesCount == 0) "Tap to add multiple pictures" else "$selectedImagesCount pictures selected",
+                            text = if (selectedImageUris.isEmpty()) "Tap to add multiple pictures" else "${selectedImageUris.size} pictures selected",
                             color = AdminSoftGray,
                             fontSize = 14.sp
+                        )
+                    }
+                }
+            }
+
+            if (selectedImageUris.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp)
+                ) {
+                    items(selectedImageUris) { uri ->
+                        Image(
+                            painter = rememberAsyncImagePainter(uri),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop
                         )
                     }
                 }
