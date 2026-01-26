@@ -6,16 +6,45 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -56,9 +85,12 @@ class LoginActivity : ComponentActivity() {
 fun LoginBody(viewModel: UserViewModel? = null) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var adminPassword by remember { mutableStateOf("") }
     var visibility by remember { mutableStateOf(false) }
+    var adminPasswordVisibility by remember { mutableStateOf(false) }
     var rememberMe by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
+    var selectedRole by remember { mutableStateOf("User") }
 
     val context = LocalContext.current
 
@@ -93,7 +125,6 @@ fun LoginBody(viewModel: UserViewModel? = null) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceAround
         ) {
-            Spacer(Modifier.height(16.dp))
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     "Login",
@@ -108,13 +139,48 @@ fun LoginBody(viewModel: UserViewModel? = null) {
                         fontSize = 14.sp,
                         color = Color.White,
                         textAlign = TextAlign.Center
-                    ))
+                    )
+                )
             }
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(cardBackground)
+                    .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp)),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "User",
+                    fontSize = 16.sp,
+                    color = Color.White,
+                    fontWeight = if (selectedRole == "User") FontWeight.Bold else FontWeight.Normal,
+                    modifier = Modifier
+                        .background(if (selectedRole == "User") primaryColor else Color.Transparent)
+                        .clickable { selectedRole = "User" }
+                        .padding(horizontal = 40.dp, vertical = 12.dp)
+                )
+                Divider(
+                    color = Color.White.copy(alpha = 0.2f),
+                    modifier = Modifier
+                        .height(40.dp)
+                        .width(1.dp)
+                )
+                Text(
+                    "Admin",
+                    fontSize = 16.sp,
+                    color = Color.White,
+                    fontWeight = if (selectedRole == "Admin") FontWeight.Bold else FontWeight.Normal,
+                    modifier = Modifier
+                        .background(if (selectedRole == "Admin") primaryColor else Color.Transparent)
+                        .clickable { selectedRole = "Admin" }
+                        .padding(horizontal = 40.dp, vertical = 12.dp)
+                )
+            }
+
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 8.dp)
-                    .height(350.dp),
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = cardBackground)
             ) {
@@ -133,32 +199,66 @@ fun LoginBody(viewModel: UserViewModel? = null) {
                         singleLine = true
                     )
 
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        placeholder = { Text("Password") },
-                        visualTransformation =
+                    AnimatedVisibility(visible = selectedRole == "User") {
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            placeholder = { Text("Password") },
+                            visualTransformation =
                             if (visibility) VisualTransformation.None
                             else PasswordVisualTransformation(),
-                        trailingIcon = {
-                            IconButton(onClick = { visibility = !visibility }) {
-                                Icon(
-                                    painter = painterResource(
-                                        if (visibility)
-                                            R.drawable.baseline_visibility_24
-                                        else
-                                            R.drawable.baseline_visibility_off_24
-                                    ),
-                                    contentDescription = null,
-                                    tint = Color.White.copy(alpha = 0.7f)
-                                )
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = loginTextFieldColors(primaryColor, textFieldBg),
-                        singleLine = true
-                    )
+                            trailingIcon = {
+                                IconButton(onClick = { visibility = !visibility }) {
+                                    Icon(
+                                        painter = painterResource(
+                                            if (visibility)
+                                                R.drawable.baseline_visibility_24
+                                            else
+                                                R.drawable.baseline_visibility_off_24
+                                        ),
+                                        contentDescription = null,
+                                        tint = Color.White.copy(alpha = 0.7f)
+                                    )
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = loginTextFieldColors(primaryColor, textFieldBg),
+                            singleLine = true
+                        )
+                    }
+
+                    AnimatedVisibility(
+                        visible = selectedRole == "Admin",
+                        enter = slideInVertically(animationSpec = tween(300)) { it } + fadeIn(tween(300)),
+                        exit = slideOutVertically(animationSpec = tween(300)) { it } + fadeOut(tween(300))
+                    ) {
+                        OutlinedTextField(
+                            value = adminPassword,
+                            onValueChange = { adminPassword = it },
+                            placeholder = { Text("Admin Password") },
+                            visualTransformation = if (adminPasswordVisibility) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                IconButton(onClick = { adminPasswordVisibility = !adminPasswordVisibility }) {
+                                    Icon(
+                                        painter = painterResource(
+                                            if (adminPasswordVisibility)
+                                                R.drawable.baseline_visibility_24
+                                            else
+                                                R.drawable.baseline_visibility_off_24
+                                        ),
+                                        contentDescription = null,
+                                        tint = Color.White.copy(alpha = 0.7f)
+                                    )
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = loginTextFieldColors(primaryColor, textFieldBg),
+                            singleLine = true
+                        )
+                    }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
@@ -205,22 +305,35 @@ fun LoginBody(viewModel: UserViewModel? = null) {
                                 )
                             )
                             .clickable {
-                                 if (email.isEmpty() || password.isEmpty()) {
-                                    Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
-                                    return@clickable
-                                }
-                                isLoading = true
-                                viewModel?.login(email, password) { success, message ->
-                                    isLoading = false
-                                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                                    if (success) {
-                                        context.startActivity(Intent(context, HomePageActivity::class.java))
+                                if (selectedRole == "Admin") {
+                                    if (email.isEmpty() || adminPassword.isEmpty()) {
+                                        Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                                        return@clickable
+                                    }
+                                    if (email == "admin@travium.com" && adminPassword == "admin123") {
+                                        Toast.makeText(context, "Login Successful", Toast.LENGTH_SHORT).show()
+                                        context.startActivity(Intent(context, AdminDashboardActivity::class.java))
+                                    } else {
+                                        Toast.makeText(context, "Invalid Admin Credentials", Toast.LENGTH_SHORT).show()
+                                    }
+                                } else {
+                                    if (email.isEmpty() || password.isEmpty()) {
+                                        Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                                        return@clickable
+                                    }
+                                    isLoading = true
+                                    viewModel?.login(email, password) { success, message ->
+                                        isLoading = false
+                                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                        if (success) {
+                                            context.startActivity(Intent(context, HomePageActivity::class.java))
+                                        }
                                     }
                                 }
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        if (isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                        if (isLoading && selectedRole == "User") CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                         else Text(
                             "Log In",
                             color = Color.White,
