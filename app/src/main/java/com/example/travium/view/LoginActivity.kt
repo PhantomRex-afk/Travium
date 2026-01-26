@@ -93,7 +93,6 @@ fun LoginBody(viewModel: UserViewModel? = null) {
     var selectedRole by remember { mutableStateOf("User") }
 
     val context = LocalContext.current
-
     val primaryColor = Color(0xFF6C63FF)
     val secondaryColor = Color(0xFF4ECDC4)
     val cardBackground = Color(0xCC1A1A1A)

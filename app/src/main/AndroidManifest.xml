@@ -3,12 +3,11 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
     <application
         android:allowBackup="true"
-        android:allowNativeHeapPointerTagging="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android.icon="@mipmap/ic_launcher"
@@ -17,12 +16,17 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Travium"
         tools:replace="android:fullBackupContent">
+        <activity
+            android:name=".view.ChangePasswordActivity"
+            android:exported="true"
+            android:label="@string/title_activity_change_password"
+            android:theme="@style/Theme.Travium">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
 
         <activity
             android:name=".view.SplashActivity"
-            android:exported="true"
-            android:label="@string/title_activity_splash"
-            android:theme="@style/Theme.Travium">
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -31,11 +35,14 @@
 
         <activity
             android:name=".view.LoginActivity"
+            android:exported="true" />
+            android:name=".view.LoginActivity"
             android:exported="false"
             android:theme="@style/Theme.Travium" />
 
         <activity
             android:name=".view.RegisterActivity"
+            android:exported="true" />
             android:exported="false"
             android:theme="@style/Theme.Travium" />
 
@@ -46,6 +53,7 @@
 
         <activity
             android:name=".view.HomePageActivity"
+            android:exported="false" />
             android:exported="false"
             android:theme="@style/Theme.Travium" />
 
@@ -65,44 +73,63 @@
             android:theme="@style/Theme.Travium" />
 
         <activity
+            android:name=".view.MainActivity"
+            android:exported="false" />
             android:name=".view.OtherUserProfileActivity"
             android:exported="false"
             android:theme="@style/Theme.Travium" />
 
         <activity
+            android:name=".view.ProfileActivity"
+            android:exported="true" />
             android:name=".view.AdminDashboardActivity"
             android:exported="false"
             android:label="@string/title_activity_admin_dashboard"
             android:theme="@style/Theme.Travium" />
 
         <activity
+            android:name=".view.SettingsActivity"
+            android:exported="true" />
             android:name=".view.FavouriteActivity"
             android:exported="false"
             android:theme="@style/Theme.Travium" />
 
         <activity
+            android:name=".view.EditProfileActivity"
+            android:exported="true" />
+        <activity
+            android:name=".view.FavouriteActivity"
+            android:exported="true" />
             android:name=".view.AddFavouriteActivity"
             android:exported="false"
             android:theme="@style/Theme.Travium" />
 
         <activity
+            android:name=".view.AddFavouriteActivity"
+            android:exported="true" />
             android:name=".view.ReportActivity"
             android:exported="false"
             android:theme="@style/Theme.Travium" />
 
         <activity
+            android:name=".view.AdminDashboardActivity"
+            android:exported="true" />
             android:name=".view.DisplayTripGroupActivity"
             android:exported="false"
             android:label="@string/title_activity_display_trip_group"
             android:theme="@style/Theme.Travium" />
 
         <activity
+            android:name=".view.ReportActivity"
+            android:exported="true" />
             android:name=".view.SetTripGroupActivity"
             android:exported="false"
             android:label="@string/title_activity_set_trip_group"
             android:theme="@style/Theme.Travium" />
 
         <activity
+            android:name=".view.ForgetPasswordActivity"
+            android:exported="true" />
             android:name=".view.MainActivity"
             android:exported="false"
             android:theme="@style/Theme.Travium" />
