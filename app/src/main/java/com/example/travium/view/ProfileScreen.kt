@@ -1,6 +1,5 @@
 package com.example.travium.view
 
-import android.content.Intent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -14,10 +13,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,7 +31,11 @@ import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.example.travium.R
 import com.example.travium.model.MakePostModel
+import com.example.travium.repository.MakePostRepoImpl
+import com.example.travium.repository.UserRepoImpl
 import com.example.travium.ui.theme.TraviumTheme
+import com.example.travium.viewmodel.MakePostViewModel
+import com.example.travium.viewmodel.UserViewModel
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -41,16 +43,25 @@ import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ktx.database
 import com.google.firebase.ktx.Firebase
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen() {
     val context = LocalContext.current
     val user = Firebase.auth.currentUser
     
+    val postViewModel = remember { MakePostViewModel(MakePostRepoImpl()) }
+    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+    val allPosts by postViewModel.allPosts.observeAsState(initial = emptyList())
+
     var fullName by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var bio by remember { mutableStateOf("") }
     var profileImageUrl by remember { mutableStateOf<String?>(null) }
     var userPosts by remember { mutableStateOf<List<MakePostModel>>(emptyList()) }
+
+    var selectedPostId by remember { mutableStateOf<String?>(null) }
+    var isSheetOpen by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     
     val midnightBlue = Color(0xFF003366)
     val darkNavy = Color(0xFF000033)
@@ -155,15 +166,12 @@ fun ProfileScreen() {
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
-
-                    // Action Buttons
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Button(
                             onClick = {
-                                // Follow logic
                             },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
@@ -202,7 +210,8 @@ fun ProfileScreen() {
                         .aspectRatio(1f)
                         .clip(RoundedCornerShape(4.dp))
                         .clickable { 
-                            // Navigation to post details could go here
+                            selectedPostId = post.postId
+                            isSheetOpen = true
                         }
                 ) {
                     Image(
@@ -265,6 +274,34 @@ fun ProfileScreen() {
                                 )
                             }
                         }
+                    }
+                }
+            }
+        }
+
+        if (isSheetOpen && selectedPostId != null) {
+            val latestPost = userPosts.find { it.postId == selectedPostId }
+            
+            if (latestPost != null) {
+                ModalBottomSheet(
+                    onDismissRequest = { isSheetOpen = false },
+                    sheetState = sheetState,
+                    containerColor = TravelCardNavy,
+                    dragHandle = { BottomSheetDefaults.DragHandle(color = TravelSoftGray) },
+                    modifier = Modifier.fillMaxHeight(0.9f)
+                ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        PostCard(
+                            post = latestPost,
+                            postViewModel = postViewModel,
+                            userViewModel = userViewModel,
+                            onCommentClick = {} // Already in comment view
+                        )
+                        CommentSection(
+                            post = latestPost,
+                            postViewModel = postViewModel,
+                            userViewModel = userViewModel
+                        )
                     }
                 }
             }

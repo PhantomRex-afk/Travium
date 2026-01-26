@@ -6,14 +6,17 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -44,10 +47,15 @@ fun SettingsBody() {
     var selectedLanguage by remember { mutableStateOf("English") }
     val languages = listOf("English", "Nepali", "Hindi", "Chinese")
 
+    val midnightBlue = Color(0xFF003366)
+    val darkNavy = Color(0xFF000033)
+    val cyanAccent = Color(0xFF00FFFF)
+
     if (showLanguageDialog) {
         AlertDialog(
             onDismissRequest = { showLanguageDialog = false },
-            title = { Text("Select Language") },
+            containerColor = midnightBlue,
+            title = { Text("Select Language", color = Color.White) },
             text = {
                 Column {
                     languages.forEach { language ->
@@ -66,40 +74,46 @@ fun SettingsBody() {
                                 onClick = {
                                     selectedLanguage = language
                                     showLanguageDialog = false
-                                }
+                                },
+                                colors = RadioButtonDefaults.colors(selectedColor = cyanAccent, unselectedColor = Color.White.copy(alpha = 0.6f))
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(text = language)
+                            Text(text = language, color = Color.White)
                         }
                     }
                 }
             },
             confirmButton = {
                 TextButton(onClick = { showLanguageDialog = false }) {
-                    Text("Cancel")
+                    Text("Cancel", color = cyanAccent)
                 }
             }
         )
     }
 
     Scaffold(
+        containerColor = darkNavy,
         topBar = {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .statusBarsPadding()
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    painter = painterResource(R.drawable.arrow_left),
-                    contentDescription = "Back",
-                    modifier = Modifier.clickable { (context as? Activity)?.finish() }
-                )
-                Spacer(modifier = Modifier.width(16.dp))
+                IconButton(onClick = { (context as? Activity)?.finish() }) {
+                    Icon(
+                        painter = painterResource(R.drawable.arrow_left),
+                        contentDescription = "Back",
+                        tint = Color.White
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "Settings",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
                 )
             }
         }
@@ -108,56 +122,97 @@ fun SettingsBody() {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .padding(horizontal = 16.dp)
         ) {
             item {
                 SettingsHeader("Account")
             }
-            items(accountSettings) { item ->
-                SettingsListItem(item) {
-                    if (item.title == "Edit Profile") {
-                        context.startActivity(Intent(context, EditProfileActivity::class.java))
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = midnightBlue),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column {
+                        accountSettings.forEach { item ->
+                            SettingsListItem(item) {
+                                if (item.title == "Edit Profile") {
+                                    context.startActivity(Intent(context, EditProfileActivity::class.java))
+                                }
+                            }
+                        }
                     }
                 }
             }
 
             item {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
                 SettingsHeader("Security & Privacy")
             }
-            items(securitySettings) { item ->
-                SettingsListItem(item) {
-                    if (item.title == "Change Password") {
-                        context.startActivity(Intent(context, ChangePasswordActivity::class.java))
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = midnightBlue),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column {
+                        securitySettings.forEach { item ->
+                            SettingsListItem(item) {
+                                if (item.title == "Change Password") {
+                                    context.startActivity(Intent(context, ChangePasswordActivity::class.java))
+                                }
+                            }
+                        }
                     }
                 }
             }
             
             item {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
                 SettingsHeader("Preferences")
             }
-            items(preferenceSettings) { item ->
-                SettingsListItem(
-                    item = item,
-                    value = if (item.title == "Language") selectedLanguage else null
-                ) { 
-                    if (item.title == "Language") {
-                        showLanguageDialog = true
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = midnightBlue),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column {
+                        preferenceSettings.forEach { item ->
+                            SettingsListItem(
+                                item = item,
+                                value = if (item.title == "Language") selectedLanguage else null
+                            ) { 
+                                if (item.title == "Language") {
+                                    showLanguageDialog = true
+                                }
+                            }
+                        }
                     }
                 }
             }
 
             item {
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
                 SettingsHeader("Support")
             }
-            items(supportSettings) { item ->
-                SettingsListItem(item) { /* Handle click */ }
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = midnightBlue),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column {
+                        supportSettings.forEach { item ->
+                            SettingsListItem(item) { /* Handle click */ }
+                        }
+                    }
+                }
             }
 
             item {
                 Spacer(modifier = Modifier.height(32.dp))
-                TextButton(
+                Button(
                     onClick = {
                         FirebaseAuth.getInstance().signOut()
                         val intent = Intent(context, LoginActivity::class.java)
@@ -165,11 +220,19 @@ fun SettingsBody() {
                         context.startActivity(intent)
                         (context as? Activity)?.finish()
                     },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .padding(bottom = 8.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFF4B4B).copy(alpha = 0.1f),
+                        contentColor = Color(0xFFFF4B4B)
+                    )
                 ) {
-                    Text("Log Out", fontWeight = FontWeight.Bold)
+                    Text("Log Out", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }
@@ -179,10 +242,11 @@ fun SettingsBody() {
 fun SettingsHeader(title: String) {
     Text(
         text = title,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        color = MaterialTheme.colorScheme.primary,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 14.sp
+        modifier = Modifier.padding(start = 8.dp, bottom = 12.dp),
+        color = Color(0xFF00FFFF),
+        fontWeight = FontWeight.Bold,
+        fontSize = 14.sp,
+        letterSpacing = 1.sp
     )
 }
 
@@ -195,22 +259,31 @@ fun SettingsListItem(item: SettingsItemData, value: String? = null, onClick: () 
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(
-            painter = painterResource(item.icon),
-            contentDescription = null,
-            modifier = Modifier.size(24.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(10.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                painter = painterResource(item.icon),
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = Color.White
+            )
+        }
         Spacer(modifier = Modifier.width(16.dp))
         Text(
             text = item.title,
             modifier = Modifier.weight(1f),
-            fontSize = 16.sp
+            fontSize = 16.sp,
+            color = Color.White,
+            fontWeight = FontWeight.Medium
         )
         if (value != null) {
             Text(
                 text = value,
-                color = Color.Gray,
+                color = Color.White.copy(alpha = 0.5f),
                 fontSize = 14.sp,
                 modifier = Modifier.padding(end = 8.dp)
             )
@@ -218,11 +291,10 @@ fun SettingsListItem(item: SettingsItemData, value: String? = null, onClick: () 
         Icon(
             painter = painterResource(android.R.drawable.arrow_down_float), // Placeholder for chevron
             contentDescription = null,
-            modifier = Modifier.size(16.dp),
-            tint = Color.Gray
+            modifier = Modifier.size(14.dp),
+            tint = Color.White.copy(alpha = 0.3f)
         )
     }
-    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = Color.LightGray)
 }
 
 data class SettingsItemData(val title: String, val icon: Int)
