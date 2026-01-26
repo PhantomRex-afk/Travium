@@ -9,12 +9,16 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
@@ -149,7 +153,7 @@ class AdminDashboardActivity : ComponentActivity() {
                 Box(modifier = Modifier.padding(innerPadding)) {
                     when(selectedIndex) {
                         0 -> AdminHomeFeed(postViewModel, userViewModel)
-                        1 -> AdminPlaceholderScreen(title = "Add New Guide")
+                        1 -> AddGuideScreen()
                         2 -> AdminUsersList(userViewModel)
                     }
                 }
@@ -174,6 +178,126 @@ fun AdminHomeFeed(postViewModel: MakePostViewModel, userViewModel: UserViewModel
         items(allPosts) { post ->
             AdminPostCard(post = post, postViewModel = postViewModel, userViewModel = userViewModel)
         }
+    }
+}
+
+@Composable
+fun AddGuideScreen() {
+    var placeName by remember { mutableStateOf("") }
+    var accommodations by remember { mutableStateOf("") }
+    // Placeholder for multiple images
+    val selectedImagesCount by remember { mutableIntStateOf(0) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(AdminDeepNavy)
+            .padding(20.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
+    ) {
+        Text(
+            text = "Create New Guide",
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            fontSize = 20.sp
+        )
+
+        // Place Name Input
+        OutlinedTextField(
+            value = placeName,
+            onValueChange = { placeName = it },
+            label = { Text("Place Name") },
+            modifier = Modifier.fillMaxWidth(),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedBorderColor = AdminAccentTeal,
+                unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                focusedLabelColor = AdminAccentTeal,
+                unfocusedLabelColor = AdminSoftGray
+            ),
+            shape = RoundedCornerShape(12.dp)
+        )
+
+        // Multiple Images Placeholder
+        Column {
+            Text(
+                text = "Pictures of the Place",
+                color = Color.White,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 16.sp
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp)
+                    .clickable { /* Future: Logic to select multiple images */ },
+                colors = CardDefaults.cardColors(containerColor = AdminCardNavy),
+                shape = RoundedCornerShape(16.dp),
+                border = Box(modifier = Modifier.border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))).let { null } // Just for visual consistency
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.AddPhotoAlternate,
+                            contentDescription = null,
+                            tint = AdminAccentTeal,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = if (selectedImagesCount == 0) "Tap to add multiple pictures" else "$selectedImagesCount pictures selected",
+                            color = AdminSoftGray,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
+        }
+
+        // Accommodations Input
+        OutlinedTextField(
+            value = accommodations,
+            onValueChange = { accommodations = it },
+            label = { Text("Accommodations (Hotels, Resorts, etc.)") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 120.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                focusedBorderColor = AdminAccentTeal,
+                unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                focusedLabelColor = AdminAccentTeal,
+                unfocusedLabelColor = AdminSoftGray
+            ),
+            shape = RoundedCornerShape(12.dp)
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Button(
+            onClick = { /* Future: Save Logic */ },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = AdminAccentTeal),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Text(
+                text = "Publish Guide",
+                color = AdminDeepNavy,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(40.dp))
     }
 }
 
