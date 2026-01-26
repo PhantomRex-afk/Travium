@@ -53,8 +53,10 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.travium.R
 import com.example.travium.model.MakePostModel
 import com.example.travium.model.UserModel
+import com.example.travium.repository.GuideRepoImpl
 import com.example.travium.repository.MakePostRepoImpl
 import com.example.travium.repository.UserRepoImpl
+import com.example.travium.viewmodel.GuideViewModel
 import com.example.travium.viewmodel.MakePostViewModel
 import com.example.travium.viewmodel.UserViewModel
 
@@ -190,9 +192,13 @@ fun AdminHomeFeed(postViewModel: MakePostViewModel, userViewModel: UserViewModel
 
 @Composable
 fun AddGuideScreen() {
+    val context = LocalContext.current
+    val guideViewModel = remember { GuideViewModel(GuideRepoImpl()) }
+    
     var placeName by remember { mutableStateOf("") }
     var accommodations by remember { mutableStateOf("") }
     var selectedImageUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    var isPublishing by remember { mutableStateOf(false) }
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(),
@@ -335,19 +341,38 @@ fun AddGuideScreen() {
         Spacer(modifier = Modifier.height(20.dp))
 
         Button(
-            onClick = { /* Future: Save Logic */ },
+            onClick = {
+                isPublishing = true
+                guideViewModel.addGuide(context, placeName, selectedImageUris, accommodations) { success, message ->
+                    isPublishing = false
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    if (success) {
+                        placeName = ""
+                        accommodations = ""
+                        selectedImageUris = emptyList()
+                    }
+                }
+            },
+            enabled = !isPublishing,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = AdminAccentTeal),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = AdminAccentTeal,
+                disabledContainerColor = AdminAccentTeal.copy(alpha = 0.5f)
+            ),
             shape = RoundedCornerShape(16.dp)
         ) {
-            Text(
-                text = "Publish Guide",
-                color = AdminDeepNavy,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
-            )
+            if (isPublishing) {
+                CircularProgressIndicator(color = AdminDeepNavy, modifier = Modifier.size(24.dp))
+            } else {
+                Text(
+                    text = "Publish Guide",
+                    color = AdminDeepNavy,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+            }
         }
         
         Spacer(modifier = Modifier.height(40.dp))
@@ -549,6 +574,7 @@ fun AdminPostCard(post: MakePostModel, postViewModel: MakePostViewModel, userVie
         colors = CardDefaults.cardColors(containerColor = AdminCardNavy)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
+            // Author Header with Delete Action
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
