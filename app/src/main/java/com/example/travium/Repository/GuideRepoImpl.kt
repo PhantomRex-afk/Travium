@@ -7,8 +7,11 @@ import android.os.Looper
 import com.cloudinary.Cloudinary
 import com.cloudinary.utils.ObjectUtils
 import com.example.travium.model.GuideModel
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import java.io.InputStream
 import java.util.concurrent.Executors
 
@@ -80,5 +83,22 @@ class GuideRepoImpl : GuideRepo {
                     callback(false, task.exception?.message ?: "Failed to publish guide")
                 }
             }
+    }
+
+    override fun getAllGuides(callback: (Boolean, String, List<GuideModel>?) -> Unit) {
+        guidesRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val guidesList = mutableListOf<GuideModel>()
+                for (guideSnapshot in snapshot.children) {
+                    val guide = guideSnapshot.getValue(GuideModel::class.java)
+                    guide?.let { guidesList.add(it) }
+                }
+                callback(true, "Guides retrieved successfully", guidesList)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                callback(false, error.message, null)
+            }
+        })
     }
 }
