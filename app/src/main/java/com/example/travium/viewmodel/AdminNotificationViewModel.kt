@@ -37,7 +37,8 @@ class AdminNotificationViewModel(private val repository: AdminNotificationRepo) 
     fun sendNotification(title: String, message: String) {
         val notification = AdminNotificationModel(
             title = title,
-            message = message
+            message = message,
+            timestamp = System.currentTimeMillis()
         )
         _loading.value = true
         repository.sendNotification(notification) { success, msg ->

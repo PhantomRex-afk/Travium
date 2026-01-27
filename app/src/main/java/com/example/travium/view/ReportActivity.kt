@@ -26,7 +26,6 @@ import com.example.travium.R
 import com.example.travium.repository.ReportRepoImpl
 import com.example.travium.view.ui.theme.TraviumTheme
 import com.example.travium.viewmodel.ReportViewModel
-import com.example.travium.viewmodel.ReportViewModelFactory
 
 class ReportActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,8 +39,10 @@ class ReportActivity : ComponentActivity() {
 
         setContent {
             TraviumTheme {
-                val factory = ReportViewModelFactory(ReportRepoImpl())
-                val viewModel: ReportViewModel = viewModel(factory = factory)
+                // Using viewModel builder to instantiate ReportViewModel without a separate Factory class
+                val viewModel: ReportViewModel = viewModel {
+                    ReportViewModel(ReportRepoImpl())
+                }
                 ReportBody(
                     reportedUserId = reportedUserId,
                     reportedByUserId = reportedByUserId,

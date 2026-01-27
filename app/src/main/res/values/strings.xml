@@ -12,5 +12,6 @@
     <string name="title_activity_splash">SplashActivity</string>
     <string name="title_activity_admin_dashboard">AdminDashboardActivity</string>
     <string name="title_activity_customer_support">CustomerSupportActivity</string>
+    <string name="title_activity_admin_notification">AdminNotificationActivity</string>
 
 </resources>
