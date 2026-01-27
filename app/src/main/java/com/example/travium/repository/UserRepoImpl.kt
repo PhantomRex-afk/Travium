@@ -10,6 +10,7 @@ import com.google.firebase.database.ValueEventListener
 class UserRepoImpl : UserRepo {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseDatabase.getInstance().getReference("users")
+    private val bannedDb = FirebaseDatabase.getInstance().getReference("banned_users")
     private val followersRef = FirebaseDatabase.getInstance().getReference("followers")
     private val followingRef = FirebaseDatabase.getInstance().getReference("following")
 
@@ -31,11 +32,40 @@ class UserRepoImpl : UserRepo {
         callback: (Boolean, String) -> Unit
     ) {
         auth.signInWithEmailAndPassword(email, password)
-            .addOnCompleteListener {
-                if(it.isSuccessful){
-                    callback(true, "Login Successfully")
-                }else{
-                    callback(false, "${it.exception?.message}")
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val userId = auth.currentUser?.uid ?: ""
+                    
+                    // Essential Check: Verify if user is banned immediately after auth success
+                    bannedDb.child(userId).addListenerForSingleValueEvent(object : ValueEventListener {
+                        override fun onDataChange(snapshot: DataSnapshot) {
+                            if (snapshot.exists()) {
+                                auth.signOut() // Kill the session
+                                callback(false, "ACCESS DENIED: Your account has been banned.")
+                            } else {
+                                // Double Check: Ensure they actually exist in the active users node
+                                db.child(userId).addListenerForSingleValueEvent(object : ValueEventListener {
+                                    override fun onDataChange(userSnapshot: DataSnapshot) {
+                                        if (userSnapshot.exists()) {
+                                            callback(true, "Login Successfully")
+                                        } else {
+                                            auth.signOut()
+                                            callback(false, "Account error. Please register again.")
+                                        }
+                                    }
+                                    override fun onCancelled(error: DatabaseError) {
+                                        callback(false, error.message)
+                                    }
+                                })
+                            }
+                        }
+
+                        override fun onCancelled(error: DatabaseError) {
+                            callback(false, error.message)
+                        }
+                    })
+                } else {
+                    callback(false, task.exception?.message ?: "Login Failed")
                 }
             }
     }
@@ -142,7 +172,7 @@ class UserRepoImpl : UserRepo {
         })
     }
 
-    override fun getAllUsers(callback: (Boolean, String, List<UserModel>?) -> Unit) {
+    override fun getAllUsers(callback: (List<UserModel>) -> Unit) {
         db.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val userList = mutableListOf<UserModel>()
@@ -150,11 +180,83 @@ class UserRepoImpl : UserRepo {
                     val user = userSnapshot.getValue(UserModel::class.java)
                     user?.let { userList.add(it) }
                 }
-                callback(true, "Users retrieved successfully", userList)
+                callback(userList)
             }
 
             override fun onCancelled(error: DatabaseError) {
-                callback(false, error.message, null)
+                callback(emptyList())
+            }
+        })
+    }
+
+    override fun banUser(userId: String, callback: (Boolean, String) -> Unit) {
+        db.child(userId).addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val user = snapshot.getValue(UserModel::class.java)
+                if (user != null) {
+                    bannedDb.child(userId).setValue(user).addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            db.child(userId).removeValue().addOnCompleteListener { removeTask ->
+                                if (removeTask.isSuccessful) {
+                                    callback(true, "User banned successfully")
+                                } else {
+                                    callback(false, "Failed to remove user from active list")
+                                }
+                            }
+                        } else {
+                            callback(false, "Failed to add user to banned list")
+                        }
+                    }
+                } else {
+                    callback(false, "User not found")
+                }
+            }
+            override fun onCancelled(error: DatabaseError) {
+                callback(false, error.message)
+            }
+        })
+    }
+
+    override fun unbanUser(userId: String, callback: (Boolean, String) -> Unit) {
+        bannedDb.child(userId).addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val user = snapshot.getValue(UserModel::class.java)
+                if (user != null) {
+                    db.child(userId).setValue(user).addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            bannedDb.child(userId).removeValue().addOnCompleteListener { removeTask ->
+                                if (removeTask.isSuccessful) {
+                                    callback(true, "User unbanned successfully")
+                                } else {
+                                    callback(false, "Failed to remove user from banned list")
+                                }
+                            }
+                        } else {
+                            callback(false, "Failed to restore user to active list")
+                        }
+                    }
+                } else {
+                    callback(false, "Banned user not found")
+                }
+            }
+            override fun onCancelled(error: DatabaseError) {
+                callback(false, error.message)
+            }
+        })
+    }
+
+    override fun getBannedUsers(callback: (List<UserModel>) -> Unit) {
+        bannedDb.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val userList = mutableListOf<UserModel>()
+                for (userSnapshot in snapshot.children) {
+                    val user = userSnapshot.getValue(UserModel::class.java)
+                    user?.let { userList.add(it) }
+                }
+                callback(userList)
+            }
+            override fun onCancelled(error: DatabaseError) {
+                callback(emptyList())
             }
         })
     }

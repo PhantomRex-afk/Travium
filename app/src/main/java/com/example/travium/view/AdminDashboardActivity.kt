@@ -180,11 +180,16 @@ fun AdminHomeFeed(postViewModel: MakePostViewModel, userViewModel: UserViewModel
 @Composable
 fun AdminUsersList(userViewModel: UserViewModel) {
     val allUsers by userViewModel.allUsers.observeAsState(initial = emptyList())
+    val bannedUsers by userViewModel.bannedUsers.observeAsState(initial = emptyList())
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf("Current Users", "Banned Users")
 
-    LaunchedEffect(Unit) {
-        userViewModel.getAllUsers()
+    LaunchedEffect(selectedTabIndex) {
+        if (selectedTabIndex == 0) {
+            userViewModel.getAllUsers()
+        } else {
+            userViewModel.getBannedUsers()
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -218,8 +223,7 @@ fun AdminUsersList(userViewModel: UserViewModel) {
             }
         }
 
-        // Fix: Make banned users list empty as requested
-        val filteredUsers = if (selectedTabIndex == 0) allUsers else emptyList<UserModel>()
+        val filteredUsers = if (selectedTabIndex == 0) allUsers else bannedUsers
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -227,14 +231,14 @@ fun AdminUsersList(userViewModel: UserViewModel) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(filteredUsers) { user ->
-                UserCard(user, isBannedView = selectedTabIndex == 1)
+                UserCard(user, isBannedView = selectedTabIndex == 1, userViewModel = userViewModel)
             }
         }
     }
 }
 
 @Composable
-fun UserCard(user: UserModel, isBannedView: Boolean) {
+fun UserCard(user: UserModel, isBannedView: Boolean, userViewModel: UserViewModel) {
     val context = LocalContext.current
     Card(
         modifier = Modifier
@@ -256,17 +260,26 @@ fun UserCard(user: UserModel, isBannedView: Boolean) {
                         .background(Brush.linearGradient(colors = listOf(AdminAccentTeal, Color(0xFF3B82F6)))),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = user.fullName.take(1).uppercase(),
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
+                    if (user.profileImageUrl.isNotEmpty()) {
+                        Image(
+                            painter = rememberAsyncImagePainter(user.profileImageUrl),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Text(
+                            text = (if (user.username.isNotEmpty()) user.username else user.fullName).take(1).uppercase(),
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text(
-                        text = user.fullName,
+                        text = if (user.username.isNotEmpty()) "@${user.username}" else user.fullName,
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
@@ -290,8 +303,17 @@ fun UserCard(user: UserModel, isBannedView: Boolean) {
             
             IconButton(
                 onClick = { 
-                    val action = if (isBannedView) "Unban" else "Ban"
-                    Toast.makeText(context, "$action user logic here", Toast.LENGTH_SHORT).show() 
+                    if (isBannedView) {
+                        userViewModel.unbanUser(user.userId) { success, message ->
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                            if (success) userViewModel.getBannedUsers()
+                        }
+                    } else {
+                        userViewModel.banUser(user.userId) { success, message ->
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                            if (success) userViewModel.getAllUsers()
+                        }
+                    }
                 }
             ) {
                 Icon(
@@ -385,10 +407,19 @@ fun AdminPostCard(post: MakePostModel, postViewModel: MakePostViewModel, userVie
                             .background(Brush.linearGradient(colors = listOf(AdminAccentTeal, Color(0xFF3B82F6)))),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = (author?.fullName?.take(1) ?: "T").uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        if (author?.profileImageUrl?.isNotEmpty() == true) {
+                            Image(
+                                painter = rememberAsyncImagePainter(author?.profileImageUrl),
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Text(text = (if (author?.username?.isNotEmpty() == true) author?.username else author?.fullName)?.take(1)?.uppercase() ?: "T", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
                     }
                     Spacer(modifier = Modifier.width(10.dp))
-                    Text(text = author?.fullName ?: "Explorer", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Text(text = author?.username?.let { "@$it" } ?: author?.fullName ?: "Explorer", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 }
                 
                 IconButton(onClick = { showDeleteDialog = true }) {

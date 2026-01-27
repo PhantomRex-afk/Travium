@@ -24,11 +24,14 @@ interface UserRepo {
 
     fun changePassword(newPassword: String, callback: (Boolean, String) -> Unit)
 
-    fun getAllUsers(callback: (Boolean, String, List<UserModel>?) -> Unit)
-
     fun followUser(currentUserId: String, targetUserId: String, callback: (Boolean, String) -> Unit)
     fun unfollowUser(currentUserId: String, targetUserId: String, callback: (Boolean, String) -> Unit)
     fun getFollowersCount(userId: String, callback: (Long) -> Unit)
     fun getFollowingCount(userId: String, callback: (Long) -> Unit)
     fun isFollowing(currentUserId: String, targetUserId: String, callback: (Boolean) -> Unit)
+
+    fun getAllUsers(callback: (List<UserModel>) -> Unit)
+    fun banUser(userId: String, callback: (Boolean, String) -> Unit)
+    fun unbanUser(userId: String, callback: (Boolean, String) -> Unit)
+    fun getBannedUsers(callback: (List<UserModel>) -> Unit)
 }
