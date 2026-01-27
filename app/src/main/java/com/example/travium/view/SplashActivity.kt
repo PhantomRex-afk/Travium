@@ -3,6 +3,7 @@ package com.example.travium.view
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -28,6 +29,10 @@ import androidx.compose.ui.unit.dp
 import com.example.travium.R
 import com.example.travium.ui.theme.TraviumTheme
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.seconds
 
@@ -53,13 +58,30 @@ fun SplashBody() {
         val firebaseAuth = FirebaseAuth.getInstance()
         val currentUser = firebaseAuth.currentUser
 
-        val intent = if (currentUser != null) {
-            Intent(context, HomePageActivity::class.java)
+        if (currentUser != null) {
+            // Check if existing session user is banned
+            val bannedRef = FirebaseDatabase.getInstance().getReference("banned_users").child(currentUser.uid)
+            bannedRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        firebaseAuth.signOut()
+                        Toast.makeText(context, "Your account has been banned.", Toast.LENGTH_LONG).show()
+                        context.startActivity(Intent(context, LoginActivity::class.java))
+                    } else {
+                        context.startActivity(Intent(context, HomePageActivity::class.java))
+                    }
+                    activity.finish()
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    context.startActivity(Intent(context, LoginActivity::class.java))
+                    activity.finish()
+                }
+            })
         } else {
-            Intent(context, LoginActivity::class.java)
+            context.startActivity(Intent(context, LoginActivity::class.java))
+            activity.finish()
         }
-        context.startActivity(intent)
-        activity.finish()
     }
 
     Scaffold(containerColor = Color.Black) { padding ->
