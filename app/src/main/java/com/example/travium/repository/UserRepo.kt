@@ -24,6 +24,8 @@ interface UserRepo {
 
     fun changePassword(newPassword: String, callback: (Boolean, String) -> Unit)
 
+    fun getAllUsers(callback: (Boolean, String, List<UserModel>?) -> Unit)
+
     fun followUser(currentUserId: String, targetUserId: String, callback: (Boolean, String) -> Unit)
     fun unfollowUser(currentUserId: String, targetUserId: String, callback: (Boolean, String) -> Unit)
     fun getFollowersCount(userId: String, callback: (Long) -> Unit)
