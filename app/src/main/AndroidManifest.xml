@@ -17,6 +17,12 @@
         android:theme="@style/Theme.Travium"
         tools:replace="android:fullBackupContent">
 
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyAFkQIPVR4sRSnGM71XWWZwxSYa5SmPuVU" />
+
+
+
         <activity
             android:name=".view.SplashActivity"
             android:exported="true"
