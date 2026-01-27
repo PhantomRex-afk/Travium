@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -28,6 +30,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddPhotoAlternate
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.LocationOn
@@ -250,7 +253,7 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp),
+                    .height(180.dp),
                 colors = CardDefaults.cardColors(containerColor = AdminCardNavy),
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
@@ -285,20 +288,42 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         items(selectedImageUris) { uri ->
-                            Image(
-                                painter = rememberAsyncImagePainter(uri),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(110.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .border(0.5.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(12.dp)),
-                                contentScale = ContentScale.Crop
-                            )
+                            Box(modifier = Modifier.size(120.dp)) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(uri),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .border(0.5.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(12.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                                // Remove button for each image
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(4.dp)
+                                        .size(24.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.Black.copy(alpha = 0.6f))
+                                        .clickable { 
+                                            selectedImageUris = selectedImageUris.filter { it != uri }
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Remove",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
                         }
                         item {
                             Surface(
                                 modifier = Modifier
-                                    .size(110.dp)
+                                    .size(120.dp)
                                     .clip(RoundedCornerShape(12.dp))
                                     .clickable { launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
                                 color = Color.White.copy(alpha = 0.05f),
@@ -413,6 +438,7 @@ fun AdminGuideList(guideViewModel: GuideViewModel) {
 @Composable
 fun AdminGuideCard(guide: GuideModel, onDelete: () -> Unit) {
     var showDeleteDialog by remember { mutableStateOf(false) }
+    val pagerState = rememberPagerState(pageCount = { guide.imageUrls.size })
 
     if (showDeleteDialog) {
         AlertDialog(
@@ -443,9 +469,10 @@ fun AdminGuideCard(guide: GuideModel, onDelete: () -> Unit) {
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = AdminCardNavy)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column {
+            // Header
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -459,25 +486,53 @@ fun AdminGuideCard(guide: GuideModel, onDelete: () -> Unit) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
+            // Interactive Pager for Images
             if (guide.imageUrls.isNotEmpty()) {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(guide.imageUrls) { url ->
+                Box(modifier = Modifier.fillMaxWidth().height(220.dp)) {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxSize()
+                    ) { page ->
                         Image(
-                            painter = rememberAsyncImagePainter(url),
+                            painter = rememberAsyncImagePainter(guide.imageUrls[page]),
                             contentDescription = null,
-                            modifier = Modifier.size(150.dp, 100.dp).clip(RoundedCornerShape(8.dp)),
+                            modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
                         )
                     }
+                    
+                    // Pager Indicators (Dots)
+                    if (guide.imageUrls.size > 1) {
+                        Row(
+                            Modifier
+                                .height(20.dp)
+                                .fillMaxWidth()
+                                .align(Alignment.BottomCenter)
+                                .background(Color.Black.copy(alpha = 0.3f)),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            repeat(guide.imageUrls.size) { iteration ->
+                                val color = if (pagerState.currentPage == iteration) AdminAccentTeal else Color.White.copy(alpha = 0.5f)
+                                Box(
+                                    modifier = Modifier
+                                        .padding(4.dp)
+                                        .clip(CircleShape)
+                                        .background(color)
+                                        .size(6.dp)
+                                )
+                            }
+                        }
+                    }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
             }
 
+            // Info Section
             if (guide.accommodations.isNotEmpty()) {
-                Text(text = "Accommodations", color = AdminAccentTeal, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                Text(text = guide.accommodations, color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp)
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(text = "Accommodations", color = AdminAccentTeal, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Text(text = guide.accommodations, color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp)
+                }
             }
         }
     }
