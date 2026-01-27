@@ -42,6 +42,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -64,12 +65,13 @@ import com.example.travium.viewmodel.GuideViewModel
 import com.example.travium.viewmodel.MakePostViewModel
 import com.example.travium.viewmodel.UserViewModel
 
-// Admin-themed dark colors
-val AdminDeepNavy = Color(0xFF0F172A)
+// Enhanced Admin-themed colors
+val AdminDeepNavy = Color(0xFF020617) // Even deeper navy
 val AdminCardNavy = Color(0xFF1E293B)
 val AdminAccentTeal = Color(0xFF2DD4BF)
 val AdminSoftGray = Color(0xFF94A3B8)
-val AdminAlertRed = Color(0xFFEF4444)
+val AdminAlertRed = Color(0xFFF43F5E) // Vibrant rose red
+val AdminGlowTeal = AdminAccentTeal.copy(alpha = 0.15f)
 
 class AdminDashboardActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -91,81 +93,101 @@ class AdminDashboardActivity : ComponentActivity() {
             Scaffold(
                 containerColor = AdminDeepNavy,
                 topBar = {
-                    Column {
-                        CenterAlignedTopAppBar(
-                            title = {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        "Travium", style = TextStyle(
-                                            fontSize = 28.sp,
-                                            fontWeight = FontWeight.ExtraBold,
-                                            color = Color.White
+                    Surface(
+                        color = AdminCardNavy,
+                        shadowElevation = 8.dp
+                    ) {
+                        Column {
+                            CenterAlignedTopAppBar(
+                                title = {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            "Travium", style = TextStyle(
+                                                fontSize = 28.sp,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = Color.White,
+                                                letterSpacing = 1.sp
+                                            )
                                         )
-                                    )
-                                    Text(
-                                        "Admin Dashboard", style = TextStyle(
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = AdminSoftGray
-                                        )
-                                    )
-                                }
-                            },
-                            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                                containerColor = AdminCardNavy
-                            ),
-                            actions = {
-                                IconButton(onClick = { /* Handle Notifications */ }) {
-                                    BadgedBox(
-                                        badge = { }
-                                    ) {
-                                        Icon(
-                                            painter = painterResource(R.drawable.notification),
-                                            contentDescription = "Notifications",
-                                            tint = Color.White
+                                        Text(
+                                            "Admin Control Center", style = TextStyle(
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = AdminAccentTeal,
+                                                letterSpacing = 2.sp
+                                            )
                                         )
                                     }
+                                },
+                                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                                    containerColor = Color.Transparent
+                                ),
+                                actions = {
+                                    IconButton(onClick = { /* Handle Notifications */ }) {
+                                        BadgedBox(
+                                            badge = { }
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.notification),
+                                                contentDescription = "Notifications",
+                                                tint = Color.White
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.width(8.dp))
                                 }
-                                Spacer(modifier = Modifier.width(8.dp))
-                            }
-                        )
-                        HorizontalDivider(color = Color.White.copy(alpha = 0.1f), thickness = 0.5.dp)
+                            )
+                            HorizontalDivider(color = AdminAccentTeal.copy(alpha = 0.2f), thickness = 1.dp)
+                        }
                     }
                 },
                 bottomBar = {
-                    Column {
-                        HorizontalDivider(color = Color.White.copy(alpha = 0.1f), thickness = 0.5.dp)
-                        NavigationBar(
-                            containerColor = AdminCardNavy,
-                            tonalElevation = 8.dp
-                        ) {
-                            val items = listOf(
-                                Triple("Home", R.drawable.outline_home_24, "Home"),
-                                Triple("Add", R.drawable.addbox, "Add Guide"),
-                                Triple("Manage", R.drawable.outline_map_pin_review_24, "Manage Guides"),
-                                Triple("Users", R.drawable.profile, "Users List")
-                            )
-                            
-                            items.forEachIndexed { index, item ->
-                                NavigationBarItem(
-                                    icon = { Icon(painterResource(item.second), contentDescription = item.third) },
-                                    label = { Text(item.first) },
-                                    selected = selectedIndex == index,
-                                    onClick = { selectedIndex = index },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = AdminAccentTeal,
-                                        selectedTextColor = AdminAccentTeal,
-                                        unselectedIconColor = AdminSoftGray,
-                                        unselectedTextColor = AdminSoftGray,
-                                        indicatorColor = AdminAccentTeal.copy(alpha = 0.1f)
-                                    )
+                    Surface(
+                        color = AdminCardNavy,
+                        shadowElevation = 16.dp
+                    ) {
+                        Column {
+                            HorizontalDivider(color = Color.White.copy(alpha = 0.05f), thickness = 0.5.dp)
+                            NavigationBar(
+                                containerColor = Color.Transparent,
+                                tonalElevation = 0.dp
+                            ) {
+                                val items = listOf(
+                                    Triple("Home", R.drawable.outline_home_24, "Home"),
+                                    Triple("Add", R.drawable.addbox, "Add Guide"),
+                                    Triple("Manage", R.drawable.outline_map_pin_review_24, "Manage Guides"),
+                                    Triple("Users", R.drawable.profile, "Users List")
                                 )
+                                
+                                items.forEachIndexed { index, item ->
+                                    NavigationBarItem(
+                                        icon = { Icon(painterResource(item.second), contentDescription = item.third) },
+                                        label = { Text(item.first, fontWeight = FontWeight.Bold) },
+                                        selected = selectedIndex == index,
+                                        onClick = { selectedIndex = index },
+                                        colors = NavigationBarItemDefaults.colors(
+                                            selectedIconColor = AdminAccentTeal,
+                                            selectedTextColor = AdminAccentTeal,
+                                            unselectedIconColor = AdminSoftGray,
+                                            unselectedTextColor = AdminSoftGray,
+                                            indicatorColor = AdminAccentTeal.copy(alpha = 0.12f)
+                                        )
+                                    )
+                                }
                             }
                         }
                     }
                 }
             ) { innerPadding ->
-                Box(modifier = Modifier.padding(innerPadding)) {
+                Box(modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(AdminDeepNavy, Color(0xFF0F172A))
+                        )
+                    )
+                ) {
                     when(selectedIndex) {
                         0 -> AdminHomeFeed(postViewModel, userViewModel)
                         1 -> AddGuideScreen(guideViewModel)
@@ -189,7 +211,7 @@ fun AdminHomeFeed(postViewModel: MakePostViewModel, userViewModel: UserViewModel
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         items(allPosts) { post ->
             AdminPostCard(post = post, postViewModel = postViewModel, userViewModel = userViewModel)
@@ -214,49 +236,64 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(AdminDeepNavy)
             .padding(20.dp)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         Text(
-            text = "Create New Guide",
+            text = "Create New Journey Guide",
             color = Color.White,
-            fontWeight = FontWeight.Bold,
-            fontSize = 20.sp
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 24.sp,
+            letterSpacing = (-0.5).sp
         )
 
+        // Place Name Input
         OutlinedTextField(
             value = placeName,
             onValueChange = { placeName = it },
-            label = { Text("Place Name") },
-            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Destination Name") },
+            modifier = Modifier.fillMaxWidth().shadow(4.dp, RoundedCornerShape(16.dp)),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color.White,
                 unfocusedTextColor = Color.White,
                 focusedBorderColor = AdminAccentTeal,
-                unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
                 focusedLabelColor = AdminAccentTeal,
-                unfocusedLabelColor = AdminSoftGray
+                unfocusedLabelColor = AdminSoftGray,
+                focusedContainerColor = AdminCardNavy,
+                unfocusedContainerColor = AdminCardNavy
             ),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(16.dp)
         )
 
+        // Multiple Images Picker - Premium UI
         Column {
-            Text(
-                text = "Pictures of the Place",
-                color = Color.White,
-                fontWeight = FontWeight.SemiBold,
-                fontSize = 16.sp
-            )
-            Spacer(modifier = Modifier.height(10.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "Gallery Images",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+                Spacer(modifier = Modifier.weight(1f))
+                if (selectedImageUris.isNotEmpty()) {
+                    Text(
+                        text = "${selectedImageUris.size} selected",
+                        color = AdminAccentTeal,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp),
+                    .height(if (selectedImageUris.isEmpty()) 180.dp else 150.dp),
                 colors = CardDefaults.cardColors(containerColor = AdminCardNavy),
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
+                shape = RoundedCornerShape(20.dp),
+                border = BorderStroke(1.dp, if (selectedImageUris.isEmpty()) Color.White.copy(alpha = 0.1f) else AdminAccentTeal.copy(alpha = 0.5f))
             ) {
                 if (selectedImageUris.isEmpty()) {
                     Box(
@@ -270,12 +307,13 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                                 imageVector = Icons.Default.AddPhotoAlternate,
                                 contentDescription = null,
                                 tint = AdminAccentTeal,
-                                modifier = Modifier.size(48.dp)
+                                modifier = Modifier.size(56.dp)
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = "Tap to add multiple pictures",
-                                color = AdminSoftGray,
+                                text = "Select Destination Photos",
+                                color = Color.White,
+                                fontWeight = FontWeight.Medium,
                                 fontSize = 14.sp
                             )
                         }
@@ -294,18 +332,17 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                                     contentDescription = null,
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .border(0.5.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(12.dp)),
+                                        .clip(RoundedCornerShape(16.dp))
+                                        .border(BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)), RoundedCornerShape(16.dp)),
                                     contentScale = ContentScale.Crop
                                 )
-                                // Remove button for each image
                                 Box(
                                     modifier = Modifier
                                         .align(Alignment.TopEnd)
-                                        .padding(4.dp)
-                                        .size(24.dp)
+                                        .padding(6.dp)
+                                        .size(22.dp)
                                         .clip(CircleShape)
-                                        .background(Color.Black.copy(alpha = 0.6f))
+                                        .background(AdminAlertRed)
                                         .clickable { 
                                             selectedImageUris = selectedImageUris.filter { it != uri }
                                         },
@@ -315,7 +352,7 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                                         imageVector = Icons.Default.Close,
                                         contentDescription = "Remove",
                                         tint = Color.White,
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(14.dp)
                                     )
                                 }
                             }
@@ -324,17 +361,17 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                             Surface(
                                 modifier = Modifier
                                     .size(120.dp)
-                                    .clip(RoundedCornerShape(12.dp))
+                                    .clip(RoundedCornerShape(16.dp))
                                     .clickable { launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-                                color = Color.White.copy(alpha = 0.05f),
-                                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
+                                color = AdminAccentTeal.copy(alpha = 0.1f),
+                                border = BorderStroke(1.dp, AdminAccentTeal.copy(alpha = 0.3f))
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
                                     Icon(
                                         imageVector = Icons.Default.Add,
                                         contentDescription = "Add more",
                                         tint = AdminAccentTeal,
-                                        modifier = Modifier.size(32.dp)
+                                        modifier = Modifier.size(36.dp)
                                     )
                                 }
                             }
@@ -344,25 +381,26 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
             }
         }
 
+        // Accommodations Input
         OutlinedTextField(
             value = accommodations,
             onValueChange = { accommodations = it },
-            label = { Text("Accommodations (Hotels, Resorts, etc.)") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 120.dp),
+            label = { Text("Accommodation Details") },
+            modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp).shadow(4.dp, RoundedCornerShape(16.dp)),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color.White,
                 unfocusedTextColor = Color.White,
                 focusedBorderColor = AdminAccentTeal,
-                unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
                 focusedLabelColor = AdminAccentTeal,
-                unfocusedLabelColor = AdminSoftGray
+                unfocusedLabelColor = AdminSoftGray,
+                focusedContainerColor = AdminCardNavy,
+                unfocusedContainerColor = AdminCardNavy
             ),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(16.dp)
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Button(
             onClick = {
@@ -380,21 +418,21 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
             enabled = !isPublishing,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
+                .height(60.dp)
+                .shadow(12.dp, RoundedCornerShape(18.dp)),
             colors = ButtonDefaults.buttonColors(
                 containerColor = AdminAccentTeal,
-                disabledContainerColor = AdminAccentTeal.copy(alpha = 0.5f)
+                contentColor = AdminDeepNavy,
+                disabledContainerColor = AdminAccentTeal.copy(alpha = 0.4f)
             ),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(18.dp)
         ) {
             if (isPublishing) {
-                CircularProgressIndicator(color = AdminDeepNavy, modifier = Modifier.size(24.dp))
+                CircularProgressIndicator(color = AdminDeepNavy, modifier = Modifier.size(28.dp))
             } else {
                 Text(
-                    text = "Publish Guide",
-                    color = AdminDeepNavy,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
+                    text = "Publish Travel Guide",
+                    style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.sp)
                 )
             }
         }
@@ -412,16 +450,20 @@ fun AdminGuideList(guideViewModel: GuideViewModel) {
         guideViewModel.getAllGuides()
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(AdminDeepNavy)) {
+    Box(modifier = Modifier.fillMaxSize()) {
         if (allGuides.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No guides published yet.", color = AdminSoftGray)
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(painterResource(R.drawable.outline_map_pin_review_24), null, tint = AdminSoftGray, modifier = Modifier.size(64.dp))
+                    Spacer(Modifier.height(16.dp))
+                    Text("No published guides", color = AdminSoftGray, fontWeight = FontWeight.Medium)
+                }
             }
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 items(allGuides) { guide ->
                     AdminGuideCard(guide = guide, onDelete = {
@@ -444,19 +486,23 @@ fun AdminGuideCard(guide: GuideModel, onDelete: () -> Unit) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             containerColor = AdminCardNavy,
-            title = { Text("Delete Guide", color = Color.White) },
-            text = { Text("Are you sure you want to remove the guide for '${guide.placeName}'? This cannot be undone.", color = AdminSoftGray) },
+            shape = RoundedCornerShape(24.dp),
+            title = { Text("Remove Guide?", color = Color.White, fontWeight = FontWeight.Bold) },
+            text = { Text("This will permanently delete the guide for '${guide.placeName}'.", color = AdminSoftGray) },
             confirmButton = {
-                TextButton(onClick = { 
-                    onDelete()
-                    showDeleteDialog = false 
-                }) {
-                    Text("Delete", color = AdminAlertRed)
+                Button(
+                    onClick = { 
+                        onDelete()
+                        showDeleteDialog = false 
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AdminAlertRed)
+                ) {
+                    Text("Delete", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel", color = AdminSoftGray)
+                    Text("Cancel", color = Color.White)
                 }
             }
         )
@@ -465,30 +511,39 @@ fun AdminGuideCard(guide: GuideModel, onDelete: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp)),
-        shape = RoundedCornerShape(16.dp),
+            .shadow(8.dp, RoundedCornerShape(24.dp))
+            .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(24.dp)),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = AdminCardNavy)
     ) {
         Column {
             // Header
             Row(
-                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(imageVector = Icons.Default.LocationOn, contentDescription = null, tint = AdminAccentTeal, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = guide.placeName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Box(
+                        modifier = Modifier.size(36.dp).clip(CircleShape).background(AdminAccentTeal.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(imageVector = Icons.Default.LocationOn, contentDescription = null, tint = AdminAccentTeal, modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(text = guide.placeName, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
                 }
-                IconButton(onClick = { showDeleteDialog = true }) {
-                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete Guide", tint = AdminAlertRed, modifier = Modifier.size(20.dp))
+                IconButton(
+                    onClick = { showDeleteDialog = true },
+                    modifier = Modifier.background(AdminAlertRed.copy(alpha = 0.1f), CircleShape)
+                ) {
+                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", tint = AdminAlertRed, modifier = Modifier.size(20.dp))
                 }
             }
 
-            // Interactive Pager for Images
+            // High-Quality Pager
             if (guide.imageUrls.isNotEmpty()) {
-                Box(modifier = Modifier.fillMaxWidth().height(220.dp)) {
+                Box(modifier = Modifier.fillMaxWidth().height(250.dp)) {
                     HorizontalPager(
                         state = pagerState,
                         modifier = Modifier.fillMaxSize()
@@ -501,37 +556,50 @@ fun AdminGuideCard(guide: GuideModel, onDelete: () -> Unit) {
                         )
                     }
                     
-                    // Pager Indicators (Dots)
+                    // Glassmorphism Indicators
                     if (guide.imageUrls.size > 1) {
-                        Row(
+                        Box(
                             Modifier
-                                .height(20.dp)
-                                .fillMaxWidth()
                                 .align(Alignment.BottomCenter)
-                                .background(Color.Black.copy(alpha = 0.3f)),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
+                                .padding(bottom = 12.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color.Black.copy(alpha = 0.4f))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
-                            repeat(guide.imageUrls.size) { iteration ->
-                                val color = if (pagerState.currentPage == iteration) AdminAccentTeal else Color.White.copy(alpha = 0.5f)
-                                Box(
-                                    modifier = Modifier
-                                        .padding(4.dp)
-                                        .clip(CircleShape)
-                                        .background(color)
-                                        .size(6.dp)
-                                )
+                            Row(
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                repeat(guide.imageUrls.size) { iteration ->
+                                    val color = if (pagerState.currentPage == iteration) AdminAccentTeal else Color.White.copy(alpha = 0.4f)
+                                    val size = if (pagerState.currentPage == iteration) 8.dp else 6.dp
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(3.dp)
+                                            .clip(CircleShape)
+                                            .background(color)
+                                            .size(size)
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // Info Section
+            // Details Section
             if (guide.accommodations.isNotEmpty()) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    Text(text = "Accommodations", color = AdminAccentTeal, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                    Text(text = guide.accommodations, color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp)
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = "ACCOMMODATIONS", color = AdminAccentTeal, fontWeight = FontWeight.Black, fontSize = 11.sp, letterSpacing = 1.sp)
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = guide.accommodations,
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp
+                    )
                 }
             }
         }
@@ -542,7 +610,7 @@ fun AdminGuideCard(guide: GuideModel, onDelete: () -> Unit) {
 fun AdminUsersList(userViewModel: UserViewModel) {
     val allUsers by userViewModel.allUsers.observeAsState(initial = emptyList())
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Current Users", "Banned Users")
+    val tabs = listOf("ACTIVE", "BANNED")
 
     LaunchedEffect(Unit) {
         userViewModel.getAllUsers()
@@ -559,7 +627,7 @@ fun AdminUsersList(userViewModel: UserViewModel) {
                     color = AdminAccentTeal
                 )
             },
-            divider = { HorizontalDivider(color = Color.White.copy(alpha = 0.1f)) }
+            divider = { HorizontalDivider(color = Color.White.copy(alpha = 0.05f)) }
         ) {
             tabs.forEachIndexed { index, title ->
                 Tab(
@@ -569,8 +637,9 @@ fun AdminUsersList(userViewModel: UserViewModel) {
                         Text(
                             text = title,
                             style = TextStyle(
-                                fontSize = 14.sp,
-                                fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Black,
+                                letterSpacing = 1.sp
                             )
                         )
                     },
@@ -584,7 +653,7 @@ fun AdminUsersList(userViewModel: UserViewModel) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(filteredUsers) { user ->
                 UserCard(user, isBannedView = selectedTabIndex == 1)
@@ -599,8 +668,9 @@ fun UserCard(user: UserModel, isBannedView: Boolean) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp)),
-        shape = RoundedCornerShape(16.dp),
+            .shadow(4.dp, RoundedCornerShape(20.dp))
+            .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(20.dp)),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = AdminCardNavy)
     ) {
         Row(
@@ -611,7 +681,7 @@ fun UserCard(user: UserModel, isBannedView: Boolean) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
+                        .size(52.dp)
                         .clip(CircleShape)
                         .background(Brush.linearGradient(colors = listOf(AdminAccentTeal, Color(0xFF3B82F6)))),
                     contentAlignment = Alignment.Center
@@ -619,8 +689,8 @@ fun UserCard(user: UserModel, isBannedView: Boolean) {
                     Text(
                         text = user.fullName.take(1).uppercase(),
                         color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
+                        fontWeight = FontWeight.Black,
+                        fontSize = 20.sp
                     )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
@@ -632,18 +702,9 @@ fun UserCard(user: UserModel, isBannedView: Boolean) {
                         fontSize = 16.sp
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Email,
-                            contentDescription = null,
-                            tint = AdminSoftGray,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = user.email,
-                            color = AdminSoftGray,
-                            fontSize = 14.sp
-                        )
+                        Icon(Icons.Default.Email, null, tint = AdminAccentTeal, modifier = Modifier.size(12.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(user.email, color = AdminSoftGray, fontSize = 13.sp)
                     }
                 }
             }
@@ -652,12 +713,14 @@ fun UserCard(user: UserModel, isBannedView: Boolean) {
                 onClick = { 
                     val action = if (isBannedView) "Unban" else "Ban"
                     Toast.makeText(context, "$action user logic here", Toast.LENGTH_SHORT).show() 
-                }
+                },
+                modifier = Modifier.background(if (isBannedView) AdminAccentTeal.copy(alpha = 0.1f) else AdminAlertRed.copy(alpha = 0.1f), CircleShape)
             ) {
                 Icon(
                     imageVector = if (isBannedView) Icons.Default.CheckCircle else Icons.Default.Block,
-                    contentDescription = if (isBannedView) "Unban" else "Ban",
-                    tint = if (isBannedView) AdminAccentTeal else AdminAlertRed
+                    contentDescription = null,
+                    tint = if (isBannedView) AdminAccentTeal else AdminAlertRed,
+                    modifier = Modifier.size(22.dp)
                 )
             }
         }
@@ -681,27 +744,31 @@ fun AdminPostCard(post: MakePostModel, postViewModel: MakePostViewModel, userVie
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             containerColor = AdminCardNavy,
-            title = { Text("Delete Post", color = Color.White) },
+            shape = RoundedCornerShape(24.dp),
+            title = { Text("Delete User Post", color = Color.White, fontWeight = FontWeight.Bold) },
             text = {
                 Column {
-                    Text("Are you sure you want to delete this post? This action cannot be undone.", color = AdminSoftGray)
+                    Text("Provide a reason for removing this post.", color = AdminSoftGray)
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
                         value = deleteReason,
                         onValueChange = { deleteReason = it },
-                        label = { Text("Reason for deletion") },
+                        label = { Text("Violation Reason") },
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = Color.White,
                             unfocusedTextColor = Color.White,
                             focusedBorderColor = AdminAccentTeal,
-                            unfocusedBorderColor = Color.White.copy(alpha = 0.2f)
-                        )
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
+                            focusedContainerColor = AdminDeepNavy,
+                            unfocusedContainerColor = AdminDeepNavy
+                        ),
+                        shape = RoundedCornerShape(12.dp)
                     )
                 }
             },
             confirmButton = {
-                TextButton(
+                Button(
                     onClick = {
                         if (deleteReason.isNotBlank()) {
                             postViewModel.deletePost(post.postId, post.userId, deleteReason) { success, message ->
@@ -711,14 +778,15 @@ fun AdminPostCard(post: MakePostModel, postViewModel: MakePostViewModel, userVie
                         } else {
                             Toast.makeText(context, "Please provide a reason", Toast.LENGTH_SHORT).show()
                         }
-                    }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = AdminAlertRed)
                 ) {
-                    Text("Delete", color = AdminAlertRed)
+                    Text("Remove Post", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancel", color = AdminSoftGray)
+                    Text("Dismiss", color = Color.White)
                 }
             }
         )
@@ -727,12 +795,12 @@ fun AdminPostCard(post: MakePostModel, postViewModel: MakePostViewModel, userVie
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp)),
-        shape = RoundedCornerShape(16.dp),
+            .shadow(6.dp, RoundedCornerShape(24.dp))
+            .border(1.dp, Color.White.copy(alpha = 0.05f), RoundedCornerShape(24.dp)),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = AdminCardNavy)
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            // Author Header with Delete Action
+        Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -740,49 +808,44 @@ fun AdminPostCard(post: MakePostModel, postViewModel: MakePostViewModel, userVie
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(Brush.linearGradient(colors = listOf(AdminAccentTeal, Color(0xFF3B82F6)))),
+                        modifier = Modifier.size(40.dp).clip(CircleShape).background(Brush.linearGradient(colors = listOf(AdminAccentTeal, Color(0xFF3B82F6)))),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = (author?.fullName?.take(1) ?: "T").uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        Text(text = (author?.fullName?.take(1) ?: "T").uppercase(), color = Color.White, fontWeight = FontWeight.Black, fontSize = 16.sp)
                     }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(text = author?.fullName ?: "Explorer", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(text = author?.fullName ?: "Traveler", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
                 
-                IconButton(onClick = { showDeleteDialog = true }) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete Post",
-                        tint = AdminAlertRed,
-                        modifier = Modifier.size(20.dp)
-                    )
+                IconButton(
+                    onClick = { showDeleteDialog = true },
+                    modifier = Modifier.background(AdminAlertRed.copy(alpha = 0.1f), CircleShape)
+                ) {
+                    Icon(imageVector = Icons.Default.Delete, contentDescription = null, tint = AdminAlertRed, modifier = Modifier.size(20.dp))
                 }
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             
             if (post.caption.isNotEmpty()) {
-                Text(text = post.caption, color = Color.White, fontSize = 14.sp)
-                Spacer(modifier = Modifier.height(6.dp))
+                Text(text = post.caption, color = Color.White, fontSize = 15.sp, lineHeight = 20.sp)
+                Spacer(modifier = Modifier.height(8.dp))
             }
             
             if (post.location.isNotEmpty()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(imageVector = Icons.Default.LocationOn, contentDescription = null, tint = AdminAccentTeal, modifier = Modifier.size(12.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = post.location, color = AdminSoftGray, fontSize = 12.sp)
+                    Icon(Icons.Default.LocationOn, null, tint = AdminAccentTeal, modifier = Modifier.size(14.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(text = post.location, color = AdminSoftGray, fontSize = 13.sp, fontWeight = FontWeight.Bold)
                 }
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
             if (post.imageUrl.isNotEmpty()) {
                 Image(
                     painter = rememberAsyncImagePainter(post.imageUrl),
                     contentDescription = null,
-                    modifier = Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(8.dp)),
+                    modifier = Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(16.dp)),
                     contentScale = ContentScale.Crop
                 )
             }
