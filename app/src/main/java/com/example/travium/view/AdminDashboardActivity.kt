@@ -1,300 +1,443 @@
 package com.example.travium.view
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.travium.ui.theme.TraviumTheme
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.ktx.database
-import com.google.firebase.ktx.Firebase
+import coil.compose.rememberAsyncImagePainter
+import com.example.travium.R
+import com.example.travium.model.MakePostModel
+import com.example.travium.model.UserModel
+import com.example.travium.repository.MakePostRepoImpl
+import com.example.travium.repository.UserRepoImpl
+import com.example.travium.viewmodel.MakePostViewModel
+import com.example.travium.viewmodel.UserViewModel
+
+// Admin-themed dark colors
+val AdminDeepNavy = Color(0xFF0F172A)
+val AdminCardNavy = Color(0xFF1E293B)
+val AdminAccentTeal = Color(0xFF2DD4BF)
+val AdminSoftGray = Color(0xFF94A3B8)
+val AdminAlertRed = Color(0xFFEF4444)
 
 class AdminDashboardActivity : ComponentActivity() {
+    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContent {
-            TraviumTheme {
-                AdminDashboardScreen()
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun AdminDashboardScreen() {
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
-    val tabs = listOf("Statistics", "Reports")
-
-    val midnightBlue = Color(0xFF003366)
-    val darkNavy = Color(0xFF000033)
-    val cyanAccent = Color(0xFF00FFFF)
-
-    Scaffold(
-        containerColor = darkNavy,
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("ADMIN", color = Color.White, fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = midnightBlue
-                )
-            )
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-        ) {
-            TabRow(
-                selectedTabIndex = selectedTabIndex,
-                containerColor = midnightBlue,
-                contentColor = Color.White,
-                indicator = { tabPositions ->
-                    TabRowDefaults.Indicator(
-                        Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                        color = cyanAccent
-                    )
-                }
-            ) {
-                tabs.forEachIndexed { index, title ->
-                    Tab(
-                        selected = selectedTabIndex == index,
-                        onClick = { selectedTabIndex = index },
-                        text = {
-                            Text(
-                                text = title,
-                                color = if (selectedTabIndex == index) cyanAccent else Color.White.copy(alpha = 0.7f),
-                                fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal
-                            )
-                        }
-                    )
-                }
-            }
-
-            when (selectedTabIndex) {
-                0 -> StatisticsScreen()
-                1 -> ReportsScreen()
-            }
-        }
-    }
-}
-
-@Composable
-fun StatisticsScreen() {
-    val midnightBlue = Color(0xFF003366)
-    val cyanAccent = Color(0xFF00FFFF)
-
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        item {
-            Text("Overview", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        }
-        item {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                StatCard("Total Users", "1,240", Modifier.weight(1f))
-                StatCard("New Posts", "+45", Modifier.weight(1f))
-            }
-        }
-        item {
-            StatCard("Active Journeys", "312", Modifier.fillMaxWidth())
-        }
-        item {
-            StatCard("Reports Resolved", "98%", Modifier.fillMaxWidth())
-        }
-    }
-}
-
-@Composable
-fun StatCard(label: String, value: String, modifier: Modifier = Modifier) {
-    val midnightBlue = Color(0xFF003366)
-    val cyanAccent = Color(0xFF00FFFF)
-
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = midnightBlue),
-        shape = RoundedCornerShape(16.dp)
-    ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Text(label, color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp)
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(value, color = cyanAccent, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ReportsScreen() {
-    var searchQuery by remember { mutableStateOf("") }
-    var userList by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) } // Pair of UserId and UserName
-    val cyanAccent = Color(0xFF00FFFF)
-    val midnightBlue = Color(0xFF003366)
-
-    // Firebase search logic
-    LaunchedEffect(searchQuery) {
-        if (searchQuery.isNotEmpty()) {
-            val database = Firebase.database
-            val myRef = database.getReference("users")
-            myRef.addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    val list = mutableListOf<Pair<String, String>>()
-                    for (userSnapshot in snapshot.children) {
-                        val name = userSnapshot.child("name").getValue(String::class.java) ?: "Unknown"
-                        val userId = userSnapshot.key ?: ""
-                        if (name.contains(searchQuery, ignoreCase = true)) {
-                            list.add(userId to name)
-                        }
-                    }
-                    userList = list
-                }
-                override fun onCancelled(error: DatabaseError) {}
-            })
-        } else {
-            userList = emptyList()
-        }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { searchQuery = it },
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Search users to notify...", color = Color.White.copy(alpha = 0.6f)) },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "Search Icon",
-                    tint = cyanAccent
-                )
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(24.dp),
-            textStyle = TextStyle(color = Color.White),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = cyanAccent,
-                unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
-                cursorColor = cyanAccent
+        
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(
+                android.graphics.Color.TRANSPARENT
             )
         )
         
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        if (userList.isEmpty()) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text("Search for a user to manage", color = Color.White.copy(alpha = 0.5f))
-            }
-        } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(userList) { (userId, userName) ->
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = midnightBlue),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text(userName, color = Color.White, fontWeight = FontWeight.Bold)
-                                Text("ID: $userId", color = Color.White.copy(alpha = 0.5f), fontSize = 10.sp)
-                            }
-                            Button(
-                                onClick = { 
-                                    /* TODO: Send report notice like "You have been reported" to userId in Firebase */ 
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = Color.Red.copy(alpha = 0.8f)),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.Warning, contentDescription = null, modifier = Modifier.size(14.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Notify", fontSize = 12.sp)
+        setContent {
+            val postViewModel = remember { MakePostViewModel(MakePostRepoImpl()) }
+            val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+            var selectedIndex by remember { mutableIntStateOf(0) }
+            
+            Scaffold(
+                containerColor = AdminDeepNavy,
+                topBar = {
+                    Column {
+                        CenterAlignedTopAppBar(
+                            title = {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        "Travium", style = TextStyle(
+                                            fontSize = 28.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = Color.White
+                                        )
+                                    )
+                                    Text(
+                                        "Admin Dashboard", style = TextStyle(
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = AdminSoftGray
+                                        )
+                                    )
                                 }
+                            },
+                            colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                                containerColor = AdminCardNavy
+                            ),
+                            actions = {
+                                IconButton(onClick = { /* Handle Notifications */ }) {
+                                    BadgedBox(
+                                        badge = { }
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.notification),
+                                            contentDescription = "Notifications",
+                                            tint = Color.White
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                        )
+                        HorizontalDivider(color = Color.White.copy(alpha = 0.1f), thickness = 0.5.dp)
+                    }
+                },
+                bottomBar = {
+                    Column {
+                        HorizontalDivider(color = Color.White.copy(alpha = 0.1f), thickness = 0.5.dp)
+                        NavigationBar(
+                            containerColor = AdminCardNavy,
+                            tonalElevation = 8.dp
+                        ) {
+                            val items = listOf(
+                                Triple("Home", R.drawable.outline_home_24, "Home"),
+                                Triple("Add Guide", R.drawable.addbox, "Add Guide"),
+                                Triple("Users", R.drawable.profile, "Users List")
+                            )
+                            
+                            items.forEachIndexed { index, item ->
+                                NavigationBarItem(
+                                    icon = { Icon(painterResource(item.second), contentDescription = item.third) },
+                                    label = { Text(item.first) },
+                                    selected = selectedIndex == index,
+                                    onClick = { selectedIndex = index },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = AdminAccentTeal,
+                                        selectedTextColor = AdminAccentTeal,
+                                        unselectedIconColor = AdminSoftGray,
+                                        unselectedTextColor = AdminSoftGray,
+                                        indicatorColor = AdminAccentTeal.copy(alpha = 0.1f)
+                                    )
+                                )
                             }
                         }
                     }
                 }
+            ) { innerPadding ->
+                Box(modifier = Modifier.padding(innerPadding)) {
+                    when(selectedIndex) {
+                        0 -> AdminHomeFeed(postViewModel, userViewModel)
+                        1 -> AdminPlaceholderScreen(title = "Add New Guide")
+                        2 -> AdminUsersList(userViewModel)
+                    }
+                }
             }
         }
+    }
+}
+
+@Composable
+fun AdminHomeFeed(postViewModel: MakePostViewModel, userViewModel: UserViewModel) {
+    val allPosts by postViewModel.allPosts.observeAsState(initial = emptyList())
+
+    LaunchedEffect(Unit) {
+        postViewModel.getAllPosts()
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        items(allPosts) { post ->
+            AdminPostCard(post = post, postViewModel = postViewModel, userViewModel = userViewModel)
+        }
+    }
+}
+
+@Composable
+fun AdminUsersList(userViewModel: UserViewModel) {
+    val allUsers by userViewModel.allUsers.observeAsState(initial = emptyList())
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
+    val tabs = listOf("Current Users", "Banned Users")
+
+    LaunchedEffect(Unit) {
+        userViewModel.getAllUsers()
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        TabRow(
+            selectedTabIndex = selectedTabIndex,
+            containerColor = AdminDeepNavy,
+            contentColor = AdminAccentTeal,
+            indicator = { tabPositions ->
+                SecondaryIndicator(
+                    Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                    color = AdminAccentTeal
+                )
+            },
+            divider = { HorizontalDivider(color = Color.White.copy(alpha = 0.1f)) }
+        ) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTabIndex == index,
+                    onClick = { selectedTabIndex = index },
+                    text = {
+                        Text(
+                            text = title,
+                            style = TextStyle(
+                                fontSize = 14.sp,
+                                fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal
+                            )
+                        )
+                    },
+                    unselectedContentColor = AdminSoftGray
+                )
+            }
+        }
+
+        // Fix: Make banned users list empty as requested
+        val filteredUsers = if (selectedTabIndex == 0) allUsers else emptyList<UserModel>()
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(filteredUsers) { user ->
+                UserCard(user, isBannedView = selectedTabIndex == 1)
+            }
+        }
+    }
+}
+
+@Composable
+fun UserCard(user: UserModel, isBannedView: Boolean) {
+    val context = LocalContext.current
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = AdminCardNavy)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(Brush.linearGradient(colors = listOf(AdminAccentTeal, Color(0xFF3B82F6)))),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = user.fullName.take(1).uppercase(),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = user.fullName,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Email,
+                            contentDescription = null,
+                            tint = AdminSoftGray,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = user.email,
+                            color = AdminSoftGray,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
+            
+            IconButton(
+                onClick = { 
+                    val action = if (isBannedView) "Unban" else "Ban"
+                    Toast.makeText(context, "$action user logic here", Toast.LENGTH_SHORT).show() 
+                }
+            ) {
+                Icon(
+                    imageVector = if (isBannedView) Icons.Default.CheckCircle else Icons.Default.Block,
+                    contentDescription = if (isBannedView) "Unban" else "Ban",
+                    tint = if (isBannedView) AdminAccentTeal else AdminAlertRed
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun AdminPostCard(post: MakePostModel, postViewModel: MakePostViewModel, userViewModel: UserViewModel) {
+    val context = LocalContext.current
+    var author by remember { mutableStateOf<UserModel?>(null) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var deleteReason by remember { mutableStateOf("") }
+
+    LaunchedEffect(post.userId) {
+        userViewModel.getUserById(post.userId) { fetchedUser ->
+            author = fetchedUser
+        }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            containerColor = AdminCardNavy,
+            title = { Text("Delete Post", color = Color.White) },
+            text = {
+                Column {
+                    Text("Are you sure you want to delete this post? This action cannot be undone.", color = AdminSoftGray)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = deleteReason,
+                        onValueChange = { deleteReason = it },
+                        label = { Text("Reason for deletion") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = AdminAccentTeal,
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.2f)
+                        )
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (deleteReason.isNotBlank()) {
+                            postViewModel.deletePost(post.postId, post.userId, deleteReason) { success, message ->
+                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                if (success) showDeleteDialog = false
+                            }
+                        } else {
+                            Toast.makeText(context, "Please provide a reason", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                ) {
+                    Text("Delete", color = AdminAlertRed)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel", color = AdminSoftGray)
+                }
+            }
+        )
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = AdminCardNavy)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .background(Brush.linearGradient(colors = listOf(AdminAccentTeal, Color(0xFF3B82F6)))),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = (author?.fullName?.take(1) ?: "T").uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(text = author?.fullName ?: "Explorer", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                }
+                
+                IconButton(onClick = { showDeleteDialog = true }) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete Post",
+                        tint = AdminAlertRed,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            if (post.caption.isNotEmpty()) {
+                Text(text = post.caption, color = Color.White, fontSize = 14.sp)
+                Spacer(modifier = Modifier.height(6.dp))
+            }
+            
+            if (post.location.isNotEmpty()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(imageVector = Icons.Default.LocationOn, contentDescription = null, tint = AdminAccentTeal, modifier = Modifier.size(12.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = post.location, color = AdminSoftGray, fontSize = 12.sp)
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            if (post.imageUrl.isNotEmpty()) {
+                Image(
+                    painter = rememberAsyncImagePainter(post.imageUrl),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxWidth().height(200.dp).clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun AdminPlaceholderScreen(title: String) {
+    Box(modifier = Modifier.fillMaxSize().background(AdminDeepNavy), contentAlignment = Alignment.Center) {
+        Text(text = title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
     }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun AdminDashboardScreenPreview() {
-    TraviumTheme {
-        AdminDashboardScreen()
-    }
+    AdminPlaceholderScreen(title = "Welcome Admin")
 }

@@ -141,4 +141,21 @@ class UserRepoImpl : UserRepo {
             }
         })
     }
+
+    override fun getAllUsers(callback: (Boolean, String, List<UserModel>?) -> Unit) {
+        db.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val userList = mutableListOf<UserModel>()
+                for (userSnapshot in snapshot.children) {
+                    val user = userSnapshot.getValue(UserModel::class.java)
+                    user?.let { userList.add(it) }
+                }
+                callback(true, "Users retrieved successfully", userList)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                callback(false, error.message, null)
+            }
+        })
+    }
 }

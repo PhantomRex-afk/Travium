@@ -20,4 +20,6 @@ interface MakePostRepo {
     fun addComment(postId: String, comment: Comment, callback: (Boolean) -> Unit)
 
     fun getNotifications(userId: String, callback: (Boolean, String, List<NotificationModel>?) -> Unit)
+
+    fun deletePost(postId: String, userId: String, reason: String, callback: (Boolean, String) -> Unit)
 }
