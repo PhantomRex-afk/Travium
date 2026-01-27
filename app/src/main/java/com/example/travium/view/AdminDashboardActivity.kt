@@ -1,5 +1,6 @@
 package com.example.travium.view
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -69,6 +71,35 @@ class AdminDashboardActivity : ComponentActivity() {
             val postViewModel = remember { MakePostViewModel(MakePostRepoImpl()) }
             val userViewModel = remember { UserViewModel(UserRepoImpl()) }
             var selectedIndex by remember { mutableIntStateOf(0) }
+            val context = LocalContext.current
+            var showLogoutDialog by remember { mutableStateOf(false) }
+
+            if (showLogoutDialog) {
+                AlertDialog(
+                    onDismissRequest = { showLogoutDialog = false },
+                    containerColor = AdminCardNavy,
+                    title = { Text("Logout", color = Color.White) },
+                    text = { Text("Are you sure you want to logout?", color = AdminSoftGray) },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                showLogoutDialog = false
+                                val intent = Intent(context, LoginActivity::class.java)
+                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                context.startActivity(intent)
+                                finish()
+                            }
+                        ) {
+                            Text("Logout", color = AdminAlertRed)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showLogoutDialog = false }) {
+                            Text("Cancel", color = AdminSoftGray)
+                        }
+                    }
+                )
+            }
             
             Scaffold(
                 containerColor = AdminDeepNavy,
@@ -108,7 +139,13 @@ class AdminDashboardActivity : ComponentActivity() {
                                         )
                                     }
                                 }
-                                Spacer(modifier = Modifier.width(8.dp))
+                                IconButton(onClick = { showLogoutDialog = true }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Logout,
+                                        contentDescription = "Logout",
+                                        tint = Color.White
+                                    )
+                                }
                             }
                         )
                         HorizontalDivider(color = Color.White.copy(alpha = 0.1f), thickness = 0.5.dp)
