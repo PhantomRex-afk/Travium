@@ -128,8 +128,9 @@ fun HomeScreenBody() {
                 ) {
                     items(searchResults) { user ->
                         UserSearchItem(user = user) {
-                            // Navigate to Profile - for now we'll just toast
-                            Toast.makeText(context, "Opening @${user.username}'s profile", Toast.LENGTH_SHORT).show()
+                            val intent = Intent(context, OtherUserProfileActivity::class.java)
+                            intent.putExtra("userId", user.userId)
+                            context.startActivity(intent)
                         }
                     }
                 }
@@ -226,6 +227,7 @@ fun UserSearchItem(user: UserModel, onClick: () -> Unit) {
 @Composable
 fun PostAuthorHeader(userId: String, userViewModel: UserViewModel) {
     var user by remember { mutableStateOf<UserModel?>(null) }
+    val context = LocalContext.current
 
     LaunchedEffect(userId) {
         userViewModel.getUserById(userId) { fetchedUser ->
@@ -235,7 +237,13 @@ fun PostAuthorHeader(userId: String, userViewModel: UserViewModel) {
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                val intent = Intent(context, OtherUserProfileActivity::class.java)
+                intent.putExtra("userId", userId)
+                context.startActivity(intent)
+            }
     ) {
         // Placeholder for user avatar
         Box(
