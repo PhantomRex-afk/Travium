@@ -1,7 +1,7 @@
 package com.example.travium.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.example.travium.model.NotificationModel
+import com.example.travium.model.AdminNotificationModel
 import com.example.travium.repository.AdminNotificationRepo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.asStateFlow
 
 class AdminNotificationViewModel(private val repository: AdminNotificationRepo) : ViewModel() {
 
-    private val _notifications = MutableStateFlow<List<NotificationModel>>(emptyList())
-    val notifications: StateFlow<List<NotificationModel>> = _notifications.asStateFlow()
+    private val _notifications = MutableStateFlow<List<AdminNotificationModel>>(emptyList())
+    val notifications: StateFlow<List<AdminNotificationModel>> = _notifications.asStateFlow()
 
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading.asStateFlow()
@@ -34,12 +34,10 @@ class AdminNotificationViewModel(private val repository: AdminNotificationRepo) 
         }
     }
 
-    fun sendNotification(type: String, message: String, postId: String = "", fromUserId: String) {
-        val notification = NotificationModel(
-            type = type,
-            message = message,
-            postId = postId,
-            fromUserId = fromUserId
+    fun sendNotification(title: String, message: String) {
+        val notification = AdminNotificationModel(
+            title = title,
+            message = message
         )
         _loading.value = true
         repository.sendNotification(notification) { success, msg ->

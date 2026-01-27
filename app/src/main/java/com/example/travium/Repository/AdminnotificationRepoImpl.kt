@@ -1,12 +1,12 @@
 package com.example.travium.repository
 
-import com.example.travium.model.NotificationModel
+import com.example.travium.model.AdminNotificationModel
 import com.google.firebase.database.FirebaseDatabase
 
-class AdminnotificationRepoImpl : AdminNotificationRepo {
+class AdminNotificationRepoImpl : AdminNotificationRepo {
     private val database = FirebaseDatabase.getInstance().getReference("admin_notifications")
 
-    override fun sendNotification(notification: NotificationModel, callback: (Boolean, String?) -> Unit) {
+    override fun sendNotification(notification: AdminNotificationModel, callback: (Boolean, String?) -> Unit) {
         val notificationId = database.push().key ?: return callback(false, "Failed to generate ID")
         val finalNotification = notification.copy(
             notificationId = notificationId,
@@ -23,11 +23,11 @@ class AdminnotificationRepoImpl : AdminNotificationRepo {
             }
     }
 
-    override fun getAllNotifications(callback: (List<NotificationModel>?, String?) -> Unit) {
+    override fun getAllNotifications(callback: (List<AdminNotificationModel>?, String?) -> Unit) {
         database.get().addOnSuccessListener { snapshot ->
-            val notifications = mutableListOf<NotificationModel>()
+            val notifications = mutableListOf<AdminNotificationModel>()
             snapshot.children.forEach { child ->
-                child.getValue(NotificationModel::class.java)?.let {
+                child.getValue(AdminNotificationModel::class.java)?.let {
                     notifications.add(it)
                 }
             }

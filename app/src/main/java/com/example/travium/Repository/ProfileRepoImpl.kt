@@ -110,21 +110,4 @@ class ProfileRepoImpl(private val context: Context) : ProfileRepo {
         }
         return fileName
     }
-    override fun getFileNameFromUri(
-        context: Context,
-        imageUri: Uri
-    ): String? {
-
-        var fileName: String? = null
-        val cursor: Cursor? = context.contentResolver.query(imageUri, null, null, null, null)
-        cursor?.use {
-            if (it.moveToFirst()) {
-                val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                if (nameIndex != -1) {
-                    fileName = it.getString(nameIndex)
-                }
-            }
-        }
-        return fileName
-    }
 }

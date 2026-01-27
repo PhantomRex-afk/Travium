@@ -1,7 +1,11 @@
 package com.example.travium.view
 
 import android.net.Uri
+import android.os.Bundle
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
@@ -29,6 +33,19 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import coil.compose.rememberAsyncImagePainter
 import com.example.travium.R
+import com.example.travium.view.ui.theme.TraviumTheme
+
+class ProfileActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContent {
+            TraviumTheme {
+                ProfileBody()
+            }
+        }
+    }
+}
 
 @Composable
 fun ProfileBody() {
