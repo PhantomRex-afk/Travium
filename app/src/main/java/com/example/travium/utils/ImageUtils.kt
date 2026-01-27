@@ -60,7 +60,7 @@ class ImageUtils(private val activity: Activity, private val registryOwner: Acti
     }
 
     private fun openGallery() {
-        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+        val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI).apply {
             type = "image/*"
         }
         galleryLauncher.launch(intent)

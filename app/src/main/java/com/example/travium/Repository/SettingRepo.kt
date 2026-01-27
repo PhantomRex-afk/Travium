@@ -1,6 +1,6 @@
-package com.example.travium.Repository
+package com.example.travium.repository
 
-import com.example.travium.Model.SettingModel
+import com.example.travium.model.SettingModel
 
 interface SettingRepo {
     fun saveSettings(
