@@ -44,4 +44,8 @@ class GuideViewModel(private val repo: GuideRepo) : ViewModel() {
             }
         }
     }
+
+    fun deleteGuide(guideId: String, callback: (Boolean, String) -> Unit) {
+        repo.deleteGuide(guideId, callback)
+    }
 }

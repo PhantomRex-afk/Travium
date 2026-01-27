@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.example.travium.R
+import com.example.travium.model.GuideModel
 import com.example.travium.model.MakePostModel
 import com.example.travium.model.UserModel
 import com.example.travium.repository.GuideRepoImpl
@@ -81,6 +82,7 @@ class AdminDashboardActivity : ComponentActivity() {
         setContent {
             val postViewModel = remember { MakePostViewModel(MakePostRepoImpl()) }
             val userViewModel = remember { UserViewModel(UserRepoImpl()) }
+            val guideViewModel = remember { GuideViewModel(GuideRepoImpl()) }
             var selectedIndex by remember { mutableIntStateOf(0) }
             
             Scaffold(
@@ -136,7 +138,8 @@ class AdminDashboardActivity : ComponentActivity() {
                         ) {
                             val items = listOf(
                                 Triple("Home", R.drawable.outline_home_24, "Home"),
-                                Triple("Add Guide", R.drawable.addbox, "Add Guide"),
+                                Triple("Add", R.drawable.addbox, "Add Guide"),
+                                Triple("Manage", R.drawable.outline_map_pin_review_24, "Manage Guides"),
                                 Triple("Users", R.drawable.profile, "Users List")
                             )
                             
@@ -162,8 +165,9 @@ class AdminDashboardActivity : ComponentActivity() {
                 Box(modifier = Modifier.padding(innerPadding)) {
                     when(selectedIndex) {
                         0 -> AdminHomeFeed(postViewModel, userViewModel)
-                        1 -> AddGuideScreen()
-                        2 -> AdminUsersList(userViewModel)
+                        1 -> AddGuideScreen(guideViewModel)
+                        2 -> AdminGuideList(guideViewModel)
+                        3 -> AdminUsersList(userViewModel)
                     }
                 }
             }
@@ -191,9 +195,8 @@ fun AdminHomeFeed(postViewModel: MakePostViewModel, userViewModel: UserViewModel
 }
 
 @Composable
-fun AddGuideScreen() {
+fun AddGuideScreen(guideViewModel: GuideViewModel) {
     val context = LocalContext.current
-    val guideViewModel = remember { GuideViewModel(GuideRepoImpl()) }
     
     var placeName by remember { mutableStateOf("") }
     var accommodations by remember { mutableStateOf("") }
@@ -220,7 +223,6 @@ fun AddGuideScreen() {
             fontSize = 20.sp
         )
 
-        // Place Name Input
         OutlinedTextField(
             value = placeName,
             onValueChange = { placeName = it },
@@ -237,7 +239,6 @@ fun AddGuideScreen() {
             shape = RoundedCornerShape(12.dp)
         )
 
-        // Multiple Images Picker - Integrated UI
         Column {
             Text(
                 text = "Pictures of the Place",
@@ -295,7 +296,6 @@ fun AddGuideScreen() {
                             )
                         }
                         item {
-                            // Add More Button at the end of the row
                             Surface(
                                 modifier = Modifier
                                     .size(110.dp)
@@ -319,7 +319,6 @@ fun AddGuideScreen() {
             }
         }
 
-        // Accommodations Input
         OutlinedTextField(
             value = accommodations,
             onValueChange = { accommodations = it },
@@ -380,6 +379,111 @@ fun AddGuideScreen() {
 }
 
 @Composable
+fun AdminGuideList(guideViewModel: GuideViewModel) {
+    val allGuides by guideViewModel.allGuides.observeAsState(initial = emptyList())
+    val context = LocalContext.current
+
+    LaunchedEffect(Unit) {
+        guideViewModel.getAllGuides()
+    }
+
+    Box(modifier = Modifier.fillMaxSize().background(AdminDeepNavy)) {
+        if (allGuides.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("No guides published yet.", color = AdminSoftGray)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(allGuides) { guide ->
+                    AdminGuideCard(guide = guide, onDelete = {
+                        guideViewModel.deleteGuide(guide.guideId) { success, message ->
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                        }
+                    })
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AdminGuideCard(guide: GuideModel, onDelete: () -> Unit) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            containerColor = AdminCardNavy,
+            title = { Text("Delete Guide", color = Color.White) },
+            text = { Text("Are you sure you want to remove the guide for '${guide.placeName}'? This cannot be undone.", color = AdminSoftGray) },
+            confirmButton = {
+                TextButton(onClick = { 
+                    onDelete()
+                    showDeleteDialog = false 
+                }) {
+                    Text("Delete", color = AdminAlertRed)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel", color = AdminSoftGray)
+                }
+            }
+        )
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp)),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = AdminCardNavy)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(imageVector = Icons.Default.LocationOn, contentDescription = null, tint = AdminAccentTeal, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(text = guide.placeName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                }
+                IconButton(onClick = { showDeleteDialog = true }) {
+                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete Guide", tint = AdminAlertRed, modifier = Modifier.size(20.dp))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (guide.imageUrls.isNotEmpty()) {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(guide.imageUrls) { url ->
+                        Image(
+                            painter = rememberAsyncImagePainter(url),
+                            contentDescription = null,
+                            modifier = Modifier.size(150.dp, 100.dp).clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            if (guide.accommodations.isNotEmpty()) {
+                Text(text = "Accommodations", color = AdminAccentTeal, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                Text(text = guide.accommodations, color = Color.White.copy(alpha = 0.8f), fontSize = 14.sp)
+            }
+        }
+    }
+}
+
+@Composable
 fun AdminUsersList(userViewModel: UserViewModel) {
     val allUsers by userViewModel.allUsers.observeAsState(initial = emptyList())
     var selectedTabIndex by remember { mutableIntStateOf(0) }
@@ -420,7 +524,6 @@ fun AdminUsersList(userViewModel: UserViewModel) {
             }
         }
 
-        // Fix: Make banned users list empty as requested
         val filteredUsers = if (selectedTabIndex == 0) allUsers else emptyList<UserModel>()
 
         LazyColumn(

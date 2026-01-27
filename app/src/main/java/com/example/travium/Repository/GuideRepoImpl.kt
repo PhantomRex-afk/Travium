@@ -101,4 +101,18 @@ class GuideRepoImpl : GuideRepo {
             }
         })
     }
+
+    override fun deleteGuide(guideId: String, callback: (Boolean, String) -> Unit) {
+        if (guideId.isEmpty()) {
+            callback(false, "Invalid Guide ID")
+            return
+        }
+        guidesRef.child(guideId).removeValue().addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                callback(true, "Guide deleted successfully")
+            } else {
+                callback(false, task.exception?.message ?: "Failed to delete guide")
+            }
+        }
+    }
 }
