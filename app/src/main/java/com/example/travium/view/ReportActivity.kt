@@ -1,6 +1,7 @@
 package com.example.travium.view
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -14,21 +15,40 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.travium.R
+import com.example.travium.repository.ReportRepoImpl
 import com.example.travium.view.ui.theme.TraviumTheme
+import com.example.travium.viewmodel.ReportViewModel
+import com.example.travium.viewmodel.ReportViewModelFactory
 
 class ReportActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        // Assume these are passed via Intent
+        val reportedUserId = intent.getStringExtra("REPORTED_USER_ID") ?: ""
+        val reportedByUserId = intent.getStringExtra("REPORTED_BY_USER_ID") ?: ""
+        val targetName = intent.getStringExtra("TARGET_NAME") ?: "this traveller"
+
         setContent {
             TraviumTheme {
-                ReportBody()
+                val factory = ReportViewModelFactory(ReportRepoImpl())
+                val viewModel: ReportViewModel = viewModel(factory = factory)
+                ReportBody(
+                    reportedUserId = reportedUserId,
+                    reportedByUserId = reportedByUserId,
+                    targetName = targetName,
+                    viewModel = viewModel,
+                    onBack = { finish() }
+                )
             }
         }
     }
@@ -36,10 +56,29 @@ class ReportActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ReportBody(targetName: String = "this traveller") {
+fun ReportBody(
+    reportedUserId: String = "",
+    reportedByUserId: String = "",
+    targetName: String = "this traveller",
+    viewModel: ReportViewModel? = null,
+    onBack: () -> Unit = {}
+) {
     var selectedReason by remember { mutableStateOf<String?>(null) }
     var additionalDetails by remember { mutableStateOf("") }
-    var showConfirmation by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    val isLoading by viewModel?.loading?.collectAsState() ?: remember { mutableStateOf(false) }
+    val submissionStatus by viewModel?.submissionStatus?.collectAsState() ?: remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(submissionStatus) {
+        submissionStatus?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            if (it.contains("success", ignoreCase = true)) {
+                onBack()
+            }
+            viewModel?.clearStatus()
+        }
+    }
 
     val reportReasons = listOf(
         "Suspicious travel behavior",
@@ -58,7 +97,7 @@ fun ReportBody(targetName: String = "this traveller") {
             TopAppBar(
                 title = { Text("Report Activity", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
-                    IconButton(onClick = { /* Handle back */ }) {
+                    IconButton(onClick = onBack) {
                         Icon(
                             painter = painterResource(R.drawable.arrow_left),
                             contentDescription = "Back"
@@ -68,122 +107,119 @@ fun ReportBody(targetName: String = "this traveller") {
             )
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-        ) {
-            LazyColumn(
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 16.dp)
+                    .fillMaxSize()
+                    .padding(padding)
             ) {
-                item {
-                    Text(
-                        text = "Report $targetName",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
-                    )
-                    Text(
-                        text = "Help us maintain a safe community for solo travellers. Your report helps identify suspicious behavior and unreliable group members.",
-                        fontSize = 14.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-                    HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
-                }
-
-                items(reportReasons) { reason ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { selectedReason = reason }
-                            .padding(vertical = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 16.dp)
+                ) {
+                    item {
                         Text(
-                            text = reason,
-                            modifier = Modifier.weight(1f),
-                            fontSize = 16.sp,
-                            color = if (selectedReason == reason) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            text = "Report $targetName",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
                         )
-                        RadioButton(
-                            selected = (selectedReason == reason),
-                            onClick = { selectedReason = reason }
+                        Text(
+                            text = "Help us maintain a safe community for solo travellers. Your report helps identify suspicious behavior and unreliable group members.",
+                            fontSize = 14.sp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(bottom = 16.dp)
                         )
+                        HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
                     }
-                    HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
-                }
 
-                // Space for additional details
-                item {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Text(
-                        text = "Additional Information",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
-                    Text(
-                        text = "Please provide more context or specific details about the issue.",
-                        fontSize = 12.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-                    OutlinedTextField(
-                        value = additionalDetails,
-                        onValueChange = { additionalDetails = it },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(150.dp),
-                        placeholder = { 
+                    items(reportReasons) { reason ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedReason = reason }
+                                .padding(vertical = 16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text(
-                                "Describe the incident, specific dates, or why you find this behavior suspicious...",
-                                fontSize = 14.sp
-                            ) 
-                        },
-                        shape = RoundedCornerShape(12.dp),
-                        maxLines = 10,
-                        singleLine = false
-                    )
-                    Spacer(modifier = Modifier.height(32.dp))
-                }
-            }
-
-            Button(
-                onClick = { 
-                    if (selectedReason != null) {
-                        showConfirmation = true 
+                                text = reason,
+                                modifier = Modifier.weight(1f),
+                                fontSize = 16.sp,
+                                color = if (selectedReason == reason) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            )
+                            RadioButton(
+                                selected = (selectedReason == reason),
+                                onClick = { selectedReason = reason }
+                            )
+                        }
+                        HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray)
                     }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                enabled = selectedReason != null,
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Submit Report", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+
+                    item {
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text(
+                            text = "Additional Information",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                        Text(
+                            text = "Please provide more context or specific details about the issue.",
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(bottom = 12.dp)
+                        )
+                        OutlinedTextField(
+                            value = additionalDetails,
+                            onValueChange = { additionalDetails = it },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(150.dp),
+                            placeholder = { 
+                                Text(
+                                    "Describe the incident, specific dates, or why you find this behavior suspicious...",
+                                    fontSize = 14.sp
+                                ) 
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            maxLines = 10,
+                            singleLine = false
+                        )
+                        Spacer(modifier = Modifier.height(32.dp))
+                    }
+                }
+
+                Button(
+                    onClick = { 
+                        if (selectedReason != null) {
+                            viewModel?.submitReport(
+                                reportedUserId = reportedUserId,
+                                reportedByUserId = reportedByUserId,
+                                reason = selectedReason!!,
+                                details = additionalDetails
+                            )
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    enabled = selectedReason != null && !isLoading,
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                    } else {
+                        Text("Submit Report", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         }
-    }
-
-    if (showConfirmation) {
-        AlertDialog(
-            onDismissRequest = { showConfirmation = false },
-            confirmButton = {
-                TextButton(onClick = { showConfirmation = false /* Navigate back */ }) {
-                    Text("OK")
-                }
-            },
-            title = { Text("Report Received") },
-            text = { Text("Thank you for helping keep Travium safe. Our team will investigate this traveller's activity promptly.") }
-        )
     }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun ReportPreview() {
-    ReportBody("Blastoise")
+    ReportBody(targetName = "Blastoise")
 }
