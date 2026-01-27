@@ -22,5 +22,11 @@ interface UserRepo {
 
     fun getUserById(userId: String, callback: (UserModel?) -> Unit)
 
-    fun getAllUsers(callback: (Boolean, String, List<UserModel>?) -> Unit)
+    fun changePassword(newPassword: String, callback: (Boolean, String) -> Unit)
+
+    fun followUser(currentUserId: String, targetUserId: String, callback: (Boolean, String) -> Unit)
+    fun unfollowUser(currentUserId: String, targetUserId: String, callback: (Boolean, String) -> Unit)
+    fun getFollowersCount(userId: String, callback: (Long) -> Unit)
+    fun getFollowingCount(userId: String, callback: (Long) -> Unit)
+    fun isFollowing(currentUserId: String, targetUserId: String, callback: (Boolean) -> Unit)
 }

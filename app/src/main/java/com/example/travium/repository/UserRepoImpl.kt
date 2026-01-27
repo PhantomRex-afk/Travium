@@ -10,6 +10,8 @@ import com.google.firebase.database.ValueEventListener
 class UserRepoImpl : UserRepo {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseDatabase.getInstance().getReference("users")
+    private val followersRef = FirebaseDatabase.getInstance().getReference("followers")
+    private val followingRef = FirebaseDatabase.getInstance().getReference("following")
 
     override fun register(email: String, password: String, callback: (Boolean, String, String) -> Unit) {
         auth.createUserWithEmailAndPassword(email, password)
@@ -52,7 +54,69 @@ class UserRepoImpl : UserRepo {
             }
     }
 
+    override fun changePassword(newPassword: String, callback: (Boolean, String) -> Unit) {
+        auth.currentUser?.updatePassword(newPassword)
+            ?.addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    callback(true, "Password changed successfully")
+                } else {
+                    callback(false, task.exception?.message ?: "Failed to change password")
+                }
+            } ?: callback(false, "User not logged in")
+    }
 
+    override fun followUser(currentUserId: String, targetUserId: String, callback: (Boolean, String) -> Unit) {
+        followingRef.child(currentUserId).child(targetUserId).setValue(true)
+            .addOnSuccessListener {
+                followersRef.child(targetUserId).child(currentUserId).setValue(true)
+                    .addOnSuccessListener { callback(true, "Followed successfully") }
+                    .addOnFailureListener { callback(false, it.message ?: "Failed to update followers") }
+            }
+            .addOnFailureListener { callback(false, it.message ?: "Failed to update following") }
+    }
+
+    override fun unfollowUser(currentUserId: String, targetUserId: String, callback: (Boolean, String) -> Unit) {
+        followingRef.child(currentUserId).child(targetUserId).removeValue()
+            .addOnSuccessListener {
+                followersRef.child(targetUserId).child(currentUserId).removeValue()
+                    .addOnSuccessListener { callback(true, "Unfollowed successfully") }
+                    .addOnFailureListener { callback(false, it.message ?: "Failed to update followers") }
+            }
+            .addOnFailureListener { callback(false, it.message ?: "Failed to update following") }
+    }
+
+    override fun getFollowersCount(userId: String, callback: (Long) -> Unit) {
+        followersRef.child(userId).addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                callback(snapshot.childrenCount)
+            }
+            override fun onCancelled(error: DatabaseError) {
+                callback(0)
+            }
+        })
+    }
+
+    override fun getFollowingCount(userId: String, callback: (Long) -> Unit) {
+        followingRef.child(userId).addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                callback(snapshot.childrenCount)
+            }
+            override fun onCancelled(error: DatabaseError) {
+                callback(0)
+            }
+        })
+    }
+
+    override fun isFollowing(currentUserId: String, targetUserId: String, callback: (Boolean) -> Unit) {
+        followingRef.child(currentUserId).child(targetUserId).addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                callback(snapshot.exists())
+            }
+            override fun onCancelled(error: DatabaseError) {
+                callback(false)
+            }
+        })
+    }
 
     override fun addUserToDatabase(userId: String, userModel: UserModel, callback: (Boolean, String) -> Unit) {
         db.child(userId).setValue(userModel)

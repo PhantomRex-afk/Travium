@@ -1,5 +1,6 @@
 package com.example.travium.view
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -29,6 +30,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
@@ -56,6 +59,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -105,6 +109,7 @@ fun MainScreen(
     selectedImageUri: Uri?,
     onPickImage: () -> Unit
 ) {
+    val context = LocalContext.current
     val postViewModel = remember { MakePostViewModel(MakePostRepoImpl()) }
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
@@ -179,6 +184,15 @@ fun MainScreen(
                                     )
                                 }
                             }
+                            IconButton(onClick = { 
+                                context.startActivity(Intent(context, SettingsActivity::class.java))
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = "Settings",
+                                    tint = Color.White
+                                )
+                            }
                             Spacer(modifier = Modifier.width(8.dp))
                         }
                     )
@@ -223,6 +237,7 @@ fun MainScreen(
                         3 -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Text("Chat Feature Coming Soon!", color = TravelSoftGray)
                         }
+                        4 -> ProfileScreen()
                         else -> HomeScreenBody()
                     }
                 }
