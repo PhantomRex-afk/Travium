@@ -34,6 +34,9 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.Satellite
+import androidx.compose.material.icons.filled.Terrain
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
@@ -69,11 +72,14 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapType
+import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 
-// Admin-themed dark colors
+// Enhanced Admin-themed colors
 val AdminDeepNavy = Color(0xFF020617)
 val AdminCardNavy = Color(0xFF1E293B)
 val AdminAccentTeal = Color(0xFF2DD4BF)
@@ -84,7 +90,13 @@ class AdminDashboardActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge(statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT))
+        
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(
+                android.graphics.Color.TRANSPARENT
+            )
+        )
+        
         setContent {
             val postViewModel = remember { MakePostViewModel(MakePostRepoImpl()) }
             val userViewModel = remember { UserViewModel(UserRepoImpl()) }
@@ -178,25 +190,45 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
     var selectedImageUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var isPublishing by remember { mutableStateOf(false) }
     
+    // Map State
     var destinationLocation by remember { mutableStateOf<LatLng?>(null) }
     val hotelLocations = remember { mutableStateListOf<HotelLocation>() }
     var showHotelNameDialog by remember { mutableStateOf<LatLng?>(null) }
     var tempHotelName by remember { mutableStateOf("") }
+    
+    // Interactive Map Properties
+    var mapType by remember { mutableStateOf(MapType.NORMAL) }
+    val uiSettings by remember { mutableStateOf(MapUiSettings(
+        zoomControlsEnabled = true,
+        compassEnabled = true,
+        mapToolbarEnabled = true
+    )) }
 
     val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.PickMultipleVisualMedia()) { uris -> selectedImageUris = uris }
-    val cameraPositionState = rememberCameraPositionState { position = CameraPosition.fromLatLngZoom(LatLng(0.0, 0.0), 2f) }
+    
+    // Centered on Nepal
+    val nepalCenter = LatLng(28.3949, 84.1240)
+    val cameraPositionState = rememberCameraPositionState { 
+        position = CameraPosition.fromLatLngZoom(nepalCenter, 7f) 
+    }
 
     if (showHotelNameDialog != null) {
         AlertDialog(
             onDismissRequest = { showHotelNameDialog = null },
             containerColor = AdminCardNavy,
-            title = { Text("Hotel Name", color = Color.White) },
+            title = { Text("Add Hotel Marker", color = Color.White, fontWeight = FontWeight.Bold) },
             text = {
                 OutlinedTextField(
                     value = tempHotelName,
                     onValueChange = { tempHotelName = it },
-                    label = { Text("Name of the hotel") },
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = AdminAccentTeal)
+                    label = { Text("Hotel Name") },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White, 
+                        unfocusedTextColor = Color.White, 
+                        focusedBorderColor = AdminAccentTeal,
+                        focusedLabelColor = AdminAccentTeal,
+                        unfocusedLabelColor = AdminSoftGray
+                    )
                 )
             },
             confirmButton = {
@@ -206,7 +238,7 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                         tempHotelName = ""
                         showHotelNameDialog = null
                     }
-                }) { Text("Add", color = AdminAccentTeal) }
+                }) { Text("Confirm", color = AdminAccentTeal, fontWeight = FontWeight.Bold) }
             }
         )
     }
@@ -259,20 +291,62 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
             }
         }
 
+        // Map Section
         Column {
-            Text("Set Location & Hotels", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text("Interactive Guide Map", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
             Spacer(Modifier.height(8.dp))
-            Text("Long-press to set destination. Long-press again to add hotels.", color = AdminSoftGray, fontSize = 12.sp)
+            Text("Long-press to set destination and hotels in Nepal.", color = AdminSoftGray, fontSize = 12.sp)
             Spacer(Modifier.height(12.dp))
-            Card(modifier = Modifier.fillMaxWidth().height(300.dp), shape = RoundedCornerShape(20.dp), border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))) {
-                GoogleMap(modifier = Modifier.fillMaxSize(), cameraPositionState = cameraPositionState, onMapLongClick = { latLng -> if (destinationLocation == null) destinationLocation = latLng else showHotelNameDialog = latLng }) {
-                    destinationLocation?.let { Marker(state = MarkerState(position = it), title = "Destination", icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)) }
-                    hotelLocations.forEach { Marker(state = MarkerState(position = LatLng(it.latitude, it.longitude)), title = it.name) }
+            
+            Box(modifier = Modifier.fillMaxWidth().height(350.dp).clip(RoundedCornerShape(24.dp)).border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(24.dp))) {
+                GoogleMap(
+                    modifier = Modifier.fillMaxSize(), 
+                    cameraPositionState = cameraPositionState,
+                    properties = MapProperties(mapType = mapType),
+                    uiSettings = uiSettings,
+                    onMapLongClick = { latLng -> 
+                        if (destinationLocation == null) destinationLocation = latLng else showHotelNameDialog = latLng 
+                    }
+                ) {
+                    destinationLocation?.let { 
+                        Marker(
+                            state = MarkerState(position = it), 
+                            title = "Main Destination: $placeName", 
+                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                        ) 
+                    }
+                    hotelLocations.forEach { marker -> 
+                        Marker(
+                            state = MarkerState(position = LatLng(marker.latitude, marker.longitude)), 
+                            title = marker.name,
+                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)
+                        ) 
+                    }
                 }
-            }
-            if (destinationLocation != null) {
-                TextButton(onClick = { destinationLocation = null; hotelLocations.clear() }, modifier = Modifier.align(Alignment.End)) {
-                    Text("Clear Pins", color = AdminAlertRed)
+                
+                // Map Type Toggles
+                Column(modifier = Modifier.align(Alignment.TopStart).padding(12.dp).clip(RoundedCornerShape(12.dp)).background(Color.Black.copy(alpha = 0.6f)).padding(4.dp)) {
+                    IconButton(onClick = { mapType = MapType.NORMAL }, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.Map, null, tint = if (mapType == MapType.NORMAL) AdminAccentTeal else Color.White, modifier = Modifier.size(20.dp))
+                    }
+                    IconButton(onClick = { mapType = MapType.SATELLITE }, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.Satellite, null, tint = if (mapType == MapType.SATELLITE) AdminAccentTeal else Color.White, modifier = Modifier.size(20.dp))
+                    }
+                    IconButton(onClick = { mapType = MapType.TERRAIN }, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.Terrain, null, tint = if (mapType == MapType.TERRAIN) AdminAccentTeal else Color.White, modifier = Modifier.size(20.dp))
+                    }
+                }
+
+                if (destinationLocation != null) {
+                    Button(
+                        onClick = { destinationLocation = null; hotelLocations.clear() },
+                        modifier = Modifier.align(Alignment.BottomStart).padding(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = AdminAlertRed.copy(alpha = 0.8f)),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Reset Pins", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
@@ -280,7 +354,7 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
         OutlinedTextField(
             value = accommodations,
             onValueChange = { accommodations = it },
-            label = { Text("Accommodation Text Details") },
+            label = { Text("Accommodation Details & Tips") },
             modifier = Modifier.fillMaxWidth().heightIn(min = 140.dp).shadow(4.dp, RoundedCornerShape(16.dp)),
             colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = AdminAccentTeal, unfocusedBorderColor = Color.White.copy(alpha = 0.1f), focusedContainerColor = AdminCardNavy, unfocusedContainerColor = AdminCardNavy),
             shape = RoundedCornerShape(16.dp)
@@ -378,7 +452,7 @@ fun AdminPostCard(post: MakePostModel, postViewModel: MakePostViewModel, userVie
         Column(modifier = Modifier.padding(16.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                 Row(verticalAlignment = Alignment.CenterVertically) { Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(Brush.linearGradient(colors = listOf(AdminAccentTeal, Color(0xFF3B82F6)))), contentAlignment = Alignment.Center) { Text(author?.fullName?.take(1)?.uppercase() ?: "T", color = Color.White, fontWeight = FontWeight.Black) }; Spacer(modifier = Modifier.width(12.dp)); Text(author?.fullName ?: "Traveler", color = Color.White, fontWeight = FontWeight.Bold) }
-                IconButton(onClick = { showDeleteDialog = true }, modifier = Modifier.background(AdminAlertRed.copy(alpha = 0.1f), CircleShape)) { Icon(Icons.Default.Delete, null, tint = AdminAlertRed, modifier = Modifier.size(20.dp)) }
+                IconButton(onClick = { showDeleteDialog = true }, modifier = Modifier.background(AdminAlertRed.copy(alpha = 0.1f), CircleShape) ) { Icon(Icons.Default.Delete, null, tint = AdminAlertRed, modifier = Modifier.size(20.dp)) }
             }
             Spacer(modifier = Modifier.height(12.dp))
             if (post.caption.isNotEmpty()) Text(post.caption, color = Color.White)
