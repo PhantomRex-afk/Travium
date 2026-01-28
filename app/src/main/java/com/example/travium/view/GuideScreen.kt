@@ -31,11 +31,26 @@ import com.example.travium.viewmodel.GuideViewModel
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.android.gms.maps.model.MapStyleOptions
+import com.google.maps.android.compose.*
+
+// Retro/Clean Travel Map Style JSON (Similar to your reference image)
+const val TRAVEL_MAP_STYLE = """
+[
+  { "elementType": "geometry", "stylers": [ { "color": "#ebe3cd" } ] },
+  { "elementType": "labels.text.fill", "stylers": [ { "color": "#523735" } ] },
+  { "elementType": "labels.text.stroke", "stylers": [ { "color": "#f5f1e6" } ] },
+  { "featureType": "administrative", "elementType": "geometry.stroke", "stylers": [ { "color": "#c9b2a6" } ] },
+  { "featureType": "landscape.natural", "elementType": "geometry", "stylers": [ { "color": "#dfd2ae" } ] },
+  { "featureType": "poi", "elementType": "geometry", "stylers": [ { "color": "#dfd2ae" } ] },
+  { "featureType": "poi", "elementType": "labels.text.fill", "stylers": [ { "color": "#93817c" } ] },
+  { "featureType": "poi.park", "elementType": "geometry.fill", "stylers": [ { "color": "#a5b076" } ] },
+  { "featureType": "road", "elementType": "geometry", "stylers": [ { "color": "#f5f1e6" } ] },
+  { "featureType": "road.highway", "elementType": "geometry", "stylers": [ { "color": "#f8c967" } ] },
+  { "featureType": "road.highway", "elementType": "geometry.stroke", "stylers": [ { "color": "#e9bc62" } ] },
+  { "featureType": "water", "elementType": "geometry.fill", "stylers": [ { "color": "#b9d3c2" } ] }
+]
+"""
 
 @Composable
 fun GuideScreenBody() {
@@ -53,7 +68,7 @@ fun GuideScreenBody() {
     ) {
         if (allGuides.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Explore guides created by admins.", color = TravelSoftGray)
+                Text("Explore local travel guides.", color = TravelSoftGray)
             }
         } else {
             LazyColumn(
@@ -75,18 +90,18 @@ fun GuideScreenBody() {
 fun UserGuideCard(guide: GuideModel) {
     var isExpanded by remember { mutableStateOf(false) }
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(LatLng(guide.latitude, guide.longitude), 12f)
+        position = CameraPosition.fromLatLngZoom(LatLng(guide.latitude, guide.longitude), 15f)
     }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(20.dp)),
-        shape = RoundedCornerShape(20.dp),
+            .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(24.dp)),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = TravelCardNavy)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
-            // Header: Place Name
+            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -95,7 +110,7 @@ fun UserGuideCard(guide: GuideModel) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.LocationOn, null, tint = TravelAccentTeal, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = guide.placeName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(text = guide.placeName, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
                 }
                 IconButton(onClick = { isExpanded = !isExpanded }) {
                     Icon(
@@ -108,18 +123,18 @@ fun UserGuideCard(guide: GuideModel) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Scrollable Pictures
+            // Teeny Tiny Image Row
             if (guide.imageUrls.isNotEmpty()) {
                 LazyRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(guide.imageUrls) { url ->
                         Image(
                             painter = rememberAsyncImagePainter(url),
                             contentDescription = null,
                             modifier = Modifier
-                                .size(160.dp, 110.dp)
+                                .size(140.dp, 90.dp)
                                 .clip(RoundedCornerShape(12.dp)),
                             contentScale = ContentScale.Crop
                         )
@@ -127,47 +142,44 @@ fun UserGuideCard(guide: GuideModel) {
                 }
             }
 
-            // Expandable Content: Map & Details
             AnimatedVisibility(visible = isExpanded) {
                 Column(modifier = Modifier.padding(top = 16.dp)) {
-                    // Map Preview
-                    Text("Location Overview", color = TravelAccentTeal, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                    // Styled Map Header
+                    Text("Interactive Guide Map", color = TravelAccentTeal, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(8.dp))
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
+                            .height(280.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
                     ) {
                         GoogleMap(
                             modifier = Modifier.fillMaxSize(),
                             cameraPositionState = cameraPositionState,
-                            uiSettings = MapUiSettings(zoomControlsEnabled = false, scrollGesturesEnabled = true)
+                            properties = MapProperties(
+                                mapStyleOptions = MapStyleOptions(TRAVEL_MAP_STYLE)
+                            ),
+                            uiSettings = MapUiSettings(zoomControlsEnabled = false, scrollGesturesEnabled = true, mapToolbarEnabled = true)
                         ) {
-                            // Main Destination
                             Marker(
-                                state = MarkerState(position = LatLng(guide.latitude, guide.longitude)),
+                                state = rememberMarkerState(position = LatLng(guide.latitude, guide.longitude)),
                                 title = guide.placeName,
                                 icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
                             )
-                            // Recommended Hotels
                             guide.hotels.forEach { hotel ->
                                 Marker(
-                                    state = MarkerState(position = LatLng(hotel.latitude, hotel.longitude)),
+                                    state = rememberMarkerState(position = LatLng(hotel.latitude, hotel.longitude)),
                                     title = hotel.name,
-                                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)
+                                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
                                 )
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Accommodations Text
                     if (guide.accommodations.isNotEmpty()) {
-                        Text("Travel Tips & Accommodations", color = TravelAccentTeal, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text("Description & Accommodations", color = TravelAccentTeal, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         Text(
                             text = guide.accommodations,
                             color = Color.White.copy(alpha = 0.8f),
