@@ -71,6 +71,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+// Note: TRAVEL_MAP_STYLE is defined in GuideScreen.kt to avoid conflict
+
 // Enhanced Admin-themed colors
 val AdminDeepNavy = Color(0xFF0F172A)
 val AdminCardNavy = Color(0xFF1E293B)
@@ -170,15 +172,13 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
     var selectedImageUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var isPublishing by remember { mutableStateOf(false) }
     
-    // Map State
     var destinationLocation by remember { mutableStateOf<LatLng?>(null) }
     val hotelLocations = remember { mutableStateListOf<HotelLocation>() }
+    var showHotelNameDialog by remember { mutableStateOf<LatLng?>(null) }
+    var tempHotelName by remember { mutableStateOf("") }
     var mapType by remember { mutableStateOf(MapType.NORMAL) }
     
-    // Search States
     var placeSearchQuery by remember { mutableStateOf("") }
-    var hotelSearchQuery by remember { mutableStateOf("") }
-    val foundHotels = remember { mutableStateListOf<HotelLocation>() }
 
     val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.PickMultipleVisualMedia()) { uris -> selectedImageUris = uris }
     val cameraPositionState = rememberCameraPositionState { position = CameraPosition.fromLatLngZoom(LatLng(28.3949, 84.1240), 7f) }
@@ -186,7 +186,7 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
     val searchPlace = {
         coroutineScope.launch {
             try {
-                val query = if (placeSearchQuery.lowercase().contains("nepal")) placeSearchQuery else "$placeSearchQuery, Nepal"
+                val query = if (placeSearchQuery.lowercase().contains("nepal")) placeSearchQuery else "${placeSearchQuery}, Nepal"
                 val addresses = withContext(Dispatchers.IO) {
                     geocoder.getFromLocationName(query, 1)
                 }
@@ -205,26 +205,29 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
         }
     }
 
-    val searchExistingHotels = {
-        coroutineScope.launch {
-            try {
-                if (destinationLocation == null) {
-                    Toast.makeText(context, "Pin a destination first", Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
-                val query = if (hotelSearchQuery.isNotBlank()) hotelSearchQuery else "Hotels"
-                val results = withContext(Dispatchers.IO) {
-                    geocoder.getFromLocationName("$query near $placeName", 10)
-                }
-                foundHotels.clear()
-                results?.forEach { addr ->
-                    foundHotels.add(HotelLocation(addr.featureName ?: "Hotel", addr.latitude, addr.longitude))
-                }
-                if (foundHotels.isEmpty()) Toast.makeText(context, "No hotels found nearby", Toast.LENGTH_SHORT).show()
-            } catch (e: Exception) {
-                Toast.makeText(context, "Hotel search failed", Toast.LENGTH_SHORT).show()
+    if (showHotelNameDialog != null) {
+        AlertDialog(
+            onDismissRequest = { showHotelNameDialog = null },
+            containerColor = AdminCardNavy,
+            title = { Text("Hotel Name", color = Color.White) },
+            text = {
+                OutlinedTextField(
+                    value = tempHotelName,
+                    onValueChange = { tempHotelName = it },
+                    label = { Text("Enter hotel name") },
+                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = AdminAccentTeal)
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (tempHotelName.isNotBlank()) {
+                        hotelLocations.add(HotelLocation(tempHotelName, showHotelNameDialog!!.latitude, showHotelNameDialog!!.longitude))
+                        tempHotelName = ""
+                        showHotelNameDialog = null
+                    }
+                }) { Text("Add", color = AdminAccentTeal) }
             }
-        }
+        )
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(20.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(24.dp)) {
@@ -239,7 +242,6 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
             shape = RoundedCornerShape(12.dp)
         )
 
-        // Integrated Image Picker
         Card(modifier = Modifier.fillMaxWidth().height(160.dp), colors = CardDefaults.cardColors(containerColor = AdminCardNavy), shape = RoundedCornerShape(16.dp)) {
             if (selectedImageUris.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize().clickable { launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }, contentAlignment = Alignment.Center) {
@@ -267,13 +269,11 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
             }
         }
 
-        // Map Section with Search
         Column {
             Text("Set Location & Hotels", color = Color.White, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             Box(modifier = Modifier.fillMaxWidth().height(450.dp).clip(RoundedCornerShape(20.dp)).border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(20.dp))) {
                 Column {
-                    // Place Search Bar
                     OutlinedTextField(
                         value = placeSearchQuery,
                         onValueChange = { placeSearchQuery = it },
@@ -292,26 +292,6 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                         shape = RoundedCornerShape(8.dp)
                     )
 
-                    // Hotel Search Bar (only shows if destination is pinned)
-                    if (destinationLocation != null) {
-                        OutlinedTextField(
-                            value = hotelSearchQuery,
-                            onValueChange = { hotelSearchQuery = it },
-                            placeholder = { Text("Find real hotels nearby...", color = AdminSoftGray, fontSize = 12.sp) },
-                            leadingIcon = { Icon(Icons.Default.LocationOn, null, tint = AdminAccentTeal, modifier = Modifier.size(18.dp)) },
-                            trailingIcon = { 
-                                IconButton(onClick = { searchExistingHotels() }) { 
-                                    Icon(Icons.Default.Add, "Search Hotels", tint = AdminAccentTeal) 
-                                } 
-                            },
-                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedContainerColor = AdminCardNavy, unfocusedContainerColor = AdminCardNavy),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                            keyboardActions = KeyboardActions(onSearch = { searchExistingHotels() }),
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                    }
-
                     Box(modifier = Modifier.fillMaxSize()) {
                         GoogleMap(
                             modifier = Modifier.fillMaxSize(),
@@ -320,7 +300,7 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                                 mapStyleOptions = MapStyleOptions(TRAVEL_MAP_STYLE),
                                 mapType = mapType
                             ),
-                            onMapLongClick = { latLng -> if (destinationLocation == null) destinationLocation = latLng }
+                            onMapLongClick = { latLng -> if (destinationLocation == null) destinationLocation = latLng else showHotelNameDialog = latLng }
                         ) {
                             destinationLocation?.let { LatLngPos ->
                                 Marker(
@@ -330,32 +310,15 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                                 ) 
                             }
                             
-                            // Found Hotels Pins
-                            foundHotels.forEach { hotel ->
-                                Marker(
-                                    state = rememberMarkerState(key = "found_${hotel.name}", position = LatLng(hotel.latitude, hotel.longitude)),
-                                    title = hotel.name,
-                                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN),
-                                    onClick = { 
-                                        if (!hotelLocations.any { it.latitude == hotel.latitude }) {
-                                            hotelLocations.add(hotel)
-                                            Toast.makeText(context, "${hotel.name} added!", Toast.LENGTH_SHORT).show()
-                                        }
-                                        true
-                                    }
-                                )
-                            }
-
                             hotelLocations.forEach { hotelLoc ->
                                 Marker(
-                                    state = rememberMarkerState(key = "added_${hotelLoc.name}", position = LatLng(hotelLoc.latitude, hotelLoc.longitude)), 
+                                    state = rememberMarkerState(key = "admin_add_${hotelLoc.name}", position = LatLng(hotelLoc.latitude, hotelLoc.longitude)), 
                                     title = hotelLoc.name, 
                                     icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)
                                 ) 
                             }
                         }
                         
-                        // Map Type Toggles
                         Column(modifier = Modifier.align(Alignment.TopStart).padding(8.dp).background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(8.dp))) {
                             IconButton(onClick = { mapType = MapType.NORMAL }) { Icon(Icons.Default.Map, null, tint = if (mapType == MapType.NORMAL) AdminAccentTeal else Color.White) }
                             IconButton(onClick = { mapType = MapType.HYBRID }) { Icon(Icons.Default.Satellite, null, tint = if (mapType == MapType.HYBRID) AdminAccentTeal else Color.White) }
@@ -365,7 +328,6 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                 }
             }
             
-            // Pinned Hotels Chip List
             if (hotelLocations.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -399,11 +361,7 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                 guideViewModel.addGuide(context, placeName, selectedImageUris, accommodations) { success, message ->
                     isPublishing = false
                     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                    if (success) { 
-                        placeName = ""; accommodations = ""; selectedImageUris = emptyList()
-                        destinationLocation = null; hotelLocations.clear(); foundHotels.clear()
-                        placeSearchQuery = ""; hotelSearchQuery = ""
-                    }
+                    if (success) { placeName = ""; accommodations = ""; selectedImageUris = emptyList(); destinationLocation = null; hotelLocations.clear(); placeSearchQuery = "" }
                 }
             },
             enabled = !isPublishing,
