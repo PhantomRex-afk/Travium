@@ -17,7 +17,7 @@
         android:theme="@style/Theme.Travium"
         tools:replace="android:fullBackupContent">
 
-        <!-- Google Maps API Key - REPLACE WITH YOUR KEY -->
+        <!-- Google Maps API Key -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyAFkQIPVR4sRSnGM71XWWZwxSYa5SmPuVU" />
@@ -49,8 +49,13 @@
 
         <activity
             android:name=".view.HomePageActivity"
-            android:exported="false"
-            android:theme="@style/Theme.Travium" />
+            android:exported="true"
+            android:theme="@style/Theme.Travium">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".view.SettingsActivity"
