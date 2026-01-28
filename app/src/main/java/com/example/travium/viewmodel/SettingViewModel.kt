@@ -1,8 +1,8 @@
 package com.example.travium.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.example.travium.Model.SettingModel
-import com.example.travium.Repository.SettingRepo
+import com.example.travium.model.SettingModel
+import com.example.travium.repository.SettingRepo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

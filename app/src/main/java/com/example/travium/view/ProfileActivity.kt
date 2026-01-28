@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import coil.compose.rememberAsyncImagePainter
 import com.example.travium.R
-import com.example.travium.view.ui.theme.TraviumTheme
+import com.example.travium.ui.theme.TraviumTheme
 
 class ProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -268,5 +268,7 @@ fun ProfileEventDetailPopup(
 @Preview(showBackground = true)
 @Composable
 fun ProfilePreview() {
-    ProfileBody()
+    TraviumTheme {
+        ProfileBody()
+    }
 }

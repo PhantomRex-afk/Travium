@@ -54,7 +54,12 @@ class MakePostRepoImpl : MakePostRepo {
                 for (productSnapshot in snapshot.children) {
                     try {
                         val product = productSnapshot.getValue(MakePostModel::class.java)
-                        product?.let { productList.add(it) }
+                        // If the post exists in DB but has no postId field, we fill it with the key
+                        // to prevent empty string deletions in the future.
+                        product?.let { 
+                            val fixedPost = if (it.postId.isEmpty()) it.copy(postId = productSnapshot.key ?: "") else it
+                            productList.add(fixedPost) 
+                        }
                     } catch (e: DatabaseException) {
                         Log.e("MakePostRepoImpl", "Failed to parse post: ${productSnapshot.key}", e)
                     }
@@ -109,6 +114,7 @@ class MakePostRepoImpl : MakePostRepo {
     }
 
     override fun likePost(postId: String, userId: String, callback: (Boolean) -> Unit) {
+        if (postId.isEmpty()) return
         postsRef.child(postId).runTransaction(object : Transaction.Handler {
             override fun doTransaction(currentData: MutableData): Transaction.Result {
                 val post = currentData.getValue(MakePostModel::class.java) ?: return Transaction.success(currentData)
@@ -118,7 +124,6 @@ class MakePostRepoImpl : MakePostRepo {
                     likes.remove(userId)
                 } else {
                     likes.add(userId)
-                    // Create notification for post owner
                     if (userId != post.userId) {
                         val notificationId = notificationsRef.child(post.userId).push().key ?: ""
                         val notificationData = NotificationModel(
@@ -142,6 +147,7 @@ class MakePostRepoImpl : MakePostRepo {
     }
 
     override fun addComment(postId: String, comment: Comment, callback: (Boolean) -> Unit) {
+        if (postId.isEmpty()) return
         postsRef.child(postId).runTransaction(object : Transaction.Handler {
             override fun doTransaction(currentData: MutableData): Transaction.Result {
                 val post = currentData.getValue(MakePostModel::class.java) ?: return Transaction.success(currentData)
@@ -153,7 +159,6 @@ class MakePostRepoImpl : MakePostRepo {
                 
                 currentData.child("comments").value = comments
 
-                // Create notification for post owner
                 if (comment.userId != post.userId) {
                     val notificationId = notificationsRef.child(post.userId).push().key ?: ""
                     val notificationData = NotificationModel(
@@ -188,7 +193,6 @@ class MakePostRepoImpl : MakePostRepo {
                         Log.e("MakePostRepoImpl", "Failed to parse notification", e)
                     }
                 }
-                // Sort by newest first
                 notificationList.sortByDescending { it.timestamp }
                 callback(true, "Notifications retrieved", notificationList)
             }
@@ -197,5 +201,30 @@ class MakePostRepoImpl : MakePostRepo {
                 callback(false, error.message, null)
             }
         })
+    }
+
+    override fun deletePost(postId: String, userId: String, reason: String, callback: (Boolean, String) -> Unit) {
+        if (postId.isEmpty()) {
+            callback(false, "Invalid Post ID. This post might be from an older version of the app.")
+            return
+        }
+        
+        postsRef.child(postId).removeValue().addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val notificationId = notificationsRef.child(userId).push().key ?: ""
+                val notificationData = NotificationModel(
+                    notificationId = notificationId,
+                    type = "deletion",
+                    fromUserId = "admin",
+                    message = "Your post was deleted for: $reason",
+                    postId = postId,
+                    timestamp = System.currentTimeMillis()
+                )
+                notificationsRef.child(userId).child(notificationId).setValue(notificationData)
+                callback(true, "Post deleted successfully")
+            } else {
+                callback(false, task.exception?.message ?: "Failed to delete post")
+            }
+        }
     }
 }

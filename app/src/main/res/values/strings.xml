@@ -10,8 +10,13 @@
     <string name="title_activity_report">ReportActivity</string>
 
     <string name="title_activity_splash">SplashActivity</string>
+    <string name="title_activity_forget_password">ForgetPasswordActivity</string>
+    <string name="title_activity_chat">ChatActivity</string>
+    <string name="title_activity_set_trip_group">SetTripGroupActivity</string>
+    <string name="title_activity_display_trip_group">DisplayTripGroupActivity</string>
+    <string name="title_activity_save">SaveActivity</string>
+    <string name="title_activity_favourite">FavouriteActivity</string>
+    <string name="title_activity_add_favourite">AddFavouriteActivity</string>
     <string name="title_activity_admin_dashboard">AdminDashboardActivity</string>
-    <string name="title_activity_customer_support">CustomerSupportActivity</string>
-    <string name="title_activity_admin_notification">AdminNotificationActivity</string>
-
+    <string name="title_activity_change_password">ChangePasswordActivity</string>
 </resources>
