@@ -1,10 +1,10 @@
 package com.example.travium.viewmodel
+
 import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
-import androidx.core.content.FileProvider
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -12,13 +12,12 @@ import androidx.lifecycle.viewModelScope
 import com.example.travium.model.GroupChat
 import com.example.travium.model.LeaveChatRequest
 import com.example.travium.model.GroupMessage
-import com.example.travium.repository.GroupChatRepository
+import com.example.travium.repository.GroupChatRepo
 import kotlinx.coroutines.launch
-import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
-class GroupChatRoomViewModel(private val repository: GroupChatRepository) : ViewModel() {
+class GroupChatRoomViewModel(private val repository: GroupChatRepo) : ViewModel() {
 
     private val _messages = MutableLiveData<List<GroupMessage>>(emptyList())
     val messages: LiveData<List<GroupMessage>> = _messages
@@ -35,18 +34,24 @@ class GroupChatRoomViewModel(private val repository: GroupChatRepository) : View
     private val _isUploading = MutableLiveData(false)
     val isUploading: LiveData<Boolean> = _isUploading
 
-    private val _leaveGroupResult = MutableLiveData<LeaveChatRequest?>(null)
-    val leaveGroupResult: LiveData<LeaveChatRequest?> = _leaveGroupResult
+    // Change type to represent result state, not LeaveChatRequest object
+    private val _leaveGroupResult = MutableLiveData<LeaveGroupResult?>(null)
+    val leaveGroupResult: LiveData<LeaveGroupResult?> = _leaveGroupResult
 
     private val _isLeavingGroup = MutableLiveData(false)
     val isLeavingGroup: LiveData<Boolean> = _isLeavingGroup
 
-    private var messageListener: (() -> Unit)? = null
+    // If you need to store the actual LeaveChatRequest
+    private val _leaveRequest = MutableLiveData<LeaveChatRequest?>(null)
+    val leaveRequest: LiveData<LeaveChatRequest?> = _leaveRequest
+
+    private var currentGroupId: String? = null
 
     /**
      * Listen for new messages in real-time
      */
     fun listenForMessages(groupId: String) {
+        currentGroupId = groupId
         repository.listenForGroupMessages(
             groupId = groupId,
             onNewMessage = { newMessage ->
@@ -66,7 +71,6 @@ class GroupChatRoomViewModel(private val repository: GroupChatRepository) : View
             }
         )
     }
-
 
     /**
      * Load group information
@@ -247,8 +251,6 @@ class GroupChatRoomViewModel(private val repository: GroupChatRepository) : View
         }
     }
 
-
-
     /**
      * Create image URI for camera
      */
@@ -269,42 +271,64 @@ class GroupChatRoomViewModel(private val repository: GroupChatRepository) : View
     }
 
     /**
-     * Leave group using LeaveChatRequest
+     * Leave group using separate parameters (repository expects this)
      */
-    fun leaveGroup(leaveChatRequest: LeaveChatRequest) {
+    fun leaveGroup(groupId: String, userId: String) {
         _isLeavingGroup.value = true
+        _leaveGroupResult.value = null
 
-        // FIXED: The repository.leaveGroup only accepts groupId, userId, and callback
-        repository.leaveGroup(
-            groupId = leaveChatRequest.groupId,
-            userId = leaveChatRequest.userId
-        ) { result ->
+        repository.leaveGroup(groupId, userId) { result ->
             _isLeavingGroup.value = false
+
             result.onSuccess {
-                // Return the original request with success timestamp
-                _leaveGroupResult.value = leaveChatRequest.copy(leaveTimestamp = System.currentTimeMillis())
+                // Create a LeaveChatRequest for tracking (optional)
+                val leaveRequest = LeaveChatRequest(
+                    groupId = groupId,
+                    userId = userId,
+                    leaveTimestamp = System.currentTimeMillis()
+                )
+                _leaveRequest.value = leaveRequest
+
+                // Set success result
+                _leaveGroupResult.value = LeaveGroupResult.Success
             }.onFailure { error ->
-                // Return the request with error info
-                _leaveGroupResult.value = leaveChatRequest.copy(reason = error.message)
+                _leaveGroupResult.value = LeaveGroupResult.Error(
+                    error.message ?: "Failed to leave group"
+                )
             }
         }
     }
 
     /**
-     * Leave group using separate parameters
+     * Alternative: Leave group using LeaveChatRequest object
+     * (If your repository supports this)
      */
-    fun leaveGroup(groupId: String, userId: String, reason: String? = null) {
-        val leaveChatRequest = LeaveChatRequest(
-            groupId = groupId,
-            userId = userId,
-            reason = reason
-        )
-        leaveGroup(leaveChatRequest)
+    fun leaveGroupWithRequest(request: LeaveChatRequest) {
+        _isLeavingGroup.value = true
+        _leaveGroupResult.value = null
+
+        // Check if repository has this method signature
+        // If not, use the simpler version above
+        repository.leaveGroup(request.groupId, request.userId) { result ->
+            _isLeavingGroup.value = false
+
+            result.onSuccess {
+                _leaveRequest.value = request
+                _leaveGroupResult.value = LeaveGroupResult.Success
+            }.onFailure { error ->
+                _leaveGroupResult.value = LeaveGroupResult.Error(
+                    error.message ?: "Failed to leave group"
+                )
+            }
+        }
     }
 
-
+    /**
+     * Clear leave group result
+     */
     fun clearLeaveGroupResult() {
         _leaveGroupResult.value = null
+        _leaveRequest.value = null
     }
 
     /**
@@ -333,11 +357,11 @@ class GroupChatRoomViewModel(private val repository: GroupChatRepository) : View
         } ?: emptyList()
     }
 
+    /**
+     * Clean up resources
+     */
     override fun onCleared() {
         super.onCleared()
-        // Stop listening to prevent memory leaks
-        // You'll need to store groupId as a property
+        currentGroupId = null
     }
-
-
 }

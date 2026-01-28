@@ -1,4 +1,4 @@
-package com.example.travium.Repository
+package com.example.travium.repository
 
 import android.content.Context
 import android.net.Uri
@@ -8,19 +8,15 @@ import com.cloudinary.utils.ObjectUtils
 import com.example.travium.model.GroupChat
 import com.example.travium.model.GroupMember
 import com.example.travium.model.GroupMessage
-import com.example.travium.repository.GroupChatRepository
+import com.example.travium.repository.GroupChatRepo
 import com.google.firebase.database.*
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.storage.StorageReference
 import kotlinx.coroutines.*
-import kotlinx.coroutines.tasks.await
 import java.io.InputStream
 import java.util.*
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
-class GroupChatRepositoryImpl : GroupChatRepository {
+class GroupChatRepoImpl : GroupChatRepo {
 
     private val database: FirebaseDatabase = FirebaseDatabase.getInstance()
     private val storage: FirebaseStorage = FirebaseStorage.getInstance()

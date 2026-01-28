@@ -6,7 +6,7 @@ import com.example.travium.model.GroupChat
 import com.example.travium.model.GroupMember
 import com.example.travium.model.GroupMessage
 
-interface GroupChatRepository {
+interface GroupChatRepo {
     // Group Operations
     fun createGroup(
         groupName: String,

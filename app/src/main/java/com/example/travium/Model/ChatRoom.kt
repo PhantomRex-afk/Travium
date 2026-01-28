@@ -2,8 +2,8 @@ package com.example.travium.model
 
 data class ChatRoom(
     val chatId: String = "",
-    val participant1Id: String = "", // JobSeeker ID
-    val participant2Id: String = "", // Company ID or another JobSeeker ID
+    val participant1Id: String = "",
+    val participant2Id: String = "",
     val participant1Name: String = "",
     val participant2Name: String = "",
     val participant1Photo: String = "",
@@ -41,7 +41,7 @@ data class ChatMessage(
     val messageText: String = "",
     val timestamp: Long = System.currentTimeMillis(),
     val isRead: Boolean = false,
-    val messageType: String = "text", // text, image, video, document
+    val messageType: String = "text", // text, image, document
     val mediaUrl: String = ""
 ) {
     fun toMap(): Map<String, Any?> {

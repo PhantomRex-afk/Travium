@@ -4,7 +4,6 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import android.content.Context
 import android.net.Uri
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -13,15 +12,14 @@ import com.example.travium.model.ChatMessage
 import com.example.travium.model.ChatRoom
 import com.example.travium.model.GroupChat
 import com.example.travium.repository.ChatRepository
-import com.example.travium.repository.GroupChatRepository
+import com.example.travium.repository.GroupChatRepo
 import com.example.travium.utils.ChatItem
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import java.io.File
 import java.util.*
 
 class ChatViewModel(private val chatRepository: ChatRepository,
-                    private val groupChatRepository: GroupChatRepository) : ViewModel() {
+                    private val groupChatRepository: GroupChatRepo) : ViewModel() {
 
     private val _chatRooms = MutableLiveData<List<ChatRoom>>()
     val chatRooms: LiveData<List<ChatRoom>> = _chatRooms
@@ -231,103 +229,12 @@ class ChatViewModel(private val chatRepository: ChatRepository,
         return null
     }
 
-    fun uploadAndSendVoiceMessage(
-        audioFile: File,
-        chatId: String,
-        senderId: String,
-        receiverId: String,
-        senderName: String,
-        receiverName: String
-    ) {
-        if (!audioFile.exists()) {
-            _error.value = "Audio file does not exist"
-            return
-        }
-
-        if (audioFile.length() == 0L) {
-            _error.value = "Audio file is empty"
-            return
-        }
-
-        Log.d("VoiceUpload", "ViewModel: Starting upload")
-        Log.d("VoiceUpload", "ViewModel: File path: ${audioFile.absolutePath}")
-        Log.d("VoiceUpload", "ViewModel: File size: ${audioFile.length()} bytes")
-
-        _isUploading.value = true
-        _uploadProgress.value = 0.0
-
-        viewModelScope.launch {
-
-        }
-    }
-
-    // New method for media upload
-    fun uploadAndSendMediaMessage(
-        context: Context,
-        mediaUri: Uri,
-        mediaType: String, // "image", "video", "document"
-        chatId: String,
-        senderId: String,
-        receiverId: String,
-        senderName: String,
-        receiverName: String
-    ) {
-        Log.d("MediaUpload", "ViewModel: Starting $mediaType upload")
-
-        _isUploading.value = true
-        _uploadProgress.value = 0.0
-
-        viewModelScope.launch {
-            chatRepository.uploadMediaFile(
-                context = context,
-                mediaUri = mediaUri,
-                mediaType = mediaType,
-                onProgress = { progress ->
-                    Log.d("MediaUpload", "ViewModel: Progress: $progress%")
-                    _uploadProgress.value = progress
-                },
-                onSuccess = { downloadUrl ->
-                    Log.d("MediaUpload", "ViewModel: Upload successful")
-                    Log.d("MediaUpload", "ViewModel: Download URL: $downloadUrl")
-
-                    val displayText = when (mediaType) {
-                        "image" -> "Photo"
-                        "video" -> "Video"
-                        "document" -> "Document"
-                        else -> "Media file"
-                    }
-
-                    sendMessage(
-                        chatId = chatId,
-                        senderId = senderId,
-                        receiverId = receiverId,
-                        senderName = senderName,
-                        receiverName = receiverName,
-                        messageText = displayText,
-                        messageType = mediaType,
-                        mediaUrl = downloadUrl
-                    )
-
-                    _isUploading.value = false
-                    _uploadProgress.value = 0.0
-                },
-                onFailure = { errorMessage ->
-                    Log.e("MediaUpload", "ViewModel: Upload failed: $errorMessage")
-                    _error.value = "Upload failed: $errorMessage"
-                    _isUploading.value = false
-                    _uploadProgress.value = 0.0
-                }
-            )
-        }
-    }
-
     fun loadAllChats(userId: String) {
         _loading.value = true
 
         viewModelScope.launch {
             // We need to wait for BOTH 1-on-1 and Groups to load
             val privateChatsDeferred = async {
-                // You might need to suspendify your repo calls or use suspendCoroutine
                 fetchPrivateChatsSuspend(userId)
             }
 
@@ -338,7 +245,7 @@ class ChatViewModel(private val chatRepository: ChatRepository,
             val privateChats = privateChatsDeferred.await()
             val groupChats = groupChatsDeferred.await()
 
-            // 3. Convert to Unified ChatItems
+            // Convert to Unified ChatItems
             val chatItems = mutableListOf<ChatItem>()
 
             // Convert Private Chats
@@ -352,7 +259,7 @@ class ChatViewModel(private val chatRepository: ChatRepository,
                 chatItems.add(ChatItem.Group(group))
             }
 
-            // 4. Sort by time descending (newest first)
+            // Sort by time descending (newest first)
             val sortedChats = chatItems.sortedByDescending { it.lastMessageTime }
 
             _allChats.value = sortedChats
@@ -372,11 +279,5 @@ class ChatViewModel(private val chatRepository: ChatRepository,
             result.onSuccess { cont.resume(it) }
             result.onFailure { cont.resume(emptyList()) }
         }
-    }
-
-    private fun formatDuration(millis: Long): String {
-        val seconds = (millis / 1000) % 60
-        val minutes = (millis / (1000 * 60)) % 60
-        return String.format("%02d:%02d", minutes, seconds)
     }
 }

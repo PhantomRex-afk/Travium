@@ -19,7 +19,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -60,8 +59,7 @@ import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import com.example.travium.R
 import com.example.travium.model.ChatMessage
-import com.example.travium.repository.GroupChatRepository
-import com.example.travium.Repository.GroupChatRepositoryImpl
+import com.example.travium.repository.GroupChatRepoImpl
 import com.example.travium.repository.ChatRepositoryImpl
 import com.example.travium.viewmodel.ChatViewModel
 import com.example.travium.viewmodel.ChatViewModelFactory
@@ -78,19 +76,7 @@ class ChatActivity : ComponentActivity() {
     private val chatViewModel: ChatViewModel by viewModels {
         ChatViewModelFactory(
             ChatRepositoryImpl(),
-            groupChatRepository = GroupChatRepositoryImpl())
-    }
-
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (!isGranted) {
-            Toast.makeText(
-                this,
-                "Microphone permission is required for voice messages",
-                Toast.LENGTH_SHORT
-            ).show()
-        }
+            groupChatRepository = GroupChatRepoImpl())
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -119,22 +105,8 @@ class ChatActivity : ComponentActivity() {
                 receiverId = receiverId,
                 currentUserId = currentUserId,
                 currentUserName = currentUserName,
-                chatViewModel = chatViewModel,
-                onRequestPermission = { checkAndRequestPermission() }
+                chatViewModel = chatViewModel
             )
-        }
-    }
-
-    private fun checkAndRequestPermission(): Boolean {
-        return when {
-            ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.RECORD_AUDIO
-            ) == PackageManager.PERMISSION_GRANTED -> true
-            else -> {
-                requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                false
-            }
         }
     }
 }
@@ -147,16 +119,13 @@ fun ChatBody(
     receiverId: String,
     currentUserId: String,
     currentUserName: String,
-    chatViewModel: ChatViewModel,
-    onRequestPermission: () -> Boolean
+    chatViewModel: ChatViewModel
 ) {
     val context = LocalContext.current
     val activity = context as? ComponentActivity
     val keyboardController = LocalSoftwareKeyboardController.current
 
     var messageText by remember { mutableStateOf("") }
-    var isRecording by remember { mutableStateOf(false) }
-    var recordingDuration by remember { mutableStateOf(0L) }
     var showAttachmentDialog by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
@@ -171,8 +140,6 @@ fun ChatBody(
 
     val listState = rememberLazyListState()
     var typingJob by remember { mutableStateOf<Job?>(null) }
-    var recordingJob by remember { mutableStateOf<Job?>(null) }
-
 
     LaunchedEffect(error) {
         error?.let {
@@ -223,15 +190,15 @@ fun ChatBody(
     ) { uri: Uri? ->
         uri?.let {
             chatRoom?.let { cr ->
-                chatViewModel.uploadAndSendMediaMessage(
-                    context = context,
-                    mediaUri = uri,
-                    mediaType = "image",
+                chatViewModel.sendMessage(
                     chatId = cr.chatId,
                     senderId = currentUserId,
                     receiverId = receiverId,
                     senderName = currentUserName,
                     receiverName = receiverName,
+                    messageText = "",
+                    messageType = "image",
+                    mediaUrl = uri.toString()
                 )
             }
         }
@@ -242,15 +209,15 @@ fun ChatBody(
     ) { uri: Uri? ->
         uri?.let {
             chatRoom?.let { cr ->
-                chatViewModel.uploadAndSendMediaMessage(
-                    context = context,
-                    mediaUri = uri,
-                    mediaType = "document",
+                chatViewModel.sendMessage(
                     chatId = cr.chatId,
                     senderId = currentUserId,
                     receiverId = receiverId,
                     senderName = currentUserName,
-                    receiverName = receiverName
+                    receiverName = receiverName,
+                    messageText = "",
+                    messageType = "document",
+                    mediaUrl = uri.toString()
                 )
             }
         }
@@ -262,15 +229,15 @@ fun ChatBody(
     ) { success ->
         if (success && tempPhotoUri != null) {
             chatRoom?.let { cr ->
-                chatViewModel.uploadAndSendMediaMessage(
-                    context = context,
-                    mediaUri = tempPhotoUri!!,
-                    mediaType = "image",
+                chatViewModel.sendMessage(
                     chatId = cr.chatId,
                     senderId = currentUserId,
                     receiverId = receiverId,
                     senderName = currentUserName,
-                    receiverName = receiverName
+                    receiverName = receiverName,
+                    messageText = "",
+                    messageType = "image",
+                    mediaUrl = tempPhotoUri.toString()
                 )
             }
         }
@@ -307,6 +274,29 @@ fun ChatBody(
                         }
                     )
                 }
+                MessageInputBar(
+                    messageText = messageText,
+                    onMessageChange = { messageText = it },
+                    onSendClick = {
+                        if (messageText.isNotBlank()) {
+                            chatRoom?.let { cr ->
+                                chatViewModel.sendMessage(
+                                    chatId = cr.chatId,
+                                    senderId = currentUserId,
+                                    receiverId = receiverId,
+                                    senderName = currentUserName,
+                                    receiverName = receiverName,
+                                    messageText = messageText
+                                )
+                                messageText = ""
+                            }
+                        }
+                    },
+                    onAddClick = { showAttachmentDialog = true },
+                    isUploading = isUploading,
+                    uploadProgress = uploadProgress,
+                    showAttachmentDialog = showAttachmentDialog
+                )
             }
         }
     ) { padding ->
@@ -346,7 +336,6 @@ fun ChatBody(
                         AnimatedVisibility(
                             visible = true,
                             enter = fadeIn() + slideInVertically(initialOffsetY = { 50 }),
-//                            modifier = Modifier.animateItemPlacement()
                         ) {
                             Column {
                                 if (shouldShowDateHeader(messages, index)) {
@@ -356,11 +345,6 @@ fun ChatBody(
 
                                 when (message.messageType) {
                                     "image" -> ImageMessageBubble(
-                                        message = message,
-                                        isSentByMe = message.senderId == currentUserId,
-                                        onLongPress = { showMessageOptions(context, message, chatViewModel) }
-                                    )
-                                    "video" -> VideoMessageBubble(
                                         message = message,
                                         isSentByMe = message.senderId == currentUserId,
                                         onLongPress = { showMessageOptions(context, message, chatViewModel) }
@@ -503,7 +487,6 @@ fun MessageInputBar(
     onMessageChange: (String) -> Unit,
     onSendClick: () -> Unit,
     onAddClick: () -> Unit,
-    onVoiceClick: () -> Unit,
     isUploading: Boolean = false,
     uploadProgress: Double = 0.0,
     showAttachmentDialog: Boolean = false
@@ -945,101 +928,6 @@ fun ImageMessageBubble(
 }
 
 @Composable
-fun VideoMessageBubble(
-    message: ChatMessage,
-    isSentByMe: Boolean,
-    onLongPress: () -> Unit
-) {
-    val context = LocalContext.current
-    val alignment = if (isSentByMe) Alignment.CenterEnd else Alignment.CenterStart
-
-    Box(
-        modifier = Modifier.fillMaxWidth(),
-        contentAlignment = alignment
-    ) {
-        Card(
-            modifier = Modifier
-                .widthIn(max = 280.dp)
-                .shadow(4.dp, RoundedCornerShape(18.dp))
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onLongPress = { onLongPress() },
-                        onTap = {
-                            val intent = Intent(Intent.ACTION_VIEW).apply {
-                                setDataAndType(Uri.parse(message.mediaUrl), "video/*")
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            }
-                            context.startActivity(intent)
-                        }
-                    )
-                },
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
-        ) {
-            Column(modifier = Modifier.padding(6.dp)) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(220.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(Color(0xFF1A237E), Color(0xFF283593))
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(64.dp)
-                            .background(Color.White.copy(alpha = 0.9f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "Play",
-                            modifier = Modifier.size(40.dp),
-                            tint = Color(0xFF1976D2)
-                        )
-                    }
-                }
-
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = "🎥 Video",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF616161)
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = formatMessageTime(message.timestamp),
-                            color = Color.Gray,
-                            fontSize = 11.sp
-                        )
-                        if (isSentByMe) {
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(
-                                imageVector = Icons.Default.Done,
-                                contentDescription = "Status",
-                                modifier = Modifier.size(14.dp),
-                                tint = if (message.isRead) Color(0xFF00C853) else Color.Gray
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 fun DocumentMessageBubble(
     message: ChatMessage,
     isSentByMe: Boolean,
@@ -1101,7 +989,7 @@ fun DocumentMessageBubble(
 
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "📄 Document",
+                            text = "Document",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Medium,
                             color = Color(0xFF212121)
@@ -1163,12 +1051,6 @@ fun formatDates(timestamp: Long): String {
     }
 }
 
-fun formatDuration(millis: Long): String {
-    val seconds = (millis / 1000) % 60
-    val minutes = (millis / (1000 * 60)) % 60
-    return String.format("%02d:%02d", minutes, seconds)
-}
-
 fun shouldShowDateHeader(messages: List<ChatMessage>, index: Int): Boolean {
     if (index == 0) return true
 
@@ -1187,25 +1069,17 @@ fun shouldShowDateHeader(messages: List<ChatMessage>, index: Int): Boolean {
 }
 
 fun showMessageOptions(context: Context, message: ChatMessage, chatViewModel: ChatViewModel) {
-    val options = if (message.messageType == "voice") {
-        arrayOf("Delete Message")
-    } else {
-        arrayOf("Copy Text", "Delete Message")
-    }
+    val options = arrayOf("Copy Text", "Delete Message")
 
     AlertDialog.Builder(context)
         .setTitle("Message Options")
         .setItems(options) { dialog, which ->
             when (which) {
                 0 -> {
-                    if (message.messageType == "voice") {
-                        chatViewModel.deleteMessage(message.messageId, message.chatId)
-                    } else {
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        val clip = ClipData.newPlainText("message", message.messageText)
-                        clipboard.setPrimaryClip(clip)
-                        Toast.makeText(context, "Message copied", Toast.LENGTH_SHORT).show()
-                    }
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    val clip = ClipData.newPlainText("message", message.messageText)
+                    clipboard.setPrimaryClip(clip)
+                    Toast.makeText(context, "Message copied", Toast.LENGTH_SHORT).show()
                 }
                 1 -> {
                     chatViewModel.deleteMessage(message.messageId, message.chatId)

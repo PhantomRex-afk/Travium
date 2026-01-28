@@ -1,23 +1,18 @@
-
 package com.example.travium.repository
 
 import android.content.Context
-import android.media.MediaPlayer
 import android.util.Log
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import com.cloudinary.Cloudinary
-import com.cloudinary.Url
 import com.cloudinary.utils.ObjectUtils
 import com.example.travium.model.ChatMessage
 import com.example.travium.model.ChatRoom
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import java.io.File
-import java.io.FileInputStream
 import java.io.InputStream
-import java.net.HttpURLConnection
 import java.util.*
 import java.util.concurrent.Executors
 import kotlin.collections.HashMap
@@ -323,8 +318,6 @@ class ChatRepositoryImpl : ChatRepository {
         })
     }
 
-
-
     override fun uploadMediaFile(
         context: Context,
         mediaUri: Uri,
@@ -358,7 +351,6 @@ class ChatRepositoryImpl : ChatRepository {
 
                 val resourceType = when (mediaType) {
                     "image" -> "image"
-                    "video" -> "video"
                     "document" -> "raw"
                     else -> "auto"
                 }
@@ -416,14 +408,7 @@ class ChatRepositoryImpl : ChatRepository {
                         val isSenderParticipant1 = message.senderId == room.participant1Id
 
                         val updates = HashMap<String, Any>()
-
-                        val displayText = if (message.messageType == "voice") {
-                            "🎤 Voice message"
-                        } else {
-                            message.messageText
-                        }
-
-                        updates["lastMessage"] = displayText
+                        updates["lastMessage"] = message.messageText
                         updates["lastMessageTime"] = message.timestamp
 
                         if (isSenderParticipant1) {

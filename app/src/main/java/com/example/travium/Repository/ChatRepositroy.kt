@@ -1,11 +1,10 @@
-// File: ChatRepository.kt
 package com.example.travium.repository
 
 import android.content.Context
 import android.net.Uri
 import com.example.travium.model.ChatMessage
 import com.example.travium.model.ChatRoom
-import java.io.File
+
 
 interface ChatRepository {
     // Chat Room Operations
@@ -83,7 +82,7 @@ interface ChatRepository {
     fun uploadMediaFile(
         context: Context,
         mediaUri: Uri,
-        mediaType: String, // "image", "video", "document"
+        mediaType: String, // "image", "document"
         onProgress: (Double) -> Unit,
         onSuccess: (String) -> Unit,
         onFailure: (String) -> Unit
