@@ -234,9 +234,7 @@ fun MainScreen(
                         0 -> HomeScreenBody()
                         1 -> HomeScreenBody()
                         2 -> MakePostBody(selectedImageUri = selectedImageUri, onPickImage = onPickImage)
-                        3 -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Chat Feature Coming Soon!", color = TravelSoftGray)
-                        }
+                        3 -> ChatActivity()
                         4 -> ProfileScreen()
                         else -> HomeScreenBody()
                     }
