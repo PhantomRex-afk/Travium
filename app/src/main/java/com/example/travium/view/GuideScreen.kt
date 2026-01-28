@@ -143,7 +143,7 @@ fun UserGuideCard(guide: GuideModel) {
                         GoogleMap(
                             modifier = Modifier.fillMaxSize(),
                             cameraPositionState = cameraPositionState,
-                            uiSettings = MapUiSettings(zoomControlsEnabled = false, scrollGesturesEnabled = false)
+                            uiSettings = MapUiSettings(zoomControlsEnabled = false, scrollGesturesEnabled = true)
                         ) {
                             // Main Destination
                             Marker(
