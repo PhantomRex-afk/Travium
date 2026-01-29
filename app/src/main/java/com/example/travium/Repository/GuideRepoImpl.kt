@@ -85,6 +85,21 @@ class GuideRepoImpl : GuideRepo {
             }
     }
 
+    override fun updateGuide(guide: GuideModel, callback: (Boolean, String) -> Unit) {
+        if (guide.guideId.isEmpty()) {
+            callback(false, "Invalid Guide ID")
+            return
+        }
+        guidesRef.child(guide.guideId).setValue(guide)
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    callback(true, "Guide updated successfully")
+                } else {
+                    callback(false, task.exception?.message ?: "Failed to update guide")
+                }
+            }
+    }
+
     override fun getAllGuides(callback: (Boolean, String, List<GuideModel>?) -> Unit) {
         guidesRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {

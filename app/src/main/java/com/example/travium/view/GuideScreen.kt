@@ -124,9 +124,9 @@ fun UserGuideCard(guide: GuideModel) {
                 }
             }
 
+            // Expanded Content
             AnimatedVisibility(visible = isExpanded) {
                 Column(modifier = Modifier.padding(top = 16.dp)) {
-                    // Styled Map Header
                     Text("Interactive Guide Map", color = TravelAccentTeal, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(8.dp))
                     Box(
@@ -144,16 +144,19 @@ fun UserGuideCard(guide: GuideModel) {
                             ),
                             uiSettings = MapUiSettings(zoomControlsEnabled = false, scrollGesturesEnabled = true, mapToolbarEnabled = true)
                         ) {
+                            // Main Destination Pin (Azure)
                             Marker(
-                                state = rememberMarkerState(key = "user_guide_dest_${guide.guideId}", position = LatLng(guide.latitude, guide.longitude)),
+                                state = rememberMarkerState(key = "user_dest_${guide.guideId}_${guide.latitude}", position = LatLng(guide.latitude, guide.longitude)),
                                 title = guide.placeName,
                                 icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
                             )
+                            
+                            // Officially Recommended Hotel Pins (Orange)
                             guide.hotels.forEach { hotel ->
                                 Marker(
-                                    state = rememberMarkerState(key = "user_guide_hotel_${hotel.name}_${hotel.latitude}", position = LatLng(hotel.latitude, hotel.longitude)),
+                                    state = rememberMarkerState(key = "user_hotel_${hotel.name}_${hotel.latitude}_${hotel.longitude}", position = LatLng(hotel.latitude, hotel.longitude)),
                                     title = hotel.name,
-                                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
+                                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)
                                 )
                             }
                         }
