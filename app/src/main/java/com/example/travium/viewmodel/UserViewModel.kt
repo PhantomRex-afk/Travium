@@ -11,6 +11,9 @@ class UserViewModel(private val repo: UserRepo) : ViewModel() {
     private val _allUsers = MutableLiveData<List<UserModel>>()
     val allUsers: LiveData<List<UserModel>> = _allUsers
 
+    private val _bannedUsers = MutableLiveData<List<UserModel>>()
+    val bannedUsers: LiveData<List<UserModel>> = _bannedUsers
+
     fun login(
         email: String, password: String,
         callback: (Boolean, String) -> Unit
@@ -48,13 +51,43 @@ class UserViewModel(private val repo: UserRepo) : ViewModel() {
     }
 
     fun getAllUsers() {
-        repo.getAllUsers { success, message, userList ->
-            if (success && userList != null) {
-                _allUsers.value = userList
-            } else {
-                _allUsers.value = emptyList()
-            }
+        repo.getAllUsers { userList ->
+            _allUsers.value = userList
         }
+    }
+
+    fun getBannedUsers() {
+        repo.getBannedUsers { userList ->
+            _bannedUsers.value = userList
+        }
+    }
+
+    fun banUser(userId: String, callback: (Boolean, String) -> Unit) {
+        repo.banUser(userId, callback)
+    }
+
+    fun unbanUser(userId: String, callback: (Boolean, String) -> Unit) {
+        repo.unbanUser(userId, callback)
+    }
+
+    fun followUser(currentUserId: String, targetUserId: String, callback: (Boolean, String) -> Unit) {
+        repo.followUser(currentUserId, targetUserId, callback)
+    }
+
+    fun unfollowUser(currentUserId: String, targetUserId: String, callback: (Boolean, String) -> Unit) {
+        repo.unfollowUser(currentUserId, targetUserId, callback)
+    }
+
+    fun isFollowing(currentUserId: String, targetUserId: String, callback: (Boolean) -> Unit) {
+        repo.isFollowing(currentUserId, targetUserId, callback)
+    }
+
+    fun getFollowersCount(userId: String, callback: (Long) -> Unit) {
+        repo.getFollowersCount(userId, callback)
+    }
+
+    fun getFollowingCount(userId: String, callback: (Long) -> Unit) {
+        repo.getFollowingCount(userId, callback)
     }
 
     fun searchUsers(query: String, callback: (List<UserModel>) -> Unit) {
