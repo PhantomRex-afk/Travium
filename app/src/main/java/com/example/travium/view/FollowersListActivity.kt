@@ -13,20 +13,19 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -34,7 +33,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.example.travium.model.UserModel
 import com.example.travium.repository.UserRepoImpl
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
@@ -49,7 +47,9 @@ data class FollowerUi(
     val username: String,
     val profileImageUrl: String?,
     var isFollowingBack: Boolean = false,
-    val isLoaded: Boolean = true
+    val lastActive: String? = null,
+    val isOnline: Boolean = false,
+    val mutualFriends: Int = 0
 )
 
 class FollowersListActivity : ComponentActivity() {
@@ -62,22 +62,24 @@ class FollowersListActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun FollowersListBody() {
     val context = LocalContext.current
     val userRepository = remember { UserRepoImpl() }
     val auth = FirebaseAuth.getInstance()
+    val listState = rememberLazyListState()
 
-    // Premium color palette
+    // Color palette
     val primaryBlue = Color(0xFF0EA5E9)
-    val secondaryBlue = Color(0xFF38BDF8)
-    val accentBlue = Color(0xFF7DD3FC)
-    val bgGradientStart = Color(0xFFF0F9FF)
-    val bgGradientEnd = Color(0xFFE0F2FE)
+    val bgColor = Color(0xFFFAFAFA)
     val cardBg = Color(0xFFFFFFFF)
+    val bubbleColor = primaryBlue.copy(alpha = 0.1f)
     val followButtonColor = Color(0xFF10B981)
     val unfollowButtonColor = Color(0xFFEF4444)
+    val textPrimary = Color(0xFF1E293B)
+    val textSecondary = Color(0xFF64748B)
+    val textTertiary = Color(0xFF94A3B8)
 
     var searchQuery by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
@@ -109,38 +111,57 @@ fun FollowersListBody() {
         if (searchQuery.isEmpty()) {
             followerDetails
         } else {
-            followerDetails.filter {
-                it.name.contains(searchQuery, ignoreCase = true) ||
-                        it.username.contains(searchQuery, ignoreCase = true)
+            followerDetails.filter { follower ->
+                follower.name.contains(searchQuery, ignoreCase = true) ||
+                        follower.username.contains(searchQuery, ignoreCase = true)
             }
         }
     }
 
     Scaffold(
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
-                    AnimatedContent(
-                        targetState = isSearching,
-                        transitionSpec = {
-                            fadeIn(tween(300)) + slideInVertically() togetherWith
-                                    fadeOut(tween(300)) + slideOutVertically()
-                        },
-                        label = "titleAnimation"
-                    ) { searching ->
-                        if (!searching) {
-                            Text(
-                                "Followers",
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        } else {
-                            FollowersSearchBar(
-                                query = searchQuery,
-                                onQueryChange = { searchQuery = it },
-                                onClear = { searchQuery = "" }
-                            )
-                        }
+                    if (!isSearching) {
+                        Text(
+                            "Followers (${followerDetails.size})",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 18.sp,
+                            color = Color.White
+                        )
+                    } else {
+                        TextField(
+                            value = searchQuery,
+                            onValueChange = { newQuery -> searchQuery = newQuery },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = {
+                                Text(
+                                    "Search followers...",
+                                    color = Color.White.copy(alpha = 0.7f)
+                                )
+                            },
+                            colors = TextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                cursorColor = Color.White
+                            ),
+                            singleLine = true,
+                            trailingIcon = {
+                                if (searchQuery.isNotEmpty()) {
+                                    IconButton(onClick = { searchQuery = "" }) {
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = "Clear",
+                                            tint = Color.White
+                                        )
+                                    }
+                                }
+                            }
+                        )
                     }
                 },
                 navigationIcon = {
@@ -153,12 +174,7 @@ fun FollowersListBody() {
                     }
                 },
                 actions = {
-                    IconButton(
-                        onClick = {
-                            isSearching = !isSearching
-                            if (!isSearching) searchQuery = ""
-                        }
-                    ) {
+                    IconButton(onClick = { isSearching = !isSearching }) {
                         Icon(
                             if (isSearching) Icons.Default.Close else Icons.Default.Search,
                             contentDescription = if (isSearching) "Close Search" else "Search",
@@ -166,66 +182,47 @@ fun FollowersListBody() {
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = primaryBlue
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = Color(0xFF0EA5E9)
                 )
             )
         }
-    ) { padding ->
+    ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(bgGradientStart, bgGradientEnd, Color.White),
-                        startY = 0f,
-                        endY = 1500f
-                    )
-                )
-                .padding(padding)
+                .background(bgColor)
+                .padding(paddingValues)
         ) {
             when {
                 isLoading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            CircularProgressIndicator(color = primaryBlue)
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                "Loading followers...",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = Color.Gray
-                            )
-                        }
-                    }
+                    LoadingState(primaryBlue = primaryBlue)
                 }
                 filteredFollowers.isEmpty() && searchQuery.isNotEmpty() -> {
-                    FollowersEmptySearchState()
+                    EmptySearchState()
                 }
                 filteredFollowers.isEmpty() -> {
-                    FollowersEmptyState()
+                    EmptyFollowersState()
                 }
                 else -> {
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        contentPadding = PaddingValues(bottom = 80.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
                         itemsIndexed(filteredFollowers) { index, follower ->
-                            FollowerCard(
+                            FollowerItem(
                                 follower = follower,
                                 index = index,
                                 primaryBlue = primaryBlue,
-                                secondaryBlue = secondaryBlue,
-                                accentBlue = accentBlue,
                                 cardBg = cardBg,
+                                bubbleColor = bubbleColor,
                                 followButtonColor = followButtonColor,
                                 unfollowButtonColor = unfollowButtonColor,
+                                textPrimary = textPrimary,
+                                textSecondary = textSecondary,
+                                textTertiary = textTertiary,
                                 onFollowToggle = {
                                     if (currentUserId.isNotEmpty()) {
                                         if (follower.isFollowingBack) {
@@ -303,6 +300,324 @@ fun FollowersListBody() {
     }
 }
 
+@Composable
+fun FollowerItem(
+    follower: FollowerUi,
+    index: Int,
+    primaryBlue: Color,
+    cardBg: Color,
+    bubbleColor: Color,
+    followButtonColor: Color,
+    unfollowButtonColor: Color,
+    textPrimary: Color,
+    textSecondary: Color,
+    textTertiary: Color,
+    onFollowToggle: () -> Unit,
+    context: Context
+) {
+    var showMenu by remember { mutableStateOf(false) }
+    var visible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        delay(index * 50L)
+        visible = true
+    }
+
+    val isCurrentUser = (context as? ComponentActivity) != null
+
+    AnimatedVisibility(
+        visible = visible,
+        enter = slideInVertically(
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow
+            ),
+            initialOffsetY = { fullHeight -> (fullHeight / 2) }
+        ) + fadeIn(animationSpec = tween(300))
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 2.dp),
+            color = cardBg,
+            onClick = { /* Handle click */ },
+            shape = RoundedCornerShape(16.dp),
+            tonalElevation = 1.dp
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp, horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Avatar with online indicator
+                Box(
+                    modifier = Modifier.size(56.dp),
+                    contentAlignment = Alignment.BottomEnd
+                ) {
+                    // Avatar
+                    Surface(
+                        shape = CircleShape,
+                        color = primaryBlue.copy(alpha = 0.1f),
+                        modifier = Modifier.size(56.dp)
+                    ) {
+                        if (follower.profileImageUrl != null) {
+                            AsyncImage(
+                                model = follower.profileImageUrl,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = follower.name.take(1).uppercase(),
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = primaryBlue
+                                )
+                            }
+                        }
+                    }
+
+                    // Online indicator
+                    if (follower.isOnline) {
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF10B981))
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // User info
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = follower.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = textPrimary,
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        if (follower.mutualFriends > 0) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(bubbleColor)
+                            ) {
+                                Text(
+                                    text = "${follower.mutualFriends} mutual",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = primaryBlue,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = follower.username,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = textSecondary,
+                        maxLines = 1
+                    )
+
+                    // Last active
+                    if (follower.lastActive != null) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Active ${follower.lastActive}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = textTertiary,
+                            maxLines = 1
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // Follow/Unfollow button
+                if (isCurrentUser && !follower.isFollowingBack) {
+                    Button(
+                        onClick = onFollowToggle,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = followButtonColor
+                        ),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.height(36.dp)
+                    ) {
+                        Text("Follow", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    }
+                } else if (isCurrentUser && follower.isFollowingBack) {
+                    Box {
+                        IconButton(
+                            onClick = { showMenu = true },
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.MoreVert,
+                                contentDescription = "More options",
+                                tint = textTertiary
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        "Unfollow",
+                                        color = unfollowButtonColor
+                                    )
+                                },
+                                onClick = {
+                                    showMenu = false
+                                    onFollowToggle()
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Close,
+                                        contentDescription = null,
+                                        tint = unfollowButtonColor
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LoadingState(primaryBlue: Color) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .clip(CircleShape)
+                .background(primaryBlue.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(
+                color = primaryBlue,
+                modifier = Modifier.size(40.dp),
+                strokeWidth = 3.dp
+            )
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            "Loading followers...",
+            style = MaterialTheme.typography.titleMedium,
+            color = Color.Gray,
+            fontWeight = FontWeight.Medium
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            "Fetching your connections",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.LightGray
+        )
+    }
+}
+
+@Composable
+fun EmptySearchState() {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .clip(CircleShape)
+                .background(Color.LightGray.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Default.Search,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+                tint = Color.LightGray
+            )
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            "No users found",
+            style = MaterialTheme.typography.titleLarge,
+            color = Color.Gray,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            "Try different search terms",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.LightGray
+        )
+    }
+}
+
+@Composable
+fun EmptyFollowersState() {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .clip(CircleShape)
+                .background(Color.LightGray.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Default.Person,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+                tint = Color.LightGray
+            )
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            "No followers yet",
+            style = MaterialTheme.typography.titleLarge,
+            color = Color.Gray,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            "When someone follows this profile, they'll appear here",
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.LightGray
+        )
+    }
+}
+
 // Helper function to load followers
 private fun loadFollowers(
     userId: String,
@@ -333,24 +648,27 @@ private fun loadFollowers(
                             name = user.fullName.ifEmpty { "User" },
                             username = user.username.ifEmpty { "@user" },
                             profileImageUrl = if (user.profileImageUrl.isNotEmpty()) user.profileImageUrl else null,
-                            isFollowingBack = false
+                            isFollowingBack = false,
+                            lastActive = "recently",
+                            isOnline = false,
+                            mutualFriends = (0..10).random()
                         )
 
                         // Check if current user is following this follower
-                        if (currentUserId.isNotEmpty()) {
+                        if (currentUserId.isNotEmpty() && currentUserId != followerId) {
                             userRepository.isFollowing(currentUserId, followerId) { isFollowing ->
                                 followerUi.isFollowingBack = isFollowing
                                 followers.add(followerUi)
                                 loadedCount++
                                 if (loadedCount == totalCount) {
-                                    onComplete(followers.sortedBy { it.name })
+                                    onComplete(followers.sortedBy { it -> it.name })
                                 }
                             }
                         } else {
                             followers.add(followerUi)
                             loadedCount++
                             if (loadedCount == totalCount) {
-                                onComplete(followers.sortedBy { it.name })
+                                onComplete(followers.sortedBy { it -> it.name })
                             }
                         }
                     } else {
@@ -360,11 +678,14 @@ private fun loadFollowers(
                             name = "User",
                             username = "@user",
                             profileImageUrl = null,
-                            isFollowingBack = false
+                            isFollowingBack = false,
+                            lastActive = null,
+                            isOnline = false,
+                            mutualFriends = 0
                         ))
                         loadedCount++
                         if (loadedCount == totalCount) {
-                            onComplete(followers.sortedBy { it.name })
+                            onComplete(followers.sortedBy { it -> it.name })
                         }
                     }
                 }
@@ -375,284 +696,4 @@ private fun loadFollowers(
             onComplete(emptyList())
         }
     })
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun FollowersSearchBar(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    onClear: () -> Unit
-) {
-    TextField(
-        value = query,
-        onValueChange = onQueryChange,
-        modifier = Modifier.fillMaxWidth(),
-        placeholder = { Text("Search followers...", color = Color.White.copy(alpha = 0.7f)) },
-        colors = TextFieldDefaults.colors(
-            focusedTextColor = Color.White,
-            unfocusedTextColor = Color.White,
-            focusedContainerColor = Color.Transparent,
-            unfocusedContainerColor = Color.Transparent,
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-            cursorColor = Color.White
-        ),
-        singleLine = true,
-        trailingIcon = {
-            if (query.isNotEmpty()) {
-                IconButton(onClick = onClear) {
-                    Icon(Icons.Default.Close, contentDescription = "Clear", tint = Color.White)
-                }
-            }
-        }
-    )
-}
-
-@Composable
-fun FollowersEmptySearchState() {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            Icons.Default.Search,
-            contentDescription = null,
-            modifier = Modifier.size(80.dp),
-            tint = Color.LightGray
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            "No followers found",
-            style = MaterialTheme.typography.titleLarge,
-            color = Color.Gray
-        )
-        Text(
-            "Try searching with different keywords",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.LightGray
-        )
-    }
-}
-
-@Composable
-fun FollowersEmptyState() {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            Icons.Default.Person,
-            contentDescription = null,
-            modifier = Modifier.size(80.dp),
-            tint = Color.LightGray
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            "No followers yet",
-            style = MaterialTheme.typography.titleLarge,
-            color = Color.Gray
-        )
-        Text(
-            "When someone follows this profile, they'll appear here",
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.LightGray
-        )
-    }
-}
-
-@Composable
-fun FollowerCard(
-    follower: FollowerUi,
-    index: Int,
-    primaryBlue: Color,
-    secondaryBlue: Color,
-    accentBlue: Color,
-    cardBg: Color,
-    followButtonColor: Color,
-    unfollowButtonColor: Color,
-    onFollowToggle: () -> Unit,
-    context: Context
-) {
-    var visible by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) {
-        delay(index * 80L)
-        visible = true
-    }
-
-    val scale by animateFloatAsState(
-        targetValue = if (visible) 1f else 0.8f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "cardScale"
-    )
-
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessLow
-            )
-        ) + expandVertically()
-    ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .scale(scale)
-                .shadow(
-                    elevation = 8.dp,
-                    shape = RoundedCornerShape(20.dp),
-                    spotColor = primaryBlue.copy(alpha = 0.2f)
-                ),
-            shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = cardBg
-            )
-        ) {
-            Box {
-                // Decorative gradient background
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(100.dp)
-                        .background(
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(
-                                    accentBlue.copy(alpha = 0.1f),
-                                    secondaryBlue.copy(alpha = 0.05f)
-                                )
-                            )
-                        )
-                )
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(20.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Avatar
-                    UserAvatar(
-                        primaryBlue = primaryBlue,
-                        secondaryBlue = secondaryBlue,
-                        accentBlue = accentBlue,
-                        name = follower.name,
-                        profileImageUrl = follower.profileImageUrl
-                    )
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
-                    // Follower info
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text(
-                            text = follower.name,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1E293B)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = follower.username,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFF64748B),
-                            lineHeight = 20.sp
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    // Follow/Unfollow button (only show if not current user)
-                    if (context as? ComponentActivity? != null) {
-                        Button(
-                            onClick = { onFollowToggle() },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (follower.isFollowingBack) unfollowButtonColor else followButtonColor
-                            ),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text(if (follower.isFollowingBack) "Following" else "Follow")
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun UserAvatar(
-    primaryBlue: Color,
-    secondaryBlue: Color,
-    accentBlue: Color,
-    name: String,
-    profileImageUrl: String?
-) {
-    Box(
-        modifier = Modifier.size(70.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        // Rotating gradient background
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(CircleShape)
-                .background(
-                    brush = Brush.sweepGradient(
-                        colors = listOf(
-                            accentBlue,
-                            secondaryBlue,
-                            primaryBlue,
-                            accentBlue
-                        )
-                    )
-                )
-        )
-
-        // Inner circle
-        Box(
-            modifier = Modifier
-                .size(64.dp)
-                .clip(CircleShape)
-                .background(Color.White),
-            contentAlignment = Alignment.Center
-        ) {
-            if (!profileImageUrl.isNullOrEmpty()) {
-                AsyncImage(
-                    model = profileImageUrl,
-                    contentDescription = name,
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(60.dp)
-                        .clip(CircleShape)
-                        .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(primaryBlue, secondaryBlue)
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (name.isNotEmpty()) name.first().toString().uppercase() else "?",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-            }
-        }
-    }
 }

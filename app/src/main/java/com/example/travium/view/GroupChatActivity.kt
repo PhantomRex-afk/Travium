@@ -58,6 +58,8 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
+val TravelLightBlue = Color(0xFFE3F2FD)
+
 class GroupChatActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,7 +72,7 @@ class GroupChatActivity : ComponentActivity() {
         val viewModel = GroupChatRoomViewModel(GroupChatRepoImpl())
 
         setContent {
-            MaterialTheme {
+            TraviumChatTheme {
                 GroupChatScreen(
                     viewModel = viewModel,
                     groupId = groupId,
@@ -82,6 +84,32 @@ class GroupChatActivity : ComponentActivity() {
             }
         }
     }
+}
+
+@Composable
+fun TraviumChatTheme(content: @Composable () -> Unit) {
+    MaterialTheme(
+        colorScheme = darkColorScheme(
+            primary = TravelAccentTeal,
+            onPrimary = TravelDeepNavy,
+            secondary = TravelCardNavy,
+            onSecondary = Color.White,
+            tertiary = TravelLightBlue,
+            onTertiary = TravelDeepNavy,
+            background = TravelDeepNavy,
+            onBackground = Color.White,
+            surface = TravelCardNavy,
+            onSurface = Color.White,
+            surfaceVariant = TravelCardNavy.copy(alpha = 0.8f),
+            onSurfaceVariant = TravelSoftGray,
+            error = Color(0xFFF44336),
+            onError = Color.White,
+            outline = TravelSoftGray.copy(alpha = 0.3f),
+            outlineVariant = TravelSoftGray.copy(alpha = 0.1f),
+            scrim = Color.Black.copy(alpha = 0.5f)
+        ),
+        content = content
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -191,7 +219,7 @@ fun GroupChatScreen(
 
     Scaffold(
         topBar = {
-            ModernGroupChatTopBar(
+            TraviumGroupChatTopBar(
                 groupName = groupName,
                 groupImage = groupInfo?.groupImage ?: "",
                 memberCount = groupInfo?.members?.size ?: 0,
@@ -203,7 +231,7 @@ fun GroupChatScreen(
             )
         },
         bottomBar = {
-            ModernChatInputBar(
+            TraviumChatInputBar(
                 text = textState,
                 onTextChange = { textState = it },
                 onSend = {
@@ -228,14 +256,7 @@ fun GroupChatScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFFE3F2FD),
-                            Color(0xFFBBDEFB)
-                        )
-                    )
-                )
+                .background(TravelDeepNavy)
         ) {
             if (isLoading) {
                 Box(
@@ -244,13 +265,13 @@ fun GroupChatScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator(
-                            color = Color(0xFF1976D2),
+                            color = TravelAccentTeal,
                             strokeWidth = 3.dp
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = "Loading messages...",
-                            color = Color(0xFF1976D2),
+                            color = TravelAccentTeal,
                             fontSize = 14.sp
                         )
                     }
@@ -268,20 +289,20 @@ fun GroupChatScreen(
                             imageVector = Icons.Default.Email,
                             contentDescription = null,
                             modifier = Modifier.size(64.dp),
-                            tint = Color(0xFF90CAF9)
+                            tint = TravelSoftGray
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
                             text = "No messages yet",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color(0xFF1976D2)
+                            color = TravelAccentTeal
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "Start the conversation!",
                             fontSize = 14.sp,
-                            color = Color(0xFF64B5F6)
+                            color = TravelSoftGray
                         )
                     }
                 }
@@ -308,7 +329,7 @@ fun GroupChatScreen(
                             )
                         ) {
                             Column {
-                                ModernGroupMessageItem(
+                                TraviumGroupMessageItem(
                                     message = message,
                                     isMe = message.senderId == currentUserId,
                                     groupInfo = groupInfo,
@@ -327,7 +348,7 @@ fun GroupChatScreen(
 
     // Settings menu
     if (showSettingsMenu) {
-        GroupSettingsMenu(
+        TraviumGroupSettingsMenu(
             onDismiss = { showSettingsMenu = false },
             onLeaveGroup = {
                 showSettingsMenu = false
@@ -343,7 +364,7 @@ fun GroupChatScreen(
 
     // Leave group confirmation dialog
     if (showLeaveGroupDialog) {
-        LeaveGroupDialog(
+        TraviumLeaveGroupDialog(
             onDismiss = { showLeaveGroupDialog = false },
             onConfirmLeave = {
                 showLeaveGroupDialog = false
@@ -355,7 +376,7 @@ fun GroupChatScreen(
 
     // Edit members dialog
     if (showEditMembersDialog && groupInfo != null) {
-        EditMembersDialog(
+        TraviumEditMembersDialog(
             groupInfo = groupInfo!!,
             currentUserId = currentUserId,
             onDismiss = { showEditMembersDialog = false },
@@ -372,14 +393,14 @@ fun GroupChatScreen(
 
     // Other dialogs
     if (showGroupInfoDialog && groupInfo != null) {
-        ModernGroupInfoDialog(
+        TraviumGroupInfoDialog(
             groupInfo = groupInfo!!,
             onDismiss = { showGroupInfoDialog = false }
         )
     }
 
     if (showMembersDialog && groupInfo != null) {
-        ModernGroupMembersDialog(
+        TraviumGroupMembersDialog(
             groupInfo = groupInfo!!,
             currentUserId = currentUserId,
             onDismiss = { showMembersDialog = false }
@@ -387,7 +408,7 @@ fun GroupChatScreen(
     }
 
     if (showAttachmentOptions) {
-        ModernAttachmentPopup(
+        TraviumAttachmentPopup(
             onDismiss = { showAttachmentOptions = false },
             onImageClick = {
                 showAttachmentOptions = false
@@ -412,7 +433,7 @@ fun GroupChatScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ModernGroupChatTopBar(
+fun TraviumGroupChatTopBar(
     groupName: String,
     groupImage: String,
     memberCount: Int,
@@ -427,9 +448,9 @@ fun ModernGroupChatTopBar(
             .fillMaxWidth()
             .height(90.dp)
             .shadow(6.dp),
-        shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp),
+        shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = TravelCardNavy
         )
     ) {
         Row(
@@ -442,14 +463,14 @@ fun ModernGroupChatTopBar(
             Box(
                 modifier = Modifier
                     .size(42.dp)
-                    .background(Color(0xFFE3F2FD), CircleShape)
+                    .background(TravelAccentTeal.copy(alpha = 0.2f), CircleShape)
                     .clickable { onBackPressed() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.ArrowBack,
+                    imageVector = Icons.Default.ArrowBackIosNew,
                     contentDescription = "Back",
-                    tint = Color(0xFF1976D2),
+                    tint = TravelAccentTeal,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -462,7 +483,7 @@ fun ModernGroupChatTopBar(
                     .size(52.dp)
                     .shadow(4.dp, CircleShape)
                     .clip(CircleShape)
-                    .background(Color(0xFF1976D2))
+                    .background(TravelAccentTeal)
                     .clickable { onGroupInfoClick() }
             ) {
                 if (groupImage.isNotEmpty()) {
@@ -479,7 +500,7 @@ fun ModernGroupChatTopBar(
                     ) {
                         Text(
                             text = groupName.firstOrNull()?.uppercase() ?: "G",
-                            color = Color.White,
+                            color = TravelDeepNavy,
                             fontWeight = FontWeight.Bold,
                             fontSize = 20.sp
                         )
@@ -501,7 +522,7 @@ fun ModernGroupChatTopBar(
                     fontSize = 17.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    color = Color(0xFF212121)
+                    color = Color.White
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -509,25 +530,25 @@ fun ModernGroupChatTopBar(
                         imageVector = Icons.Default.Person,
                         contentDescription = null,
                         modifier = Modifier.size(14.dp),
-                        tint = Color(0xFF64B5F6)
+                        tint = TravelAccentTeal
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "$memberCount members",
                         fontSize = 13.sp,
-                        color = Color(0xFF757575)
+                        color = TravelSoftGray
                     )
                     if (isCurrentUserCreator) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Box(
                             modifier = Modifier
-                                .background(Color(0xFFFFA726), RoundedCornerShape(4.dp))
+                                .background(TravelAccentTeal, RoundedCornerShape(4.dp))
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
                             Text(
                                 text = "Admin",
                                 fontSize = 10.sp,
-                                color = Color.White,
+                                color = TravelDeepNavy,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -544,7 +565,7 @@ fun ModernGroupChatTopBar(
                     Icon(
                         imageVector = Icons.Default.AccountCircle,
                         contentDescription = "Members",
-                        tint = Color(0xFF1976D2),
+                        tint = TravelAccentTeal,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -555,7 +576,7 @@ fun ModernGroupChatTopBar(
                     Icon(
                         imageVector = Icons.Default.MoreVert,
                         contentDescription = "Settings",
-                        tint = Color(0xFF1976D2),
+                        tint = TravelAccentTeal,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -565,7 +586,7 @@ fun ModernGroupChatTopBar(
 }
 
 @Composable
-fun GroupSettingsMenu(
+fun TraviumGroupSettingsMenu(
     onDismiss: () -> Unit,
     onLeaveGroup: () -> Unit,
     onEditMembers: () -> Unit,
@@ -595,7 +616,7 @@ fun GroupSettingsMenu(
                     .width(220.dp)
                     .shadow(12.dp, RoundedCornerShape(20.dp)),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = TravelCardNavy)
             ) {
                 Column(
                     modifier = Modifier
@@ -604,21 +625,25 @@ fun GroupSettingsMenu(
                 ) {
                     // Edit Members (only for creator)
                     if (isCreator) {
-                        SettingsMenuItem(
+                        TraviumSettingsMenuItem(
                             icon = Icons.Default.Edit,
                             text = "Edit Members",
-                            iconColor = Color(0xFF1976D2),
+                            iconColor = TravelAccentTeal,
                             onClick = onEditMembers
                         )
-                        Divider(modifier = Modifier.padding(horizontal = 16.dp))
+                        Divider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            thickness = 1.dp,
+                            color = TravelSoftGray.copy(alpha = 0.3f)
+                        )
                     }
 
                     // Leave Group
-                    SettingsMenuItem(
+                    TraviumSettingsMenuItem(
                         icon = Icons.Default.ExitToApp,
                         text = "Leave Group",
-                        iconColor = Color.Red,
-                        textColor = Color.Red,
+                        iconColor = Color(0xFFF44336),
+                        textColor = Color(0xFFF44336),
                         onClick = onLeaveGroup
                     )
                 }
@@ -628,11 +653,11 @@ fun GroupSettingsMenu(
 }
 
 @Composable
-fun SettingsMenuItem(
+fun TraviumSettingsMenuItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     text: String,
     iconColor: Color,
-    textColor: Color = Color(0xFF212121),
+    textColor: Color = Color.White,
     onClick: () -> Unit
 ) {
     var isPressed by remember { mutableStateOf(false) }
@@ -688,7 +713,7 @@ fun SettingsMenuItem(
 }
 
 @Composable
-fun LeaveGroupDialog(
+fun TraviumLeaveGroupDialog(
     onDismiss: () -> Unit,
     onConfirmLeave: () -> Unit,
     isCreator: Boolean
@@ -698,7 +723,7 @@ fun LeaveGroupDialog(
         title = {
             Text(
                 text = if (isCreator) "Cannot Leave Group" else "Leave Group?",
-                color = if (isCreator) Color.Red else Color(0xFF212121)
+                color = if (isCreator) Color(0xFFF44336) else TravelAccentTeal
             )
         },
         text = {
@@ -706,14 +731,15 @@ fun LeaveGroupDialog(
                 text = if (isCreator)
                     "You are the group creator. You cannot leave the group. If you want to leave, you must delete the group or transfer ownership first."
                 else "Are you sure you want to leave this group? You won't be able to see messages anymore.",
-                fontSize = 14.sp
+                fontSize = 14.sp,
+                color = Color.White
             )
         },
         confirmButton = {
             if (!isCreator) {
                 TextButton(
                     onClick = onConfirmLeave,
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFF44336))
                 ) {
                     Text("Leave")
                 }
@@ -721,14 +747,17 @@ fun LeaveGroupDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(if (isCreator) "OK" else "Cancel")
+                Text(if (isCreator) "OK" else "Cancel", color = TravelAccentTeal)
             }
-        }
+        },
+        containerColor = TravelCardNavy,
+        titleContentColor = Color.White,
+        textContentColor = Color.White
     )
 }
 
 @Composable
-fun EditMembersDialog(
+fun TraviumEditMembersDialog(
     groupInfo: GroupChat,
     currentUserId: String,
     onDismiss: () -> Unit,
@@ -742,7 +771,7 @@ fun EditMembersDialog(
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = TravelCardNavy),
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(max = 500.dp)
@@ -758,7 +787,7 @@ fun EditMembersDialog(
                         text = "Manage Members",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF212121)
+                        color = Color.White
                     )
                     IconButton(
                         onClick = onAddMember,
@@ -767,7 +796,7 @@ fun EditMembersDialog(
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Add Member",
-                            tint = Color(0xFF1976D2),
+                            tint = TravelAccentTeal,
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -776,7 +805,7 @@ fun EditMembersDialog(
                 Text(
                     text = "${groupInfo.members.size} members",
                     fontSize = 14.sp,
-                    color = Color(0xFF757575),
+                    color = TravelSoftGray,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
@@ -788,7 +817,7 @@ fun EditMembersDialog(
                         val isCreator = memberId == groupInfo.createdBy
                         val isCurrentUser = memberId == currentUserId
 
-                        EditableMemberItem(
+                        TraviumEditableMemberItem(
                             memberId = memberId,
                             memberName = memberName,
                             memberPhoto = memberPhoto,
@@ -805,7 +834,7 @@ fun EditMembersDialog(
                         if (index < groupInfo.members.size - 1) {
                             HorizontalDivider(
                                 modifier = Modifier.padding(vertical = 8.dp),
-                                color = Color(0xFFE0E0E0)
+                                color = TravelSoftGray.copy(alpha = 0.3f)
                             )
                         }
                     }
@@ -817,11 +846,12 @@ fun EditMembersDialog(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF1976D2)
+                        containerColor = TravelAccentTeal,
+                        contentColor = TravelDeepNavy
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Close", fontSize = 16.sp)
+                    Text("Close", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -831,30 +861,39 @@ fun EditMembersDialog(
     if (showRemoveConfirmation && selectedMemberId != null) {
         AlertDialog(
             onDismissRequest = { showRemoveConfirmation = false },
-            title = { Text("Remove Member") },
-            text = { Text("Are you sure you want to remove $selectedMemberName from the group?") },
+            title = { Text("Remove Member", color = Color.White) },
+            text = {
+                Text(
+                    "Are you sure you want to remove $selectedMemberName from the group?",
+                    color = Color.White
+                )
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
                         onRemoveMember(selectedMemberId!!)
                         showRemoveConfirmation = false
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFF44336))
                 ) {
                     Text("Remove")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showRemoveConfirmation = false }) {
+                TextButton(
+                    onClick = { showRemoveConfirmation = false },
+                    colors = ButtonDefaults.textButtonColors(contentColor = TravelAccentTeal)
+                ) {
                     Text("Cancel")
                 }
-            }
+            },
+            containerColor = TravelCardNavy
         )
     }
 }
 
 @Composable
-fun EditableMemberItem(
+fun TraviumEditableMemberItem(
     memberId: String,
     memberName: String,
     memberPhoto: String,
@@ -874,7 +913,7 @@ fun EditableMemberItem(
                 .size(48.dp)
                 .shadow(2.dp, CircleShape)
                 .clip(CircleShape)
-                .background(Color(0xFF1976D2))
+                .background(TravelAccentTeal)
         ) {
             if (memberPhoto.isNotEmpty()) {
                 AsyncImage(
@@ -890,7 +929,7 @@ fun EditableMemberItem(
                 ) {
                     Text(
                         text = memberName.firstOrNull()?.uppercase() ?: "?",
-                        color = Color.White,
+                        color = TravelDeepNavy,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
                     )
@@ -906,19 +945,19 @@ fun EditableMemberItem(
                     text = if (isCurrentUser) "$memberName (You)" else memberName,
                     fontWeight = FontWeight.Medium,
                     fontSize = 15.sp,
-                    color = Color(0xFF212121)
+                    color = Color.White
                 )
                 if (isCurrentUser) {
                     Spacer(modifier = Modifier.width(6.dp))
                     Box(
                         modifier = Modifier
-                            .background(Color(0xFFE3F2FD), RoundedCornerShape(4.dp))
+                            .background(TravelAccentTeal.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
                             text = "You",
                             fontSize = 10.sp,
-                            color = Color(0xFF1976D2),
+                            color = TravelAccentTeal,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -953,7 +992,7 @@ fun EditableMemberItem(
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Remove",
-                    tint = Color.Gray,
+                    tint = TravelSoftGray,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -961,14 +1000,8 @@ fun EditableMemberItem(
     }
 }
 
-// The rest of the composables remain the same as before:
-// ModernGroupMessageItem, ModernChatInputBar, ModernGroupInfoDialog,
-// ModernGroupMembersDialog, ModernAttachmentPopup, ModernAttachmentOption, formatMessageTimes
-
-// Keep all the existing composables from the original file that are not modified
-
 @Composable
-fun ModernGroupMessageItem(
+fun TraviumGroupMessageItem(
     message: GroupMessage,
     isMe: Boolean,
     groupInfo: GroupChat?,
@@ -1000,7 +1033,7 @@ fun ModernGroupMessageItem(
                         .size(32.dp)
                         .shadow(2.dp, CircleShape)
                         .clip(CircleShape)
-                        .background(Color(0xFF1976D2))
+                        .background(TravelAccentTeal)
                 ) {
                     if (senderPhoto.isNotEmpty()) {
                         AsyncImage(
@@ -1016,7 +1049,7 @@ fun ModernGroupMessageItem(
                         ) {
                             Text(
                                 text = senderName.firstOrNull()?.uppercase() ?: "?",
-                                color = Color.White,
+                                color = TravelDeepNavy,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp
                             )
@@ -1035,7 +1068,7 @@ fun ModernGroupMessageItem(
                         text = message.senderName,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF1976D2),
+                        color = TravelAccentTeal,
                         modifier = Modifier.padding(start = 8.dp, bottom = 4.dp)
                     )
                 }
@@ -1053,7 +1086,7 @@ fun ModernGroupMessageItem(
                         bottomEnd = if (isMe) 4.dp else 18.dp
                     ),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (isMe) Color(0xFF42A5F5) else Color.White
+                        containerColor = if (isMe) TravelAccentTeal else TravelCardNavy
                     )
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
@@ -1061,7 +1094,7 @@ fun ModernGroupMessageItem(
                             "text" -> {
                                 Text(
                                     text = message.messageText,
-                                    color = if (isMe) Color.White else Color(0xFF212121),
+                                    color = if (isMe) TravelDeepNavy else Color.White,
                                     fontSize = 15.sp,
                                     lineHeight = 20.sp
                                 )
@@ -1085,14 +1118,14 @@ fun ModernGroupMessageItem(
                                     Icon(
                                         imageVector = Icons.Default.PlayArrow,
                                         contentDescription = "Voice",
-                                        tint = if (isMe) Color.White else Color(0xFF1976D2),
+                                        tint = if (isMe) TravelDeepNavy else TravelAccentTeal,
                                         modifier = Modifier.size(28.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
                                         text = "Voice message",
                                         fontSize = 14.sp,
-                                        color = if (isMe) Color.White else Color(0xFF212121)
+                                        color = if (isMe) TravelDeepNavy else Color.White
                                     )
                                 }
                             }
@@ -1108,7 +1141,7 @@ fun ModernGroupMessageItem(
                             Text(
                                 text = formatMessageTimes(message.timestamp),
                                 fontSize = 10.sp,
-                                color = if (isMe) Color.White.copy(0.8f) else Color.Gray
+                                color = if (isMe) TravelDeepNavy.copy(0.8f) else TravelSoftGray
                             )
 
                             if (isMe) {
@@ -1116,7 +1149,7 @@ fun ModernGroupMessageItem(
                                 Icon(
                                     imageVector = Icons.Default.Done,
                                     contentDescription = if (message.isRead) "Read" else "Sent",
-                                    tint = if (message.isRead) Color(0xFF00E676) else Color.White.copy(0.7f),
+                                    tint = if (message.isRead) Color(0xFF00E676) else TravelDeepNavy.copy(0.7f),
                                     modifier = Modifier.size(14.dp)
                                 )
                             }
@@ -1133,7 +1166,7 @@ fun ModernGroupMessageItem(
 }
 
 @Composable
-fun ModernChatInputBar(
+fun TraviumChatInputBar(
     text: String,
     onTextChange: (String) -> Unit,
     onSend: () -> Unit,
@@ -1145,8 +1178,8 @@ fun ModernChatInputBar(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(8.dp),
-        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+        colors = CardDefaults.cardColors(containerColor = TravelCardNavy)
     ) {
         Column(
             modifier = Modifier
@@ -1164,14 +1197,15 @@ fun ModernChatInputBar(
                     LinearProgressIndicator(
                         progress = { progressValue },
                         modifier = Modifier.size(24.dp),
-                        color = Color(0xFF1976D2),
-                        strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+                        color = TravelAccentTeal,
+                        strokeCap = androidx.compose.ui.graphics.StrokeCap.Round,
+                        trackColor = TravelSoftGray.copy(alpha = 0.3f)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = "Uploading ${uploadProgress.toInt()}%",
                         fontSize = 14.sp,
-                        color = Color(0xFF1976D2)
+                        color = TravelAccentTeal
                     )
                 }
             }
@@ -1184,10 +1218,8 @@ fun ModernChatInputBar(
                     modifier = Modifier
                         .size(48.dp)
                         .background(
-                            brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFF42A5F5), Color(0xFF1976D2))
-                            ),
-                            shape = CircleShape
+                            TravelAccentTeal,
+                            CircleShape
                         )
                         .clickable(enabled = !isUploading) { onAttachmentClick() },
                     contentAlignment = Alignment.Center
@@ -1195,7 +1227,7 @@ fun ModernChatInputBar(
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "Attach",
-                        tint = Color.White,
+                        tint = TravelDeepNavy,
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -1203,7 +1235,7 @@ fun ModernChatInputBar(
                 Card(
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+                    colors = CardDefaults.cardColors(containerColor = TravelDeepNavy)
                 ) {
                     TextField(
                         value = text,
@@ -1212,7 +1244,7 @@ fun ModernChatInputBar(
                             Text(
                                 text = "Type a message...",
                                 fontSize = 15.sp,
-                                color = Color.Gray
+                                color = TravelSoftGray
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -1220,7 +1252,10 @@ fun ModernChatInputBar(
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent,
                             focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent
+                            unfocusedIndicatorColor = Color.Transparent,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            cursorColor = TravelAccentTeal
                         ),
                         textStyle = TextStyle(fontSize = 15.sp),
                         maxLines = 4,
@@ -1240,10 +1275,8 @@ fun ModernChatInputBar(
                             modifier = Modifier
                                 .size(48.dp)
                                 .background(
-                                    brush = Brush.linearGradient(
-                                        colors = listOf(Color(0xFF42A5F5), Color(0xFF1976D2))
-                                    ),
-                                    shape = CircleShape
+                                    TravelAccentTeal,
+                                    CircleShape
                                 )
                                 .clickable { onSend() },
                             contentAlignment = Alignment.Center
@@ -1251,7 +1284,7 @@ fun ModernChatInputBar(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Send,
                                 contentDescription = "Send",
-                                tint = Color.White,
+                                tint = TravelDeepNavy,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -1259,13 +1292,13 @@ fun ModernChatInputBar(
                         Box(
                             modifier = Modifier
                                 .size(48.dp)
-                                .background(Color(0xFFE0E0E0), CircleShape),
+                                .background(TravelSoftGray.copy(alpha = 0.3f), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Send,
                                 contentDescription = "Send",
-                                tint = Color.Gray,
+                                tint = TravelSoftGray,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -1277,11 +1310,11 @@ fun ModernChatInputBar(
 }
 
 @Composable
-fun ModernGroupInfoDialog(groupInfo: GroupChat, onDismiss: () -> Unit) {
+fun TraviumGroupInfoDialog(groupInfo: GroupChat, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = TravelCardNavy),
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(12.dp, RoundedCornerShape(24.dp))
@@ -1295,7 +1328,7 @@ fun ModernGroupInfoDialog(groupInfo: GroupChat, onDismiss: () -> Unit) {
                         .size(100.dp)
                         .shadow(4.dp, CircleShape)
                         .clip(CircleShape)
-                        .background(Color(0xFF1976D2))
+                        .background(TravelAccentTeal)
                 ) {
                     if (groupInfo.groupImage.isNotEmpty()) {
                         AsyncImage(
@@ -1311,7 +1344,7 @@ fun ModernGroupInfoDialog(groupInfo: GroupChat, onDismiss: () -> Unit) {
                         ) {
                             Text(
                                 text = groupInfo.groupName.firstOrNull()?.uppercase() ?: "G",
-                                color = Color.White,
+                                color = TravelDeepNavy,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 36.sp
                             )
@@ -1325,7 +1358,7 @@ fun ModernGroupInfoDialog(groupInfo: GroupChat, onDismiss: () -> Unit) {
                     text = groupInfo.groupName,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF212121)
+                    color = Color.White
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -1337,14 +1370,14 @@ fun ModernGroupInfoDialog(groupInfo: GroupChat, onDismiss: () -> Unit) {
                     Icon(
                         imageVector = Icons.Default.Person,
                         contentDescription = null,
-                        tint = Color(0xFF1976D2),
+                        tint = TravelAccentTeal,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "${groupInfo.members.size} members",
                         fontSize = 15.sp,
-                        color = Color(0xFF757575)
+                        color = TravelSoftGray
                     )
                 }
 
@@ -1353,7 +1386,7 @@ fun ModernGroupInfoDialog(groupInfo: GroupChat, onDismiss: () -> Unit) {
                 Text(
                     text = "Created by ${groupInfo.createdByName}",
                     fontSize = 13.sp,
-                    color = Color(0xFF9E9E9E)
+                    color = TravelSoftGray
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -1362,11 +1395,12 @@ fun ModernGroupInfoDialog(groupInfo: GroupChat, onDismiss: () -> Unit) {
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF1976D2)
+                        containerColor = TravelAccentTeal,
+                        contentColor = TravelDeepNavy
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Close", fontSize = 16.sp)
+                    Text("Close", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -1374,7 +1408,7 @@ fun ModernGroupInfoDialog(groupInfo: GroupChat, onDismiss: () -> Unit) {
 }
 
 @Composable
-fun ModernGroupMembersDialog(
+fun TraviumGroupMembersDialog(
     groupInfo: GroupChat,
     currentUserId: String,
     onDismiss: () -> Unit
@@ -1382,7 +1416,7 @@ fun ModernGroupMembersDialog(
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = TravelCardNavy),
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(max = 500.dp)
@@ -1393,20 +1427,20 @@ fun ModernGroupMembersDialog(
                     text = "Group Members",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF212121),
+                    color = Color.White,
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
 
                 Text(
                     text = "${groupInfo.members.size} members",
                     fontSize = 14.sp,
-                    color = Color(0xFF757575),
+                    color = TravelSoftGray,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
                 LazyColumn {
                     items(groupInfo.members.indices.toList()) { index ->
-                        ModernMemberItem(
+                        TraviumMemberItem(
                             memberName = groupInfo.memberNames.getOrNull(index) ?: "Unknown",
                             memberPhoto = groupInfo.memberPhotos.getOrNull(index) ?: "",
                             isCreator = groupInfo.members[index] == groupInfo.createdBy,
@@ -1415,7 +1449,7 @@ fun ModernGroupMembersDialog(
                         if (index < groupInfo.members.size - 1) {
                             HorizontalDivider(
                                 modifier = Modifier.padding(vertical = 8.dp),
-                                color = Color(0xFFE0E0E0)
+                                color = TravelSoftGray.copy(alpha = 0.3f)
                             )
                         }
                     }
@@ -1427,11 +1461,12 @@ fun ModernGroupMembersDialog(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF1976D2)
+                        containerColor = TravelAccentTeal,
+                        contentColor = TravelDeepNavy
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Close", fontSize = 16.sp)
+                    Text("Close", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -1439,7 +1474,7 @@ fun ModernGroupMembersDialog(
 }
 
 @Composable
-fun ModernMemberItem(
+fun TraviumMemberItem(
     memberName: String,
     memberPhoto: String,
     isCreator: Boolean,
@@ -1456,7 +1491,7 @@ fun ModernMemberItem(
                 .size(48.dp)
                 .shadow(2.dp, CircleShape)
                 .clip(CircleShape)
-                .background(Color(0xFF1976D2))
+                .background(TravelAccentTeal)
         ) {
             if (memberPhoto.isNotEmpty()) {
                 AsyncImage(
@@ -1472,7 +1507,7 @@ fun ModernMemberItem(
                 ) {
                     Text(
                         text = memberName.firstOrNull()?.uppercase() ?: "?",
-                        color = Color.White,
+                        color = TravelDeepNavy,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
                     )
@@ -1488,19 +1523,19 @@ fun ModernMemberItem(
                     text = if (isCurrentUser) "$memberName (You)" else memberName,
                     fontWeight = FontWeight.Medium,
                     fontSize = 15.sp,
-                    color = Color(0xFF212121)
+                    color = Color.White
                 )
                 if (isCurrentUser) {
                     Spacer(modifier = Modifier.width(6.dp))
                     Box(
                         modifier = Modifier
-                            .background(Color(0xFFE3F2FD), RoundedCornerShape(4.dp))
+                            .background(TravelAccentTeal.copy(alpha = 0.2f), RoundedCornerShape(4.dp))
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
                             text = "You",
                             fontSize = 10.sp,
-                            color = Color(0xFF1976D2),
+                            color = TravelAccentTeal,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -1529,7 +1564,7 @@ fun ModernMemberItem(
 }
 
 @Composable
-fun ModernAttachmentPopup(
+fun TraviumAttachmentPopup(
     onDismiss: () -> Unit,
     onImageClick: () -> Unit,
     onCameraClick: () -> Unit
@@ -1558,7 +1593,7 @@ fun ModernAttachmentPopup(
                     .width(220.dp)
                     .shadow(12.dp, RoundedCornerShape(20.dp)),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = TravelCardNavy)
             ) {
                 Column(
                     modifier = Modifier
@@ -1571,19 +1606,19 @@ fun ModernAttachmentPopup(
                         style = TextStyle(
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF212121)
+                            color = Color.White
                         ),
                         modifier = Modifier.padding(bottom = 4.dp)
                     )
 
-                    ModernAttachmentOption(
+                    TraviumAttachmentOption(
                         icon = Icons.Default.AccountCircle,
                         text = "Gallery",
                         gradientColors = listOf(Color(0xFF667EEA), Color(0xFF764BA2)),
                         onClick = onImageClick
                     )
 
-                    ModernAttachmentOption(
+                    TraviumAttachmentOption(
                         icon = Icons.Default.Face,
                         text = "Camera",
                         gradientColors = listOf(Color(0xFF4FACFE), Color(0xFF00F2FE)),
@@ -1596,7 +1631,7 @@ fun ModernAttachmentPopup(
 }
 
 @Composable
-fun ModernAttachmentOption(
+fun TraviumAttachmentOption(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     text: String,
     gradientColors: List<Color>,
@@ -1627,7 +1662,7 @@ fun ModernAttachmentOption(
                 )
             },
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA))
+        colors = CardDefaults.cardColors(containerColor = TravelDeepNavy)
     ) {
         Row(
             modifier = Modifier
@@ -1657,7 +1692,7 @@ fun ModernAttachmentOption(
                 style = TextStyle(
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color(0xFF212121)
+                    color = Color.White
                 )
             )
         }

@@ -161,7 +161,7 @@ fun ProfileScreen() {
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         ProfileStatColumn(userPosts.size.toString(), "Posts", cyanAccent)
-                        ProfileStatColumn("10B", "Followers", cyanAccent)
+                        ProfileStatColumn("0", "Followers", cyanAccent)
                         ProfileStatColumn("0", "Following", cyanAccent)
                     }
 
