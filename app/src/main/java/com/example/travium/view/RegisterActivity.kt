@@ -307,6 +307,23 @@ fun RegisterBody(viewModel: UserViewModel? = null) {
                             if (isLoading) CircularProgressIndicator(color = White, modifier = Modifier.size(24.dp))
                             else Text("Create Account", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, color = White))
                         }
+
+                        // Added Guide Registration Button
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(30.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .clickable {
+                                    context.startActivity(Intent(context, GuideRegistrationActivity::class.java))
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "Register as a Guide",
+                                style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, color = secondaryColor)
+                            )
+                        }
                     }
                 }
 
