@@ -236,7 +236,7 @@ fun MainScreen(
                         1 -> HomeScreenBody()
                         2 -> MakePostBody(selectedImageUri = selectedImageUri, onPickImage = onPickImage)
                         3 -> ChatScreen()
-                        4 -> ProfileScreen()
+                        4 -> ProfileScreen(userId = currentUserId)
                         else -> HomeScreenBody()
                     }
                 }
