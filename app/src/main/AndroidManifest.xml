@@ -76,12 +76,7 @@
         <activity
             android:name=".view.SplashActivity"
             android:exported="true"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:theme="@style/Theme.Travium" />
 
         <activity
             android:name=".view.LoginActivity"
@@ -173,11 +168,6 @@
 
         <activity
             android:name=".view.ChatListScreen"
-            android:exported="false"
-            android:theme="@style/Theme.Travium" />
-
-        <activity
-            android:name=".view.ChatScreen"
             android:exported="false"
             android:theme="@style/Theme.Travium" />
 
