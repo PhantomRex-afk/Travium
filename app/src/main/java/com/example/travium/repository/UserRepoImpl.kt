@@ -96,6 +96,10 @@ class UserRepoImpl : UserRepo {
     }
 
     override fun followUser(currentUserId: String, targetUserId: String, callback: (Boolean, String) -> Unit) {
+        if (currentUserId == targetUserId) {
+            callback(false, "You cannot follow yourself.")
+            return
+        }
         followingRef.child(currentUserId).child(targetUserId).setValue(true)
             .addOnSuccessListener {
                 followersRef.child(targetUserId).child(currentUserId).setValue(true)
@@ -118,7 +122,11 @@ class UserRepoImpl : UserRepo {
     override fun getFollowersCount(userId: String, callback: (Long) -> Unit) {
         followersRef.child(userId).addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                callback(snapshot.childrenCount)
+                var count = snapshot.childrenCount
+                if (snapshot.hasChild(userId)) {
+                    count--
+                }
+                callback(count)
             }
             override fun onCancelled(error: DatabaseError) {
                 callback(0)
@@ -129,7 +137,11 @@ class UserRepoImpl : UserRepo {
     override fun getFollowingCount(userId: String, callback: (Long) -> Unit) {
         followingRef.child(userId).addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                callback(snapshot.childrenCount)
+                var count = snapshot.childrenCount
+                if (snapshot.hasChild(userId)) {
+                    count--
+                }
+                callback(count)
             }
             override fun onCancelled(error: DatabaseError) {
                 callback(0)

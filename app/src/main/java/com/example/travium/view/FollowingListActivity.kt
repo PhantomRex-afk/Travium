@@ -1,6 +1,7 @@
 package com.example.travium.view
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -76,15 +77,16 @@ fun FollowingListBody() {
     val listState = rememberLazyListState()
 
     // Premium color palette
+    val darkNavy = Color(0xFF000033)
     val primaryBlue = Color(0xFF0EA5E9)
     val secondaryBlue = Color(0xFF38BDF8)
     val accentBlue = Color(0xFF7DD3FC)
-    val bgColor = Color(0xFFFAFAFA)
-    val cardBg = Color(0xFFFFFFFF)
+    val bgColor = darkNavy
+    val cardBg = Color(0xFF1E293B)
     val bubbleColor = primaryBlue.copy(alpha = 0.1f)
-    val textPrimary = Color(0xFF1E293B)
-    val textSecondary = Color(0xFF64748B)
-    val textTertiary = Color(0xFF94A3B8)
+    val textPrimary = Color.White
+    val textSecondary = Color(0xFF94A3B8)
+    val textTertiary = Color(0xFF64748B)
 
     var searchQuery by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
@@ -106,7 +108,7 @@ fun FollowingListBody() {
     LaunchedEffect(userId) {
         if (userId.isNotEmpty()) {
             loadFollowing(userId, userRepository) { following ->
-                followingDetails = following
+                followingDetails = following.filter { it.id != userId } // Exclude self from the list
                 isLoading = false
             }
         } else {
@@ -134,7 +136,7 @@ fun FollowingListBody() {
                 onSearchToggle = { isSearching = !isSearching },
                 onClearSearch = { searchQuery = "" },
                 onBackClick = { (context as? ComponentActivity)?.finish() },
-                title = "Following (${followingDetails.size})"
+                title = "Following (${filteredFollowing.size})"
             )
         }
     ) { padding ->
@@ -202,7 +204,11 @@ fun FollowingListBody() {
                                 },
                                 context = context,
                                 isOwnProfile = isOwnProfile,
-                                onClick = { selectedUser = following }
+                                onClick = {
+                                    val intent = Intent(context, ProfileActivity::class.java)
+                                    intent.putExtra("USER_ID", following.id)
+                                    context.startActivity(intent)
+                                }
                             )
                         }
                     }
@@ -294,7 +300,7 @@ fun ChatLikeTopAppBar(
             }
         },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = Color(0xFF0EA5E9)
+            containerColor = Color(0xFF000033)
         )
     )
 }
@@ -637,7 +643,7 @@ private fun loadFollowing(
                             profileImageUrl = if (user.profileImageUrl.isNotEmpty()) user.profileImageUrl else null,
                             lastActive = "recently",
                             isOnline = false,
-                            mutualFriends = (0..10).random() // Mock data
+                            mutualFriends = 0
                         )
 
                         following.add(followingUi)

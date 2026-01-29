@@ -16,7 +16,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -26,22 +26,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.example.travium.R
 import com.example.travium.model.MakePostModel
-import com.example.travium.repository.MakePostRepoImpl
-import com.example.travium.repository.UserRepoImpl
 import com.example.travium.ui.theme.TraviumTheme
-import com.example.travium.viewmodel.MakePostViewModel
-import com.example.travium.viewmodel.UserViewModel
+import com.google.firebase.Firebase
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.ktx.database
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.database.database
 
 class OtherUserProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,21 +53,13 @@ class OtherUserProfileActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OtherUserProfileScreen(userId: String, onBack: () -> Unit) {
-    val postViewModel = remember { MakePostViewModel(MakePostRepoImpl()) }
-    val userViewModel = remember { UserViewModel(UserRepoImpl()) }
-    
     var fullName by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var bio by remember { mutableStateOf("") }
     var profileImageUrl by remember { mutableStateOf<String?>(null) }
     var userPosts by remember { mutableStateOf<List<MakePostModel>>(emptyList()) }
-
-    var selectedPostId by remember { mutableStateOf<String?>(null) }
-    var isSheetOpen by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     
     val midnightBlue = Color(0xFF003366)
     val darkNavy = Color(0xFF000033)
@@ -79,8 +68,6 @@ fun OtherUserProfileScreen(userId: String, onBack: () -> Unit) {
     LaunchedEffect(userId) {
         if (userId.isEmpty()) return@LaunchedEffect
         val database = Firebase.database
-        
-        // Fetch User Details
         val userRef = database.getReference("users").child(userId)
         userRef.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
@@ -92,7 +79,6 @@ fun OtherUserProfileScreen(userId: String, onBack: () -> Unit) {
             override fun onCancelled(error: DatabaseError) {}
         })
 
-        // Fetch User Posts
         val postsRef = database.getReference("posts")
         postsRef.orderByChild("userId").equalTo(userId)
             .addValueEventListener(object : ValueEventListener {
@@ -113,114 +99,83 @@ fun OtherUserProfileScreen(userId: String, onBack: () -> Unit) {
             columns = GridCells.Fixed(3),
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            /* Header Section with integrated Design */
             item(span = { GridItemSpan(maxLineSpan) }) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Start
                     ) {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
                         }
                     }
-                    
-                    // Profile Image with ring
-                    Box(contentAlignment = Alignment.Center) {
-                        Box(
-                            modifier = Modifier
-                                .size(110.dp)
-                                .background(
-                                    Brush.sweepGradient(listOf(cyanAccent, Color.Blue, cyanAccent)),
-                                    CircleShape
-                                )
+
+                    Surface(
+                        shape = CircleShape,
+                        border = BorderStroke(2.dp, cyanAccent),
+                        color = Color.Transparent,
+                        modifier = Modifier.size(100.dp)
+                    ) {
+                        Image(
+                            painter = rememberAsyncImagePainter(profileImageUrl ?: R.drawable.profile),
+                            contentDescription = "Profile Image",
+                            modifier = Modifier.padding(4.dp).clip(CircleShape),
+                            contentScale = ContentScale.Crop
                         )
-                        Surface(
-                            shape = CircleShape,
-                            color = darkNavy,
-                            modifier = Modifier.size(104.dp)
-                        ) {
-                            Image(
-                                painter = rememberAsyncImagePainter(
-                                    profileImageUrl ?: R.drawable.profile
-                                ),
-                                contentDescription = "Profile Image",
-                                modifier = Modifier
-                                    .padding(4.dp)
-                                    .clip(CircleShape),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    // Username handle
                     Text(
                         if (username.isNotEmpty()) "@$username" else fullName,
-                        color = cyanAccent,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 24.sp,
-                        letterSpacing = 1.sp
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
                     )
-                    
                     Text(
                         bio,
-                        color = Color.White.copy(alpha = 0.7f),
-                        fontSize = 14.sp,
-                        modifier = Modifier.padding(top = 4.dp)
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 14.sp
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Pill-Style Stats Layout
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(24.dp))
-                            .padding(vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        StatItem(userPosts.size.toString(), "POSTS", cyanAccent)
-                        VerticalDivider(modifier = Modifier.height(20.dp), thickness = 1.dp, color = Color.White.copy(alpha = 0.1f))
-                        StatItem("0", "FOLLOWERS", cyanAccent)
-                        VerticalDivider(modifier = Modifier.height(20.dp), thickness = 1.dp, color = Color.White.copy(alpha = 0.1f))
-                        StatItem("0", "FOLLOWING", cyanAccent)
+                        ProfileStatColumn(userPosts.size.toString(), "Posts", cyanAccent)
+                        ProfileStatColumn("0", "Followers", cyanAccent)
+                        ProfileStatColumn("0", "Following", cyanAccent)
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
-                    
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Button(
-                            onClick = {
-                            },
-                            modifier = Modifier.weight(1f).height(48.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = cyanAccent,
-                                contentColor = darkNavy
-                            )
+                            onClick = { /* Follow logic */ },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = midnightBlue, contentColor = Color.White)
                         ) {
-                            Text("FOLLOW", fontWeight = FontWeight.Bold)
+                            Text("Follow", fontWeight = FontWeight.Bold)
                         }
-                        OutlinedButton(
-                            onClick = { 
-                            },
-                            modifier = Modifier.weight(1f).height(48.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            border = BorderStroke(1.dp, cyanAccent),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = cyanAccent
-                            )
+                        Button(
+                            onClick = { /* Message logic */ },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = midnightBlue, contentColor = Color.White)
                         ) {
-                            Text("MESSAGE", fontWeight = FontWeight.Bold)
+                            Text("Message", fontWeight = FontWeight.Bold)
                         }
                     }
                     
@@ -230,90 +185,45 @@ fun OtherUserProfileScreen(userId: String, onBack: () -> Unit) {
                 }
             }
 
-            /* Gallery Grid */
             items(userPosts) { post ->
-                Card(
-                    modifier = Modifier
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(16.dp))
-                        .clickable { 
-                            selectedPostId = post.postId
-                            isSheetOpen = true
-                        },
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.1f))
+                Box(
+                    modifier = Modifier.aspectRatio(1f).clip(RoundedCornerShape(4.dp))
                 ) {
-                    Box {
-                        Image(
-                            painter = rememberAsyncImagePainter(post.imageUrl),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                        
-                        // Count overlay
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(8.dp)
-                                .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                    Image(
+                        painter = rememberAsyncImagePainter(post.imageUrl),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    
+                    Box(
+                        modifier = Modifier.fillMaxSize().background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f)),
+                                startY = 100f
+                            )
+                        ),
+                        contentAlignment = Alignment.BottomStart
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(6.dp).fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Favorite,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(12.dp)
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(
-                                    text = post.likes.size.toString(),
-                                    color = Color.White,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Icon(Icons.Default.Favorite, contentDescription = "Likes", tint = Color.White, modifier = Modifier.size(14.dp))
+                                Spacer(Modifier.width(2.dp))
+                                Text(text = post.likes.size.toString(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(painter = painterResource(R.drawable.comment), contentDescription = "Comments", tint = Color.White, modifier = Modifier.size(14.dp))
+                                Spacer(Modifier.width(2.dp))
+                                Text(text = post.comments.size.toString(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
                 }
             }
         }
-
-        if (isSheetOpen && selectedPostId != null) {
-            val latestPost = userPosts.find { it.postId == selectedPostId }
-            
-            if (latestPost != null) {
-                ModalBottomSheet(
-                    onDismissRequest = { isSheetOpen = false },
-                    sheetState = sheetState,
-                    containerColor = Color(0xFF1E293B),
-                    dragHandle = { BottomSheetDefaults.DragHandle(color = Color(0xFF94A3B8)) },
-                    modifier = Modifier.fillMaxHeight(0.9f)
-                ) {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        PostCard(
-                            post = latestPost,
-                            postViewModel = postViewModel,
-                            userViewModel = userViewModel,
-                            onCommentClick = {}
-                        )
-                        CommentSection(
-                            post = latestPost,
-                            postViewModel = postViewModel,
-                            userViewModel = userViewModel
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatItem(value: String, label: String, accentColor: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(value, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
-        Text(label, color = accentColor, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
     }
 }

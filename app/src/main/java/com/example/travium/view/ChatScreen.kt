@@ -130,224 +130,234 @@ fun ChatScreen() {
                     tint = Color.White
                 )
             }
-        }
+        },
+        // Remove default padding
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
                 .background(TravelDeepNavy)
         ) {
-            Column {
-                // Search Bar
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    placeholder = { Text("Search followers/following...", color = TravelSoftGray) },
-                    leadingIcon = {
-                        Icon(
-                            Icons.Default.Search,
-                            contentDescription = null,
-                            tint = TravelAccentTeal
-                        )
-                    },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }) {
-                                Icon(Icons.Default.Close, contentDescription = null, tint = TravelSoftGray)
-                            }
-                        }
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = TravelAccentTeal,
-                        unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
-                        focusedContainerColor = Color.White.copy(alpha = 0.05f),
-                        unfocusedContainerColor = Color.White.copy(alpha = 0.05f)
-                    ),
-                    shape = RoundedCornerShape(24.dp),
-                    singleLine = true
-                )
-
-                if (searchQuery.isNotEmpty()) {
-                    // Show search results (followers/following)
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)
-                    ) {
-                        items(searchResults) { user ->
-                            UserSearchItem(
-                                user = user,
-                                currentUserId = currentUserId,
-                                currentUserName = currentUserName,
-                                chatViewModel = chatViewModel
-                            )
+            // Search Bar - no extra padding
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp), // Reduced vertical padding
+                placeholder = { Text("Search followers/following...", color = TravelSoftGray) },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Search,
+                        contentDescription = null,
+                        tint = TravelAccentTeal
+                    )
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(Icons.Default.Close, contentDescription = null, tint = TravelSoftGray)
                         }
                     }
-                } else {
-                    // Show chat list with tabs
-                    Column {
-                        // Tab Row
-                        TabRow(
-                            selectedTabIndex = selectedTab,
-                            containerColor = TravelDeepNavy,
-                            contentColor = TravelAccentTeal,
-                            indicator = { tabPositions ->
-                                TabRowDefaults.Indicator(
-                                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                                    height = 2.dp,
-                                    color = TravelAccentTeal
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    focusedBorderColor = TravelAccentTeal,
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                    focusedContainerColor = Color.White.copy(alpha = 0.05f),
+                    unfocusedContainerColor = Color.White.copy(alpha = 0.05f)
+                ),
+                shape = RoundedCornerShape(24.dp),
+                singleLine = true
+            )
+
+            if (searchQuery.isNotEmpty()) {
+                // Show search results (followers/following)
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
+                    items(searchResults) { user ->
+                        UserSearchItem(
+                            user = user,
+                            currentUserId = currentUserId,
+                            currentUserName = currentUserName,
+                            chatViewModel = chatViewModel
+                        )
+                    }
+                }
+            } else {
+                // Show chat list with tabs
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    // Tab Row with reduced height
+                    TabRow(
+                        selectedTabIndex = selectedTab,
+                        containerColor = TravelDeepNavy,
+                        contentColor = TravelAccentTeal,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp), // Set fixed height
+                        indicator = { tabPositions ->
+                            TabRowDefaults.Indicator(
+                                modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                                height = 2.dp,
+                                color = TravelAccentTeal
+                            )
+                        },
+                        divider = {}
+                    ) {
+                        Tab(
+                            selected = selectedTab == 0,
+                            onClick = { selectedTab = 0 },
+                            modifier = Modifier.height(48.dp), // Match TabRow height
+                            text = {
+                                Text(
+                                    "All Chats",
+                                    color = if (selectedTab == 0) Color.White else TravelSoftGray,
+                                    fontSize = 14.sp // Smaller font
                                 )
                             }
-                        ) {
-                            Tab(
-                                selected = selectedTab == 0,
-                                onClick = { selectedTab = 0 },
-                                text = {
-                                    Text(
-                                        "All Chats",
-                                        color = if (selectedTab == 0) Color.White else TravelSoftGray
-                                    )
-                                }
-                            )
-                            Tab(
-                                selected = selectedTab == 1,
-                                onClick = { selectedTab = 1 },
-                                text = {
-                                    Text(
-                                        "Private",
-                                        color = if (selectedTab == 1) Color.White else TravelSoftGray
-                                    )
-                                }
-                            )
-                            Tab(
-                                selected = selectedTab == 2,
-                                onClick = { selectedTab = 2 },
-                                text = {
-                                    Text(
-                                        "Groups",
-                                        color = if (selectedTab == 2) Color.White else TravelSoftGray
-                                    )
-                                }
-                            )
+                        )
+                        Tab(
+                            selected = selectedTab == 1,
+                            onClick = { selectedTab = 1 },
+                            modifier = Modifier.height(48.dp), // Match TabRow height
+                            text = {
+                                Text(
+                                    "Private",
+                                    color = if (selectedTab == 1) Color.White else TravelSoftGray,
+                                    fontSize = 14.sp // Smaller font
+                                )
+                            }
+                        )
+                        Tab(
+                            selected = selectedTab == 2,
+                            onClick = { selectedTab = 2 },
+                            modifier = Modifier.height(48.dp), // Match TabRow height
+                            text = {
+                                Text(
+                                    "Groups",
+                                    color = if (selectedTab == 2) Color.White else TravelSoftGray,
+                                    fontSize = 14.sp // Smaller font
+                                )
+                            }
+                        )
+                    }
+
+                    // Chat List
+                    when {
+                        loading -> {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(color = TravelAccentTeal)
+                            }
                         }
-
-                        // Chat List
-                        when {
-                            loading -> {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    CircularProgressIndicator(color = TravelAccentTeal)
-                                }
+                        filteredChats.isEmpty() -> {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.Chat,
+                                    contentDescription = "No Chats",
+                                    modifier = Modifier.size(64.dp),
+                                    tint = TravelSoftGray
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = when (selectedTab) {
+                                        1 -> "No private chats yet"
+                                        2 -> "No group chats yet"
+                                        else -> "No chats yet. Start a conversation!"
+                                    },
+                                    color = TravelSoftGray,
+                                    fontSize = 16.sp
+                                )
                             }
-                            filteredChats.isEmpty() -> {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.AutoMirrored.Filled.Chat,
-                                            contentDescription = "No Chats",
-                                            modifier = Modifier.size(64.dp),
-                                            tint = TravelSoftGray
-                                        )
-                                        Text(
-                                            text = when (selectedTab) {
-                                                1 -> "No private chats yet"
-                                                2 -> "No group chats yet"
-                                                else -> "No chats yet. Start a conversation!"
-                                            },
-                                            color = TravelSoftGray,
-                                            fontSize = 16.sp
-                                        )
-                                    }
-                                }
+                        }
+                        else -> {
+                            val itemsToShow = when (selectedTab) {
+                                0 -> filteredChats // All
+                                1 -> privateChats
+                                2 -> groupChats
+                                else -> filteredChats
                             }
-                            else -> {
-                                val itemsToShow = when (selectedTab) {
-                                    0 -> filteredChats // All
-                                    1 -> privateChats
-                                    2 -> groupChats
-                                    else -> filteredChats
-                                }
 
-                                LazyColumn(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentPadding = PaddingValues(vertical = 8.dp)
-                                ) {
-                                    items(
-                                        items = itemsToShow,
-                                        key = { item ->
-                                            when (item) {
-                                                is ChatItem.Private -> "private_${item.chatRoom.chatId}"
-                                                is ChatItem.Group -> "group_${item.groupChat.groupId}"
-                                            }
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(bottom = 8.dp)
+                            ) {
+                                items(
+                                    items = itemsToShow,
+                                    key = { item ->
+                                        when (item) {
+                                            is ChatItem.Private -> "private_${item.chatRoom.chatId}"
+                                            is ChatItem.Group -> "group_${item.groupChat.groupId}"
                                         }
-                                    ) { chatItem ->
-                                        ChatListItem(
-                                            chatItem = chatItem,
-                                            currentUserId = currentUserId,
-                                            onClick = {
-                                                when (chatItem) {
-                                                    is ChatItem.Private -> {
-                                                        val otherParticipantId =
-                                                            if (chatItem.chatRoom.participant1Id == currentUserId) {
-                                                                chatItem.chatRoom.participant2Id
-                                                            } else {
-                                                                chatItem.chatRoom.participant1Id
-                                                            }
-
-                                                        val otherParticipantName =
-                                                            if (chatItem.chatRoom.participant1Id == currentUserId) {
-                                                                chatItem.chatRoom.participant2Name
-                                                            } else {
-                                                                chatItem.chatRoom.participant1Name
-                                                            }
-
-                                                        val otherParticipantImage =
-                                                            if (chatItem.chatRoom.participant1Id == currentUserId) {
-                                                                chatItem.chatRoom.participant2Photo
-                                                            } else {
-                                                                chatItem.chatRoom.participant1Photo
-                                                            }
-
-                                                        // Navigate to individual chat
-                                                        val intent = Intent(
-                                                            context,
-                                                            ChatActivity::class.java
-                                                        ).apply {
-                                                            putExtra("receiverId", otherParticipantId)
-                                                            putExtra("receiverName", otherParticipantName)
-                                                            putExtra("receiverImage", otherParticipantImage)
-                                                            putExtra("currentUserId", currentUserId)
-                                                            putExtra("currentUserName", currentUserName)
+                                    }
+                                ) { chatItem ->
+                                    ChatListItem(
+                                        chatItem = chatItem,
+                                        currentUserId = currentUserId,
+                                        onClick = {
+                                            when (chatItem) {
+                                                is ChatItem.Private -> {
+                                                    val otherParticipantId =
+                                                        if (chatItem.chatRoom.participant1Id == currentUserId) {
+                                                            chatItem.chatRoom.participant2Id
+                                                        } else {
+                                                            chatItem.chatRoom.participant1Id
                                                         }
-                                                        context.startActivity(intent)
+
+                                                    val otherParticipantName =
+                                                        if (chatItem.chatRoom.participant1Id == currentUserId) {
+                                                            chatItem.chatRoom.participant2Name
+                                                        } else {
+                                                            chatItem.chatRoom.participant1Name
+                                                        }
+
+                                                    val otherParticipantImage =
+                                                        if (chatItem.chatRoom.participant1Id == currentUserId) {
+                                                            chatItem.chatRoom.participant2Photo
+                                                        } else {
+                                                            chatItem.chatRoom.participant1Photo
+                                                        }
+
+                                                    // Navigate to individual chat
+                                                    val intent = Intent(
+                                                        context,
+                                                        ChatActivity::class.java
+                                                    ).apply {
+                                                        putExtra("receiverId", otherParticipantId)
+                                                        putExtra("receiverName", otherParticipantName)
+                                                        putExtra("receiverImage", otherParticipantImage)
+                                                        putExtra("currentUserId", currentUserId)
+                                                        putExtra("currentUserName", currentUserName)
                                                     }
-                                                    is ChatItem.Group -> {
-                                                        // Navigate to group chat activity
-                                                        scope.launch {
-                                                            Toast.makeText(
-                                                                context,
-                                                                "Opening group: ${chatItem.groupChat.groupName}",
-                                                                Toast.LENGTH_SHORT
-                                                            ).show()
-                                                        }
+                                                    context.startActivity(intent)
+                                                }
+                                                is ChatItem.Group -> {
+                                                    // Navigate to group chat activity
+                                                    scope.launch {
+                                                        Toast.makeText(
+                                                            context,
+                                                            "Opening group: ${chatItem.groupChat.groupName}",
+                                                            Toast.LENGTH_SHORT
+                                                        ).show()
                                                     }
                                                 }
                                             }
-                                        )
-                                    }
+                                        }
+                                    )
                                 }
                             }
                         }

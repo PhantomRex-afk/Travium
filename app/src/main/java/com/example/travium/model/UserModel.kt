@@ -8,5 +8,7 @@ data class UserModel(
     val dob : String = "",
     val country : String = "",
     val bio: String = "",
-    val profileImageUrl: String = ""
+    val profileImageUrl: String = "",
+    val followers: List<String> = emptyList(),
+    val following: List<String> = emptyList()
 )

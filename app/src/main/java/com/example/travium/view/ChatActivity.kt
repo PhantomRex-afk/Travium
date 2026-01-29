@@ -1,12 +1,8 @@
 package com.example.travium.view
 
-import android.Manifest
-import android.app.AlertDialog
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
@@ -17,50 +13,57 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupProperties
-import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
-import com.example.travium.R
 import com.example.travium.model.ChatMessage
-import com.example.travium.repository.GroupChatRepoImpl
 import com.example.travium.repository.ChatRepositoryImpl
+import com.example.travium.repository.GroupChatRepoImpl
 import com.example.travium.viewmodel.ChatViewModel
 import com.example.travium.viewmodel.ChatViewModelFactory
 import kotlinx.coroutines.Job
@@ -69,14 +72,13 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
-import com.example.travium.view.ui.theme.Purple40
-
 
 class ChatActivity : ComponentActivity() {
     private val chatViewModel: ChatViewModel by viewModels {
         ChatViewModelFactory(
             ChatRepositoryImpl(),
-            groupChatRepository = GroupChatRepoImpl())
+            groupChatRepository = GroupChatRepoImpl()
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -85,7 +87,7 @@ class ChatActivity : ComponentActivity() {
 
         val receiverId = intent.getStringExtra("receiverId") ?: ""
         val receiverName = intent.getStringExtra("receiverName") ?: "User"
-        val receiverImage = intent.getStringExtra("receiverImage") ?:""
+        val receiverImage = intent.getStringExtra("receiverImage") ?: ""
         val currentUserId = intent.getStringExtra("currentUserId") ?: ""
         val currentUserName = intent.getStringExtra("currentUserName") ?: ""
 
@@ -94,7 +96,7 @@ class ChatActivity : ComponentActivity() {
             participant2Id = receiverId,
             participant1Name = currentUserName,
             participant2Name = receiverName,
-            participant1Photo = "",
+            participant1Photo = "", // You might want to pass the current user's photo URL here
             participant2Photo = receiverImage
         )
 
@@ -123,13 +125,11 @@ fun ChatBody(
 ) {
     val context = LocalContext.current
     val activity = context as? ComponentActivity
-    val keyboardController = LocalSoftwareKeyboardController.current
 
     var messageText by remember { mutableStateOf("") }
     var showAttachmentDialog by remember { mutableStateOf(false) }
 
     val coroutineScope = rememberCoroutineScope()
-
     val chatRoom by chatViewModel.currentChatRoom.observeAsState()
     val messages by chatViewModel.messages.observeAsState(emptyList())
     val typingStatus by chatViewModel.isTyping.observeAsState()
@@ -141,6 +141,9 @@ fun ChatBody(
     val listState = rememberLazyListState()
     var typingJob by remember { mutableStateOf<Job?>(null) }
 
+    val darkNavy = Color(0xFF000033)
+    val cyanAccent = Color(0xFF00FFFF)
+
     LaunchedEffect(error) {
         error?.let {
             Toast.makeText(context, it, Toast.LENGTH_LONG).show()
@@ -150,11 +153,11 @@ fun ChatBody(
     }
 
     LaunchedEffect(chatRoom) {
-        chatRoom?.chatId?.let { chatId ->
-            chatViewModel.loadMessages(chatId)
-            chatViewModel.listenForNewMessages(chatId)
-            chatViewModel.listenForTypingStatus(chatId)
-            chatViewModel.markMessagesAsRead(chatId, currentUserId)
+        chatRoom?.chatId?.let {
+            chatViewModel.loadMessages(it)
+            chatViewModel.listenForNewMessages(it)
+            chatViewModel.listenForTypingStatus(it)
+            chatViewModel.markMessagesAsRead(it, currentUserId)
         }
     }
 
@@ -165,80 +168,46 @@ fun ChatBody(
     }
 
     val isReceiverTyping = remember(typingStatus, receiverId) {
-        typingStatus?.let { (userId, typing) ->
-            userId == receiverId && typing
-        } ?: false
+        typingStatus?.let { (userId, typing) -> userId == receiverId && typing } ?: false
     }
 
     LaunchedEffect(messageText) {
         typingJob?.cancel()
-        if (messageText.isNotEmpty()) {
-            typingJob = coroutineScope.launch {
-                chatRoom?.chatId?.let {
+        chatRoom?.chatId?.let {
+            if (messageText.isNotEmpty()) {
+                typingJob = coroutineScope.launch {
                     chatViewModel.setTypingStatus(it, currentUserId, true)
                     delay(2000)
                     chatViewModel.setTypingStatus(it, currentUserId, false)
                 }
-            }
-        } else {
-            chatRoom?.chatId?.let { chatViewModel.setTypingStatus(it, currentUserId, false) }
-        }
-    }
-
-    val imagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        uri?.let {
-            chatRoom?.let { cr ->
-                chatViewModel.sendMessage(
-                    chatId = cr.chatId,
-                    senderId = currentUserId,
-                    receiverId = receiverId,
-                    senderName = currentUserName,
-                    receiverName = receiverName,
-                    messageText = "",
-                    messageType = "image",
-                    mediaUrl = uri.toString()
-                )
+            } else {
+                chatViewModel.setTypingStatus(it, currentUserId, false)
             }
         }
     }
 
-    val documentPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
+    val imagePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let {
             chatRoom?.let { cr ->
-                chatViewModel.sendMessage(
-                    chatId = cr.chatId,
-                    senderId = currentUserId,
-                    receiverId = receiverId,
-                    senderName = currentUserName,
-                    receiverName = receiverName,
-                    messageText = "",
-                    messageType = "document",
-                    mediaUrl = uri.toString()
-                )
+                chatViewModel.sendMessage(cr.chatId, currentUserId, receiverId, currentUserName, receiverName, "", "image", it.toString())
+            }
+        }
+    }
+
+    val documentPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let {
+            chatRoom?.let { cr ->
+                chatViewModel.sendMessage(cr.chatId, currentUserId, receiverId, currentUserName, receiverName, "", "document", it.toString())
             }
         }
     }
 
     var tempPhotoUri by remember { mutableStateOf<Uri?>(null) }
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicture()
-    ) { success ->
-        if (success && tempPhotoUri != null) {
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        val localTempUri = tempPhotoUri
+        if (success && localTempUri != null) {
             chatRoom?.let { cr ->
-                chatViewModel.sendMessage(
-                    chatId = cr.chatId,
-                    senderId = currentUserId,
-                    receiverId = receiverId,
-                    senderName = currentUserName,
-                    receiverName = receiverName,
-                    messageText = "",
-                    messageType = "image",
-                    mediaUrl = tempPhotoUri.toString()
-                )
+                chatViewModel.sendMessage(cr.chatId, currentUserId, receiverId, currentUserName, receiverName, "", "image", localTempUri.toString())
             }
         }
     }
@@ -249,29 +218,23 @@ fun ChatBody(
                 receiverName = receiverName,
                 receiverImage = receiverImage,
                 isReceiverTyping = isReceiverTyping,
-                onBackClick = { activity?.finish() },
-                onInfoClick = { /* TODO */ }
+                onBackClick = { activity?.finish() }
             )
         },
         bottomBar = {
-            Box {
+            Column {
                 if (showAttachmentDialog) {
                     AttachmentPopup(
                         onDismiss = { showAttachmentDialog = false },
-                        onGalleryClick = {
-                            showAttachmentDialog = false
-                            imagePickerLauncher.launch("image/*")
-                        },
+                        onGalleryClick = { imagePickerLauncher.launch("image/*"); showAttachmentDialog = false },
                         onCameraClick = {
-                            showAttachmentDialog = false
                             val photoFile = File(context.cacheDir, "camera_photo_${System.currentTimeMillis()}.jpg")
-                            tempPhotoUri = FileProvider.getUriForFile(context, "${context.packageName}.provider", photoFile)
-                            cameraLauncher.launch(tempPhotoUri!!)
-                        },
-                        onDocumentClick = {
+                            val uri = FileProvider.getUriForFile(context, "${context.packageName}.provider", photoFile)
+                            tempPhotoUri = uri
+                            cameraLauncher.launch(uri)
                             showAttachmentDialog = false
-                            documentPickerLauncher.launch("*/*")
-                        }
+                        },
+                        onDocumentClick = { documentPickerLauncher.launch("*/*"); showAttachmentDialog = false }
                     )
                 }
                 MessageInputBar(
@@ -280,54 +243,33 @@ fun ChatBody(
                     onSendClick = {
                         if (messageText.isNotBlank()) {
                             chatRoom?.let { cr ->
-                                chatViewModel.sendMessage(
-                                    chatId = cr.chatId,
-                                    senderId = currentUserId,
-                                    receiverId = receiverId,
-                                    senderName = currentUserName,
-                                    receiverName = receiverName,
-                                    messageText = messageText
-                                )
+                                chatViewModel.sendMessage(cr.chatId, currentUserId, receiverId, currentUserName, receiverName, messageText)
                                 messageText = ""
                             }
                         }
                     },
-                    onAddClick = { showAttachmentDialog = true },
+                    onAddClick = { showAttachmentDialog = !showAttachmentDialog },
                     isUploading = isUploading,
-                    uploadProgress = uploadProgress,
-                    showAttachmentDialog = showAttachmentDialog
+                    uploadProgress = uploadProgress.toFloat()
                 )
             }
-        }
+        },
+        containerColor = darkNavy
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFFE8F4F8),
-                            Color(0xFFF0F8FF)
-                        )
-                    )
-                )
+                .background(darkNavy)
         ) {
             if (loading && messages.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Purple40)
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = cyanAccent)
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    state = listState,
-                    reverseLayout = false,
-                    verticalArrangement = Arrangement.Bottom
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp),
+                    state = listState
                 ) {
                     itemsIndexed(
                         messages,
@@ -335,32 +277,31 @@ fun ChatBody(
                     ) { index, message ->
                         AnimatedVisibility(
                             visible = true,
-                            enter = fadeIn() + slideInVertically(initialOffsetY = { 50 }),
+                            enter = fadeIn() + slideInVertically(initialOffsetY = { 50 })
                         ) {
                             Column {
                                 if (shouldShowDateHeader(messages, index)) {
                                     DateHeader(message.timestamp)
-                                    Spacer(modifier = Modifier.height(12.dp))
+                                    Spacer(Modifier.height(12.dp))
                                 }
-
                                 when (message.messageType) {
                                     "image" -> ImageMessageBubble(
-                                        message = message,
+                                        chatMessage = message,
                                         isSentByMe = message.senderId == currentUserId,
                                         onLongPress = { showMessageOptions(context, message, chatViewModel) }
                                     )
                                     "document" -> DocumentMessageBubble(
-                                        message = message,
+                                        chatMessage = message,
                                         isSentByMe = message.senderId == currentUserId,
                                         onLongPress = { showMessageOptions(context, message, chatViewModel) }
                                     )
                                     else -> MessageBubble(
-                                        message = message,
+                                        chatMessage = message,
                                         isSentByMe = message.senderId == currentUserId,
                                         onLongPress = { showMessageOptions(context, message, chatViewModel) }
                                     )
                                 }
-                                Spacer(modifier = Modifier.height(6.dp))
+                                Spacer(Modifier.height(6.dp))
                             }
                         }
                     }
@@ -370,114 +311,50 @@ fun ChatBody(
     }
 }
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatTopAppBar(
     receiverName: String,
     receiverImage: String,
     isReceiverTyping: Boolean,
-    onBackClick: () -> Unit,
-    onInfoClick: () -> Unit
+    onBackClick: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(90.dp)
-            .shadow(4.dp),
-        shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
+    val darkNavy = Color(0xFF000033)
+    val cyanAccent = Color(0xFF00FFFF)
+    
+    TopAppBar(
+        title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(Color(0xFFF5F5F5), CircleShape)
-                        .clickable { onBackClick() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.baseline_arrow_back_ios_new_24),
-                        contentDescription = "Back",
-                        modifier = Modifier.size(20.dp),
-                        tint = Color(0xFF1976D2)
-                    )
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Box(
-                    modifier = Modifier
-                        .size(52.dp)
-                        .shadow(4.dp, CircleShape)
-                        .clip(CircleShape)
-                        .background(Color.White)
-                ) {
-                    AsyncImage(
-                        model = receiverImage,
-                        contentDescription = "Profile",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                }
+                AsyncImage(
+                    model = receiverImage,
+                    contentDescription = "Profile",
+                    modifier = Modifier.size(40.dp).clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
-                    Text(
-                        text = receiverName,
-                        style = TextStyle(
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF212121)
-                        )
-                    )
+                    Text(receiverName, style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White))
                     AnimatedVisibility(visible = isReceiverTyping) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                         Row(verticalAlignment = Alignment.CenterVertically) {
                             TypingIndicator()
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "typing",
-                                style = TextStyle(
-                                    fontSize = 13.sp,
-                                    color = Color(0xFF1976D2)
-                                )
-                            )
+                            Text("typing...", style = TextStyle(fontSize = 13.sp, color = cyanAccent))
                         }
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun TypingIndicator() {
-    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-        repeat(3) { index ->
-            val infiniteTransition = rememberInfiniteTransition(label = "typing$index")
-            val offsetY by infiniteTransition.animateFloat(
-                initialValue = 0f,
-                targetValue = -8f,
-                animationSpec = infiniteRepeatable(
-                    animation = tween(400, delayMillis = index * 100),
-                    repeatMode = RepeatMode.Reverse
-                ),
-                label = "offsetY$index"
-            )
-
-            Box(
-                modifier = Modifier
-                    .size(6.dp)
-                    .offset(y = offsetY.dp)
-                    .background(Color(0xFF1976D2), CircleShape)
-            )
-        }
-    }
+        },
+        navigationIcon = {
+            IconButton(onClick = onBackClick) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = darkNavy,
+            titleContentColor = Color.White,
+            navigationIconContentColor = Color.White
+        )
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -487,129 +364,49 @@ fun MessageInputBar(
     onMessageChange: (String) -> Unit,
     onSendClick: () -> Unit,
     onAddClick: () -> Unit,
-    isUploading: Boolean = false,
-    uploadProgress: Double = 0.0,
-    showAttachmentDialog: Boolean = false
+    isUploading: Boolean,
+    uploadProgress: Float
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(85.dp)
-            .shadow(8.dp),
-        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+    val darkNavy = Color(0xFF000033)
+    val cardBg = Color(0xFF1E293B)
+    Column(
+        modifier = Modifier.background(darkNavy)
     ) {
+        if (isUploading) {
+            LinearProgressIndicator(
+                progress = { uploadProgress },
+                modifier = Modifier.fillMaxWidth(),
+                color = Color(0xFF00FFFF)
+            )
+        }
         Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(Purple40, Color(0xFF6650a4))
-                        ),
-                        shape = CircleShape
-                    )
-                    .clickable(enabled = !isUploading) { onAddClick() },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.outline_add_24),
-                    contentDescription = "Attachment",
-                    modifier = Modifier.size(24.dp),
-                    tint = Color.White
+            IconButton(onClick = onAddClick) {
+                Icon(Icons.Default.Add, contentDescription = "Attachments", tint = Color.White)
+            }
+            TextField(
+                value = messageText,
+                onValueChange = onMessageChange,
+                modifier = Modifier.weight(1f),
+                placeholder = { Text("Message...", color = Color.Gray) },
+                shape = RoundedCornerShape(24.dp),
+                colors = TextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    focusedContainerColor = cardBg,
+                    unfocusedContainerColor = cardBg,
+                    disabledContainerColor = cardBg,
+                    cursorColor = Color.White,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent
                 )
-            }
-
-            Card(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(52.dp),
-                shape = RoundedCornerShape(26.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (isUploading) {
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            LinearProgressIndicator(
-                                progress = uploadProgress.toFloat() / 100f,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(4.dp)
-                                    .clip(RoundedCornerShape(2.dp)),
-                                color = Purple40,
-                                trackColor = Color(0xFFE0E0E0)
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Uploading ${uploadProgress.toInt()}%",
-                                style = TextStyle(fontSize = 12.sp, color = Color.Gray)
-                            )
-                        }
-                    } else {
-                        TextField(
-                            value = messageText,
-                            onValueChange = onMessageChange,
-                            placeholder = {
-                                Text(
-                                    text = "Type a message...",
-                                    style = TextStyle(fontSize = 15.sp, color = Color.Gray)
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent
-                            ),
-                            textStyle = TextStyle(fontSize = 15.sp, color = Color.Black),
-                            singleLine = false,
-                            maxLines = 3
-                        )
-                    }
-                }
-            }
-
-            AnimatedContent(
-                targetState = messageText.isNotBlank(),
-                transitionSpec = {
-                    fadeIn() + scaleIn() togetherWith fadeOut() + scaleOut()
-                },
-                label = "iconTransition"
-            ) { hasText ->
-                if (hasText) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .background(
-                                brush = Brush.linearGradient(
-                                    colors = listOf(Purple40, Color(0xFF42A5F5))
-                                ),
-                                shape = CircleShape
-                            )
-                            .clickable { onSendClick() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = "Send",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                }
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            IconButton(onClick = onSendClick) {
+                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = Color.White)
             }
         }
     }
@@ -622,471 +419,152 @@ fun AttachmentPopup(
     onCameraClick: () -> Unit,
     onDocumentClick: () -> Unit
 ) {
-    val density = LocalDensity.current
-
-    Popup(
-        alignment = Alignment.BottomStart,
-        offset = IntOffset(
-            x = with(density) { 16.dp.roundToPx() },
-            y = with(density) { (-100).dp.roundToPx() }
-        ),
+    AlertDialog(
         onDismissRequest = onDismiss,
-        properties = PopupProperties(
-            dismissOnBackPress = true,
-            dismissOnClickOutside = true
-        )
-    ) {
-        AnimatedVisibility(
-            visible = true,
-            enter = fadeIn() + scaleIn(initialScale = 0.8f) + slideInVertically(initialOffsetY = { 50 }),
-            exit = fadeOut() + scaleOut() + slideOutVertically(targetOffsetY = { 50 })
-        ) {
-            Card(
-                modifier = Modifier
-                    .width(220.dp)
-                    .shadow(12.dp, RoundedCornerShape(20.dp)),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = "Send Attachment",
-                        style = TextStyle(
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF212121)
-                        ),
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
-
-                    AttachmentOptionItem(
-                        icon = R.drawable.image,
-                        text = "Gallery",
-                        gradientColors = listOf(Color(0xFF667EEA), Color(0xFF764BA2)),
-                        onClick = onGalleryClick
-                    )
-
-                    AttachmentOptionItem(
-                        icon = R.drawable.outline_add_a_photo_24,
-                        text = "Camera",
-                        gradientColors = listOf(Color(0xFFF093FB), Color(0xFFF5576C)),
-                        onClick = onCameraClick
-                    )
-
-                    AttachmentOptionItem(
-                        icon = R.drawable.outline_add_24,
-                        text = "Document",
-                        gradientColors = listOf(Color(0xFF4FACFE), Color(0xFF00F2FE)),
-                        onClick = onDocumentClick
-                    )
-                }
+        title = { Text("Send Attachment") },
+        text = { 
+            Column {
+                TextButton(onClick = onGalleryClick) { Text("Gallery") }
+                TextButton(onClick = onCameraClick) { Text("Camera") }
+                TextButton(onClick = onDocumentClick) { Text("Document") }
             }
-        }
-    }
-}
-
-@Composable
-fun AttachmentOptionItem(
-    icon: Int,
-    text: String,
-    gradientColors: List<Color>,
-    onClick: () -> Unit
-) {
-    var isPressed by remember { mutableStateOf(false) }
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.95f else 1f,
-        animationSpec = spring(stiffness = Spring.StiffnessHigh),
-        label = "scale"
+         },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .scale(scale)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onPress = {
-                        isPressed = true
-                        tryAwaitRelease()
-                        isPressed = false
-                    },
-                    onTap = { onClick() }
-                )
-            },
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF8F9FA)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(
-                        brush = Brush.linearGradient(colors = gradientColors),
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    painter = painterResource(icon),
-                    contentDescription = text,
-                    modifier = Modifier.size(20.dp),
-                    tint = Color.White
-                )
-            }
-            Text(
-                text = text,
-                style = TextStyle(
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color(0xFF212121)
-                )
-            )
-        }
-    }
-}
-
-@Composable
-fun MessageBubble(
-    message: ChatMessage,
-    isSentByMe: Boolean,
-    onLongPress: () -> Unit
-) {
-    val alignment = if (isSentByMe) Alignment.CenterEnd else Alignment.CenterStart
-    val bubbleColor = if (isSentByMe) {
-        Brush.linearGradient(
-            colors = listOf(Color(0xFF42A5F5), Purple40)
-        )
-    } else {
-        Brush.linearGradient(
-            colors = listOf(Color.White, Color.White)
-        )
-    }
-
-    Box(
-        modifier = Modifier.fillMaxWidth(),
-        contentAlignment = alignment
-    ) {
-        Card(
-            modifier = Modifier
-                .widthIn(max = 280.dp)
-                .shadow(2.dp, RoundedCornerShape(16.dp))
-                .pointerInput(Unit) {
-                    detectTapGestures(onLongPress = { onLongPress() })
-                },
-            shape = RoundedCornerShape(
-                topStart = 18.dp,
-                topEnd = 18.dp,
-                bottomStart = if (isSentByMe) 18.dp else 4.dp,
-                bottomEnd = if (isSentByMe) 4.dp else 18.dp
-            ),
-            colors = CardDefaults.cardColors(containerColor = Color.Transparent)
-        ) {
-            Box(
-                modifier = Modifier.background(bubbleColor)
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Text(
-                        text = message.messageText,
-                        color = if (isSentByMe) Color.White else Color(0xFF212121),
-                        fontSize = 15.sp,
-                        lineHeight = 20.sp
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = formatMessageTime(message.timestamp),
-                            color = if (isSentByMe) Color.White.copy(alpha = 0.8f) else Color.Gray,
-                            fontSize = 11.sp
-                        )
-                        if (isSentByMe) {
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(
-                                imageVector = if (message.isRead) Icons.Default.Done else Icons.Default.Done,
-                                contentDescription = "Status",
-                                modifier = Modifier.size(14.dp),
-                                tint = if (message.isRead) Color(0xFF00C853) else Color.White.copy(alpha = 0.6f)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun DateHeader(timestamp: Long) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = Color.White.copy(alpha = 0.9f)
-            ),
-            shape = RoundedCornerShape(20.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Text(
-                text = formatDates(timestamp),
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color(0xFF616161)
-            )
-        }
-    }
-}
-
-
-@Composable
-fun ImageMessageBubble(
-    message: ChatMessage,
-    isSentByMe: Boolean,
-    onLongPress: () -> Unit
-) {
-    val context = LocalContext.current
-    val alignment = if (isSentByMe) Alignment.CenterEnd else Alignment.CenterStart
-
-    Box(
-        modifier = Modifier.fillMaxWidth(),
-        contentAlignment = alignment
-    ) {
-        Card(
-            modifier = Modifier
-                .widthIn(max = 280.dp)
-                .shadow(4.dp, RoundedCornerShape(18.dp))
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onLongPress = { onLongPress() },
-                        onTap = {
-                            val intent = Intent(Intent.ACTION_VIEW).apply {
-                                setDataAndType(Uri.parse(message.mediaUrl), "image/*")
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            }
-                            context.startActivity(intent)
-                        }
-                    )
-                },
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
-        ) {
-            Column(modifier = Modifier.padding(6.dp)) {
-                AsyncImage(
-                    model = message.mediaUrl,
-                    contentDescription = "Image",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(220.dp)
-                        .clip(RoundedCornerShape(14.dp)),
-                    contentScale = ContentScale.Crop
-                )
-
-                Row(
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 6.dp)
-                ) {
-                    Text(
-                        text = formatMessageTime(message.timestamp),
-                        color = Color.Gray,
-                        fontSize = 11.sp
-                    )
-                    if (isSentByMe) {
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(
-                            imageVector = Icons.Default.Done,
-                            contentDescription = "Status",
-                            modifier = Modifier.size(14.dp),
-                            tint = if (message.isRead) Color(0xFF00C853) else Color.Gray
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun DocumentMessageBubble(
-    message: ChatMessage,
-    isSentByMe: Boolean,
-    onLongPress: () -> Unit
-) {
-    val context = LocalContext.current
-    val alignment = if (isSentByMe) Alignment.CenterEnd else Alignment.CenterStart
-
-    Box(
-        modifier = Modifier.fillMaxWidth(),
-        contentAlignment = alignment
-    ) {
-        Card(
-            modifier = Modifier
-                .widthIn(max = 280.dp)
-                .shadow(2.dp, RoundedCornerShape(18.dp))
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onLongPress = { onLongPress() },
-                        onTap = {
-                            val intent = Intent(Intent.ACTION_VIEW).apply {
-                                setDataAndType(Uri.parse(message.mediaUrl), "*/*")
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            }
-                            try {
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                Toast.makeText(context, "No app found to open this document", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    )
-                },
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White)
-        ) {
-            Column(modifier = Modifier.padding(14.dp)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .background(
-                                brush = Brush.linearGradient(
-                                    colors = listOf(Color(0xFF667EEA), Color(0xFF764BA2))
-                                ),
-                                shape = RoundedCornerShape(12.dp)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.MailOutline,
-                            contentDescription = "Document",
-                            modifier = Modifier.size(24.dp),
-                            tint = Color.White
-                        )
-                    }
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Document",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF212121)
-                        )
-                        Text(
-                            text = "Tap to open",
-                            fontSize = 12.sp,
-                            color = Color.Gray
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(
-                        text = formatMessageTime(message.timestamp),
-                        color = Color.Gray,
-                        fontSize = 11.sp
-                    )
-                    if (isSentByMe) {
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(
-                            imageVector = Icons.Default.Done,
-                            contentDescription = "Status",
-                            modifier = Modifier.size(14.dp),
-                            tint = if (message.isRead) Color(0xFF00C853) else Color.Gray
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-fun formatMessageTime(timestamp: Long): String {
-    val date = Date(timestamp)
-    val format = SimpleDateFormat("hh:mm a", Locale.getDefault())
-    return format.format(date)
-}
-
-fun formatDates(timestamp: Long): String {
-    val date = Date(timestamp)
-    val today = Calendar.getInstance()
-    val messageDate = Calendar.getInstance().apply { time = date }
-
-    return when {
-        today.get(Calendar.YEAR) == messageDate.get(Calendar.YEAR) &&
-                today.get(Calendar.DAY_OF_YEAR) == messageDate.get(Calendar.DAY_OF_YEAR) -> "Today"
-
-        today.get(Calendar.YEAR) == messageDate.get(Calendar.YEAR) &&
-                today.get(Calendar.DAY_OF_YEAR) - 1 == messageDate.get(Calendar.DAY_OF_YEAR) -> "Yesterday"
-
-        else -> SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).format(date)
-    }
 }
 
 fun shouldShowDateHeader(messages: List<ChatMessage>, index: Int): Boolean {
     if (index == 0) return true
-
     val currentMessage = messages[index]
     val previousMessage = messages[index - 1]
-
-    val currentDate = Calendar.getInstance().apply {
-        timeInMillis = currentMessage.timestamp
-    }
-    val previousDate = Calendar.getInstance().apply {
-        timeInMillis = previousMessage.timestamp
-    }
-
-    return currentDate.get(Calendar.DAY_OF_YEAR) != previousDate.get(Calendar.DAY_OF_YEAR) ||
-            currentDate.get(Calendar.YEAR) != previousDate.get(Calendar.YEAR)
+    val cal1 = Calendar.getInstance().apply { timeInMillis = currentMessage.timestamp }
+    val cal2 = Calendar.getInstance().apply { timeInMillis = previousMessage.timestamp }
+    return cal1.get(Calendar.DAY_OF_YEAR) != cal2.get(Calendar.YEAR) ||
+           cal1.get(Calendar.YEAR) != cal2.get(Calendar.YEAR)
 }
 
-fun showMessageOptions(context: Context, message: ChatMessage, chatViewModel: ChatViewModel) {
-    val options = arrayOf("Copy Text", "Delete Message")
+@Composable
+fun DateHeader(timestamp: Long) {
+    val sdf = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault())
+    val dateString = sdf.format(Date(timestamp))
+    Box(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+        Text(
+            text = dateString,
+            modifier = Modifier.align(Alignment.Center).background(Color(0x80808080), RoundedCornerShape(8.dp)).padding(4.dp),
+            color = Color.White
+        )
+    }
+}
 
-    AlertDialog.Builder(context)
-        .setTitle("Message Options")
+@Composable
+fun MessageBubble(chatMessage: ChatMessage, isSentByMe: Boolean, onLongPress: (ChatMessage) -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = if (isSentByMe) Alignment.End else Alignment.Start
+    ) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = if (isSentByMe) Color(0xFF005C4B) else Color(0xFF202C33),
+            modifier = Modifier.pointerInput(Unit) {
+                detectTapGestures(onLongPress = { onLongPress(chatMessage) })
+            }
+        ) {
+            if(chatMessage.messageText.isNotEmpty()) {
+                Text(
+                    text = chatMessage.messageText, 
+                    modifier = Modifier.padding(10.dp),
+                    color = Color.White
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ImageMessageBubble(chatMessage: ChatMessage, isSentByMe: Boolean, onLongPress: (ChatMessage) -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = if (isSentByMe) Alignment.End else Alignment.Start
+    ) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = if (isSentByMe) Color(0xFF005C4B) else Color(0xFF202C33),
+            modifier = Modifier.pointerInput(Unit) {
+                detectTapGestures(onLongPress = { onLongPress(chatMessage) })
+            }
+        ) {
+            AsyncImage(
+                model = chatMessage.mediaUrl,
+                contentDescription = "Image message",
+                modifier = Modifier.size(200.dp).padding(4.dp).clip(RoundedCornerShape(12.dp)),
+                contentScale = ContentScale.Crop
+            )
+        }
+    }
+}
+
+@Composable
+fun DocumentMessageBubble(chatMessage: ChatMessage, isSentByMe: Boolean, onLongPress: (ChatMessage) -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = if (isSentByMe) Alignment.End else Alignment.Start
+    ) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = if (isSentByMe) Color(0xFF005C4B) else Color(0xFF202C33),
+            modifier = Modifier.pointerInput(Unit) {
+                detectTapGestures(onLongPress = { onLongPress(chatMessage) }) }
+        ) {
+            Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Description, contentDescription = "Document", tint = Color.White)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(text = "Document", color = Color.White) // In a real app, you'd parse the filename
+            }
+        }
+    }
+}
+
+fun showMessageOptions(context: Context, message: ChatMessage, viewModel: ChatViewModel) {
+    val options = arrayOf("Copy", "Delete")
+    android.app.AlertDialog.Builder(context)
         .setItems(options) { dialog, which ->
             when (which) {
                 0 -> {
                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                     val clip = ClipData.newPlainText("message", message.messageText)
                     clipboard.setPrimaryClip(clip)
-                    Toast.makeText(context, "Message copied", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
                 }
                 1 -> {
-                    chatViewModel.deleteMessage(message.messageId, message.chatId)
+                    viewModel.deleteMessage(message.chatId, message.messageId)
                 }
             }
             dialog.dismiss()
         }
-        .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss() }
         .show()
+}
+
+@Composable
+fun TypingIndicator() {
+    val infiniteTransition = rememberInfiniteTransition(label = "typing-indicator")
+    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
+        repeat(3) { index ->
+            val offsetY by infiniteTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = -8f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(400, delayMillis = index * 100),
+                    repeatMode = RepeatMode.Reverse
+                ), 
+                label = "offsetY-$index"
+            )
+            Box(
+                modifier = Modifier
+                    .size(6.dp)
+                    .offset(y = offsetY.dp)
+                    .clip(CircleShape)
+                    .background(Color.Gray)
+            )
+        }
+    }
 }

@@ -1,6 +1,7 @@
 package com.example.travium.view
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -48,8 +49,7 @@ data class FollowerUi(
     val profileImageUrl: String?,
     var isFollowingBack: Boolean = false,
     val lastActive: String? = null,
-    val isOnline: Boolean = false,
-    val mutualFriends: Int = 0
+    val isOnline: Boolean = false
 )
 
 class FollowersListActivity : ComponentActivity() {
@@ -71,15 +71,16 @@ fun FollowersListBody() {
     val listState = rememberLazyListState()
 
     // Color palette
+    val darkNavy = Color(0xFF000033)
     val primaryBlue = Color(0xFF0EA5E9)
-    val bgColor = Color(0xFFFAFAFA)
-    val cardBg = Color(0xFFFFFFFF)
+    val bgColor = darkNavy
+    val cardBg = Color(0xFF1E293B)
     val bubbleColor = primaryBlue.copy(alpha = 0.1f)
     val followButtonColor = Color(0xFF10B981)
     val unfollowButtonColor = Color(0xFFEF4444)
-    val textPrimary = Color(0xFF1E293B)
-    val textSecondary = Color(0xFF64748B)
-    val textTertiary = Color(0xFF94A3B8)
+    val textPrimary = Color.White
+    val textSecondary = Color(0xFF94A3B8)
+    val textTertiary = Color(0xFF64748B)
 
     var searchQuery by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
@@ -99,7 +100,7 @@ fun FollowersListBody() {
     LaunchedEffect(userId) {
         if (userId.isNotEmpty()) {
             loadFollowers(userId, currentUserId, userRepository) { followers ->
-                followerDetails = followers
+                followerDetails = followers.filter { it.id != userId }
                 isLoading = false
             }
         } else {
@@ -124,7 +125,7 @@ fun FollowersListBody() {
                 title = {
                     if (!isSearching) {
                         Text(
-                            "Followers (${followerDetails.size})",
+                            "Followers (${filteredFollowers.size})",
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 18.sp,
                             color = Color.White
@@ -183,7 +184,7 @@ fun FollowersListBody() {
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color(0xFF0EA5E9)
+                    containerColor = darkNavy
                 )
             )
         }
@@ -217,7 +218,6 @@ fun FollowersListBody() {
                                 index = index,
                                 primaryBlue = primaryBlue,
                                 cardBg = cardBg,
-                                bubbleColor = bubbleColor,
                                 followButtonColor = followButtonColor,
                                 unfollowButtonColor = unfollowButtonColor,
                                 textPrimary = textPrimary,
@@ -225,72 +225,31 @@ fun FollowersListBody() {
                                 textTertiary = textTertiary,
                                 onFollowToggle = {
                                     if (currentUserId.isNotEmpty()) {
-                                        if (follower.isFollowingBack) {
-                                            // Unfollow
-                                            userRepository.unfollowUser(
-                                                currentUserId = currentUserId,
-                                                targetUserId = follower.id
-                                            ) { success, message ->
-                                                if (success) {
-                                                    val updatedList = followerDetails.toMutableList()
-                                                    val indexToUpdate = updatedList.indexOfFirst { it.id == follower.id }
-                                                    if (indexToUpdate != -1) {
-                                                        updatedList[indexToUpdate] = updatedList[indexToUpdate].copy(
-                                                            isFollowingBack = false
-                                                        )
-                                                        followerDetails = updatedList
-                                                        Toast.makeText(
-                                                            context,
-                                                            "Unfollowed ${follower.name}",
-                                                            Toast.LENGTH_SHORT
-                                                        ).show()
-                                                    }
-                                                } else {
-                                                    Toast.makeText(
-                                                        context,
-                                                        "Failed to unfollow: $message",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
+                                        val newFollowState = !follower.isFollowingBack
+                                        val action = if (newFollowState) userRepository::followUser else userRepository::unfollowUser
+                                        action(currentUserId, follower.id) { success, message ->
+                                            if (success) {
+                                                val updatedList = followerDetails.map {
+                                                    if (it.id == follower.id) it.copy(isFollowingBack = newFollowState) else it
                                                 }
-                                            }
-                                        } else {
-                                            // Follow
-                                            userRepository.followUser(
-                                                currentUserId = currentUserId,
-                                                targetUserId = follower.id
-                                            ) { success, message ->
-                                                if (success) {
-                                                    val updatedList = followerDetails.toMutableList()
-                                                    val indexToUpdate = updatedList.indexOfFirst { it.id == follower.id }
-                                                    if (indexToUpdate != -1) {
-                                                        updatedList[indexToUpdate] = updatedList[indexToUpdate].copy(
-                                                            isFollowingBack = true
-                                                        )
-                                                        followerDetails = updatedList
-                                                        Toast.makeText(
-                                                            context,
-                                                            "Followed ${follower.name}",
-                                                            Toast.LENGTH_SHORT
-                                                        ).show()
-                                                    }
-                                                } else {
-                                                    Toast.makeText(
-                                                        context,
-                                                        "Failed to follow: $message",
-                                                        Toast.LENGTH_SHORT
-                                                    ).show()
-                                                }
+                                                followerDetails = updatedList
+                                                val toastMessage = if(newFollowState) "Followed ${follower.name}" else "Unfollowed ${follower.name}"
+                                                Toast.makeText(context, toastMessage, Toast.LENGTH_SHORT).show()
+                                            } else {
+                                                Toast.makeText(context, "Action failed: $message", Toast.LENGTH_SHORT).show()
                                             }
                                         }
                                     } else {
-                                        Toast.makeText(
-                                            context,
-                                            "Please login to follow",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
+                                        Toast.makeText(context, "Please login to follow", Toast.LENGTH_SHORT).show()
                                     }
                                 },
-                                context = context
+                                context = context,
+                                onClick = {
+                                    val intent = Intent(context, ProfileActivity::class.java)
+                                    intent.putExtra("USER_ID", follower.id)
+                                    context.startActivity(intent)
+                                },
+                                isCurrentUserItem = currentUserId == follower.id
                             )
                         }
                     }
@@ -306,14 +265,15 @@ fun FollowerItem(
     index: Int,
     primaryBlue: Color,
     cardBg: Color,
-    bubbleColor: Color,
     followButtonColor: Color,
     unfollowButtonColor: Color,
     textPrimary: Color,
     textSecondary: Color,
     textTertiary: Color,
     onFollowToggle: () -> Unit,
-    context: Context
+    context: Context,
+    onClick: () -> Unit,
+    isCurrentUserItem: Boolean
 ) {
     var showMenu by remember { mutableStateOf(false) }
     var visible by remember { mutableStateOf(false) }
@@ -322,8 +282,6 @@ fun FollowerItem(
         delay(index * 50L)
         visible = true
     }
-
-    val isCurrentUser = (context as? ComponentActivity) != null
 
     AnimatedVisibility(
         visible = visible,
@@ -340,7 +298,7 @@ fun FollowerItem(
                 .fillMaxWidth()
                 .padding(horizontal = 8.dp, vertical = 2.dp),
             color = cardBg,
-            onClick = { /* Handle click */ },
+            onClick = onClick,
             shape = RoundedCornerShape(16.dp),
             tonalElevation = 1.dp
         ) {
@@ -350,12 +308,10 @@ fun FollowerItem(
                     .padding(vertical = 12.dp, horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Avatar with online indicator
                 Box(
                     modifier = Modifier.size(56.dp),
                     contentAlignment = Alignment.BottomEnd
                 ) {
-                    // Avatar
                     Surface(
                         shape = CircleShape,
                         color = primaryBlue.copy(alpha = 0.1f),
@@ -383,7 +339,6 @@ fun FollowerItem(
                         }
                     }
 
-                    // Online indicator
                     if (follower.isOnline) {
                         Box(
                             modifier = Modifier
@@ -396,38 +351,17 @@ fun FollowerItem(
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // User info
                 Column(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = follower.name,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = textPrimary,
-                            maxLines = 1,
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        if (follower.mutualFriends > 0) {
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(bubbleColor)
-                            ) {
-                                Text(
-                                    text = "${follower.mutualFriends} mutual",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = primaryBlue,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
-                    }
+                    Text(
+                        text = follower.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = textPrimary,
+                        maxLines = 1
+                    )
 
                     Spacer(modifier = Modifier.height(4.dp))
 
@@ -438,7 +372,6 @@ fun FollowerItem(
                         maxLines = 1
                     )
 
-                    // Last active
                     if (follower.lastActive != null) {
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
@@ -452,54 +385,42 @@ fun FollowerItem(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Follow/Unfollow button
-                if (isCurrentUser && !follower.isFollowingBack) {
-                    Button(
-                        onClick = onFollowToggle,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = followButtonColor
-                        ),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.height(36.dp)
-                    ) {
-                        Text("Follow", fontSize = 13.sp, fontWeight = FontWeight.Medium)
-                    }
-                } else if (isCurrentUser && follower.isFollowingBack) {
-                    Box {
-                        IconButton(
-                            onClick = { showMenu = true },
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.MoreVert,
-                                contentDescription = "More options",
-                                tint = textTertiary
-                            )
-                        }
+                if (!isCurrentUserItem) {
+                    if (follower.isFollowingBack) {
+                        Box {
+                            IconButton(
+                                onClick = { showMenu = true },
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.MoreVert,
+                                    contentDescription = "More options",
+                                    tint = textTertiary
+                                )
+                            }
 
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false }
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Unfollow", color = unfollowButtonColor) },
+                                    onClick = {
+                                        showMenu = false
+                                        onFollowToggle()
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.Close, contentDescription = null, tint = unfollowButtonColor) }
+                                )
+                            }
+                        }
+                    } else {
+                        Button(
+                            onClick = onFollowToggle,
+                            colors = ButtonDefaults.buttonColors(containerColor = followButtonColor),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.height(36.dp)
                         ) {
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        "Unfollow",
-                                        color = unfollowButtonColor
-                                    )
-                                },
-                                onClick = {
-                                    showMenu = false
-                                    onFollowToggle()
-                                },
-                                leadingIcon = {
-                                    Icon(
-                                        Icons.Default.Close,
-                                        contentDescription = null,
-                                        tint = unfollowButtonColor
-                                    )
-                                }
-                            )
+                            Text("Follow", fontSize = 13.sp, fontWeight = FontWeight.Medium)
                         }
                     }
                 }
@@ -618,7 +539,6 @@ fun EmptyFollowersState() {
     }
 }
 
-// Helper function to load followers
 private fun loadFollowers(
     userId: String,
     currentUserId: String,
@@ -630,62 +550,36 @@ private fun loadFollowers(
     followersRef.addListenerForSingleValueEvent(object : ValueEventListener {
         override fun onDataChange(snapshot: DataSnapshot) {
             val followers = mutableListOf<FollowerUi>()
-            var loadedCount = 0
             val totalCount = snapshot.childrenCount.toInt()
-
             if (totalCount == 0) {
                 onComplete(emptyList())
                 return
             }
+            var loadedCount = 0
 
             for (followerSnapshot in snapshot.children) {
                 val followerId = followerSnapshot.key ?: continue
-
                 userRepository.getUserById(followerId) { user ->
                     if (user != null) {
-                        val followerUi = FollowerUi(
-                            id = user.userId,
-                            name = user.fullName.ifEmpty { "User" },
-                            username = user.username.ifEmpty { "@user" },
-                            profileImageUrl = if (user.profileImageUrl.isNotEmpty()) user.profileImageUrl else null,
-                            isFollowingBack = false,
-                            lastActive = "recently",
-                            isOnline = false,
-                            mutualFriends = (0..10).random()
-                        )
-
-                        // Check if current user is following this follower
-                        if (currentUserId.isNotEmpty() && currentUserId != followerId) {
-                            userRepository.isFollowing(currentUserId, followerId) { isFollowing ->
-                                followerUi.isFollowingBack = isFollowing
-                                followers.add(followerUi)
-                                loadedCount++
-                                if (loadedCount == totalCount) {
-                                    onComplete(followers.sortedBy { it -> it.name })
-                                }
-                            }
-                        } else {
-                            followers.add(followerUi)
+                        userRepository.isFollowing(currentUserId, followerId) { isFollowing ->
+                            followers.add(FollowerUi(
+                                id = user.userId,
+                                name = user.fullName.ifEmpty { "User" },
+                                username = user.username.ifEmpty { "@user" },
+                                profileImageUrl = if (user.profileImageUrl.isNotEmpty()) user.profileImageUrl else null,
+                                isFollowingBack = isFollowing,
+                                lastActive = "recently",
+                                isOnline = (System.currentTimeMillis() % 2 == 0L) // Mock online status
+                            ))
                             loadedCount++
                             if (loadedCount == totalCount) {
-                                onComplete(followers.sortedBy { it -> it.name })
+                                onComplete(followers.sortedBy { it.name })
                             }
                         }
                     } else {
-                        // Add placeholder
-                        followers.add(FollowerUi(
-                            id = followerId,
-                            name = "User",
-                            username = "@user",
-                            profileImageUrl = null,
-                            isFollowingBack = false,
-                            lastActive = null,
-                            isOnline = false,
-                            mutualFriends = 0
-                        ))
                         loadedCount++
                         if (loadedCount == totalCount) {
-                            onComplete(followers.sortedBy { it -> it.name })
+                            onComplete(followers.sortedBy { it.name })
                         }
                     }
                 }
