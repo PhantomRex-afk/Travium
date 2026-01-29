@@ -19,4 +19,10 @@
     <string name="title_activity_add_favourite">AddFavouriteActivity</string>
     <string name="title_activity_admin_dashboard">AdminDashboardActivity</string>
     <string name="title_activity_change_password">ChangePasswordActivity</string>
+    <string name="title_activity_group_chat">GroupChatActivity</string>
+    <string name="title_activity_followers_list">FollowersListActivity</string>
+    <string name="title_activity_following_list">FollowingListActivity</string>
+    <string name="title_activity_chat_screen">ChatScreen</string>
+    <string name="title_activity_main2">MainActivity2</string>
+    <string name="title_activity_create_group_chat">CreateGroupChatActivity</string>
 </resources>
