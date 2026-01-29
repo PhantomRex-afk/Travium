@@ -73,6 +73,11 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
+private val darkNavyBackground = Color(0xFF0F1A2E)
+private val lighterNavy = Color(0xFF1F2C41)
+private val cyanAccent = Color(0xFF00E5FF)
+private val myMessageBubble = Color(0xFF005C4B)
+
 class ChatActivity : ComponentActivity() {
     private val chatViewModel: ChatViewModel by viewModels {
         ChatViewModelFactory(
@@ -140,9 +145,6 @@ fun ChatBody(
 
     val listState = rememberLazyListState()
     var typingJob by remember { mutableStateOf<Job?>(null) }
-
-    val darkNavy = Color(0xFF000033)
-    val cyanAccent = Color(0xFF00FFFF)
 
     LaunchedEffect(error) {
         error?.let {
@@ -216,7 +218,6 @@ fun ChatBody(
         topBar = {
             ChatTopAppBar(
                 receiverName = receiverName,
-                receiverImage = receiverImage,
                 isReceiverTyping = isReceiverTyping,
                 onBackClick = { activity?.finish() }
             )
@@ -254,13 +255,13 @@ fun ChatBody(
                 )
             }
         },
-        containerColor = darkNavy
+        containerColor = darkNavyBackground
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(darkNavy)
+                .background(darkNavyBackground)
         ) {
             if (loading && messages.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -315,31 +316,18 @@ fun ChatBody(
 @Composable
 fun ChatTopAppBar(
     receiverName: String,
-    receiverImage: String,
     isReceiverTyping: Boolean,
     onBackClick: () -> Unit
 ) {
-    val darkNavy = Color(0xFF000033)
-    val cyanAccent = Color(0xFF00FFFF)
-    
     TopAppBar(
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                AsyncImage(
-                    model = receiverImage,
-                    contentDescription = "Profile",
-                    modifier = Modifier.size(40.dp).clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(receiverName, style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White))
-                    AnimatedVisibility(visible = isReceiverTyping) {
-                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            TypingIndicator()
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("typing...", style = TextStyle(fontSize = 13.sp, color = cyanAccent))
-                        }
+            Column {
+                Text(receiverName, style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White))
+                AnimatedVisibility(visible = isReceiverTyping) {
+                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        TypingIndicator()
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("typing...", style = TextStyle(fontSize = 13.sp, color = cyanAccent))
                     }
                 }
             }
@@ -350,7 +338,7 @@ fun ChatTopAppBar(
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = darkNavy,
+            containerColor = lighterNavy,
             titleContentColor = Color.White,
             navigationIconContentColor = Color.White
         )
@@ -367,16 +355,14 @@ fun MessageInputBar(
     isUploading: Boolean,
     uploadProgress: Float
 ) {
-    val darkNavy = Color(0xFF000033)
-    val cardBg = Color(0xFF1E293B)
     Column(
-        modifier = Modifier.background(darkNavy)
+        modifier = Modifier.background(darkNavyBackground)
     ) {
         if (isUploading) {
             LinearProgressIndicator(
-                progress = { uploadProgress },
+                progress = uploadProgress,
                 modifier = Modifier.fillMaxWidth(),
-                color = Color(0xFF00FFFF)
+                color = cyanAccent
             )
         }
         Row(
@@ -395,9 +381,9 @@ fun MessageInputBar(
                 colors = TextFieldDefaults.colors(
                     focusedTextColor = Color.White,
                     unfocusedTextColor = Color.White,
-                    focusedContainerColor = cardBg,
-                    unfocusedContainerColor = cardBg,
-                    disabledContainerColor = cardBg,
+                    focusedContainerColor = lighterNavy,
+                    unfocusedContainerColor = lighterNavy,
+                    disabledContainerColor = lighterNavy,
                     cursorColor = Color.White,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
@@ -406,7 +392,7 @@ fun MessageInputBar(
             )
             Spacer(modifier = Modifier.width(8.dp))
             IconButton(onClick = onSendClick) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = Color.White)
+                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = cyanAccent)
             }
         }
     }
@@ -464,7 +450,7 @@ fun MessageBubble(chatMessage: ChatMessage, isSentByMe: Boolean, onLongPress: (C
     ) {
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = if (isSentByMe) Color(0xFF005C4B) else Color(0xFF202C33),
+            color = if (isSentByMe) myMessageBubble else lighterNavy,
             modifier = Modifier.pointerInput(Unit) {
                 detectTapGestures(onLongPress = { onLongPress(chatMessage) })
             }
@@ -488,7 +474,7 @@ fun ImageMessageBubble(chatMessage: ChatMessage, isSentByMe: Boolean, onLongPres
     ) {
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = if (isSentByMe) Color(0xFF005C4B) else Color(0xFF202C33),
+            color = if (isSentByMe) myMessageBubble else lighterNavy,
             modifier = Modifier.pointerInput(Unit) {
                 detectTapGestures(onLongPress = { onLongPress(chatMessage) })
             }
@@ -511,7 +497,7 @@ fun DocumentMessageBubble(chatMessage: ChatMessage, isSentByMe: Boolean, onLongP
     ) {
         Surface(
             shape = RoundedCornerShape(16.dp),
-            color = if (isSentByMe) Color(0xFF005C4B) else Color(0xFF202C33),
+            color = if (isSentByMe) myMessageBubble else lighterNavy,
             modifier = Modifier.pointerInput(Unit) {
                 detectTapGestures(onLongPress = { onLongPress(chatMessage) }) }
         ) {

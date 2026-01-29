@@ -75,7 +75,6 @@ fun FollowersListBody() {
     val primaryBlue = Color(0xFF0EA5E9)
     val bgColor = darkNavy
     val cardBg = Color(0xFF1E293B)
-    val bubbleColor = primaryBlue.copy(alpha = 0.1f)
     val followButtonColor = Color(0xFF10B981)
     val unfollowButtonColor = Color(0xFFEF4444)
     val textPrimary = Color.White
@@ -315,28 +314,28 @@ fun FollowerItem(
                     Surface(
                         shape = CircleShape,
                         color = primaryBlue.copy(alpha = 0.1f),
-                        modifier = Modifier.size(56.dp)
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        if (follower.profileImageUrl != null) {
-                            AsyncImage(
-                                model = follower.profileImageUrl,
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Crop
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = follower.name.take(1).uppercase(),
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = primaryBlue
                             )
-                        } else {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = follower.name.take(1).uppercase(),
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = primaryBlue
-                                )
-                            }
                         }
+                    }
+
+                    if (follower.profileImageUrl != null) {
+                        AsyncImage(
+                            model = follower.profileImageUrl,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
                     }
 
                     if (follower.isOnline) {
