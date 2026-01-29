@@ -1,14 +1,19 @@
 package com.example.travium.viewmodel
 
 import androidx.lifecycle.ViewModel
+import com.example.travium.model.AdminNotificationModel
 import com.example.travium.model.UserModel
+import com.example.travium.repository.AdminNotificationRepo
 import com.example.travium.repository.UserRepo
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class GuideViewModel(private val repository: UserRepo) : ViewModel() {
+class GuideViewModel(
+    private val repository: UserRepo,
+    private val adminRepo: AdminNotificationRepo
+) : ViewModel() {
 
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading.asStateFlow()
@@ -51,10 +56,19 @@ class GuideViewModel(private val repository: UserRepo) : ViewModel() {
                 )
                 // Then add details to database
                 repository.addUserToDatabase(userId, guideUser) { dbSuccess, dbMessage ->
-                    _loading.value = false
                     if (dbSuccess) {
-                        _status.value = "success: Application submitted!"
+                        // Notify Admin
+                        val adminNotification = AdminNotificationModel(
+                            title = "New Guide Application",
+                            message = "$fullName has submitted a guide application for $location.",
+                            timestamp = System.currentTimeMillis()
+                        )
+                        adminRepo.sendNotification(adminNotification) { _, _ ->
+                            _loading.value = false
+                            _status.value = "success: Application submitted!"
+                        }
                     } else {
+                        _loading.value = false
                         _status.value = dbMessage
                     }
                 }

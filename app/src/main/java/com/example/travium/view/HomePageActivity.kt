@@ -9,6 +9,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -20,7 +22,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -49,6 +53,7 @@ import com.example.travium.utils.ImageUtils
 import com.example.travium.viewmodel.MakePostViewModel
 import com.example.travium.viewmodel.UserViewModel
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.delay
 
 class HomePageActivity : ComponentActivity() {
 
@@ -89,28 +94,48 @@ fun MainScreen(
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
     
     val notifications by postViewModel.notifications.observeAsState(initial = emptyList())
+    val allPosts by postViewModel.allPosts.observeAsState(initial = emptyList())
     val currentUser by userViewModel.userData.observeAsState()
     
     var selectedIndex by remember { mutableIntStateOf(0) }
     var showNotifications by remember { mutableStateOf(false) }
     var hasUnreadNotifications by remember { mutableStateOf(false) }
+    var showEventPopup by remember { mutableStateOf(false) }
     
     var lastNotificationCount by remember { mutableIntStateOf(-1) }
+    var lastPostCount by remember { mutableIntStateOf(-1) }
 
     LaunchedEffect(currentUserId) {
         if (currentUserId.isNotEmpty()) {
             postViewModel.getNotifications(currentUserId)
             userViewModel.getUserById(currentUserId) { }
+            postViewModel.getAllPosts()
         }
     }
 
-    // Dynamic Navigation Logic: If the user is a guide, redirect to GuideProfileScreen when clicking Profile
+    // New Post Notification Logic
+    LaunchedEffect(allPosts) {
+        if (lastPostCount != -1 && allPosts.size > lastPostCount) {
+            // Only show popup if we are not already on the home screen or if we want to alert explicitly
+            showEventPopup = true
+        }
+        lastPostCount = allPosts.size
+    }
+
+    // Auto-hide popup after 6 seconds
+    LaunchedEffect(showEventPopup) {
+        if (showEventPopup) {
+            delay(6000)
+            showEventPopup = false
+        }
+    }
+
+    // Guide profile redirection logic
     LaunchedEffect(selectedIndex, currentUser) {
         if (selectedIndex == 4 && currentUser?.isGuide == true) {
             val intent = Intent(context, GuideProfileScreen::class.java)
             intent.putExtra("GUIDE_ID", currentUserId)
             context.startActivity(intent)
-            // Revert selection to Home so user isn't stuck on an empty profile tab if they come back
             selectedIndex = 0 
         }
     }
@@ -232,6 +257,47 @@ fun MainScreen(
                             }
                         }
                         else -> HomeScreenBody()
+                    }
+                }
+            }
+        }
+
+        // Event Suggestion Popup
+        AnimatedVisibility(
+            visible = showEventPopup,
+            enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
+            exit = fadeOut() + slideOutVertically(targetOffsetY = { it }),
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 100.dp, start = 16.dp, end = 16.dp)
+        ) {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = TravelAccentTeal),
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { 
+                        selectedIndex = 0
+                        showEventPopup = false 
+                    }
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.NotificationsActive, contentDescription = null, tint = TravelDeepNavy)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "New Event Alert!",
+                            style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, color = TravelDeepNavy)
+                        )
+                        Text(
+                            "Latest event is happening, join quickly!",
+                            style = TextStyle(fontSize = 14.sp, color = TravelDeepNavy.copy(alpha = 0.8f))
+                        )
+                    }
+                    IconButton(onClick = { showEventPopup = false }) {
+                        Icon(Icons.Default.Close, contentDescription = "Close", tint = TravelDeepNavy)
                     }
                 }
             }

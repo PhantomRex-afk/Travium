@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,9 +31,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 import com.example.travium.R
 import com.example.travium.model.UserModel
+import com.example.travium.repository.AdminNotificationRepoImpl
 import com.example.travium.repository.UserRepoImpl
 import com.example.travium.view.ui.theme.TraviumTheme
 import com.example.travium.viewmodel.GuideViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 // Color Palette for consistency
 private val ProfileDeepNavy = Color(0xFF0F172A)
@@ -47,11 +50,12 @@ class GuideProfileScreen : ComponentActivity() {
         enableEdgeToEdge()
         
         val guideId = intent.getStringExtra("GUIDE_ID") ?: ""
+        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
         setContent {
             TraviumTheme {
                 val viewModel: GuideViewModel = viewModel {
-                    GuideViewModel(UserRepoImpl())
+                    GuideViewModel(UserRepoImpl(), AdminNotificationRepoImpl())
                 }
                 
                 val user by viewModel.userProfile.collectAsState()
@@ -66,6 +70,7 @@ class GuideProfileScreen : ComponentActivity() {
                 GuideProfileContent(
                     user = user,
                     isLoading = isLoading,
+                    isOwner = guideId == currentUserId,
                     onBack = { finish() }
                 )
             }
@@ -78,8 +83,11 @@ class GuideProfileScreen : ComponentActivity() {
 fun GuideProfileContent(
     user: UserModel?,
     isLoading: Boolean,
+    isOwner: Boolean,
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
+    
     Scaffold(
         containerColor = ProfileDeepNavy,
         topBar = {
@@ -91,6 +99,13 @@ fun GuideProfileContent(
                     }
                 },
                 actions = {
+                    if (isOwner) {
+                        IconButton(onClick = { 
+                            // context.startActivity(Intent(context, EditProfileActivity::class.java))
+                        }) {
+                            Icon(Icons.Default.Edit, contentDescription = "Edit Profile", tint = Color.White)
+                        }
+                    }
                     IconButton(onClick = { /* Share Logic */ }) {
                         Icon(Icons.Default.Share, contentDescription = "Share", tint = Color.White)
                     }
@@ -119,7 +134,7 @@ fun GuideProfileContent(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(padding),
-                contentPadding = PaddingValues(bottom = 100.dp)
+                contentPadding = PaddingValues(bottom = if (isOwner) 24.dp else 100.dp)
             ) {
                 // Header section
                 item {
@@ -211,8 +226,8 @@ fun GuideProfileContent(
         }
     }
 
-    // Floating Bottom Buttons
-    if (user != null && !isLoading) {
+    // Floating Bottom Buttons - Hidden for owner
+    if (user != null && !isLoading && !isOwner) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -224,7 +239,11 @@ fun GuideProfileContent(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     OutlinedButton(
-                        onClick = { /* Message Intent */ },
+                        onClick = { 
+                            // val intent = Intent(context, ChatActivity::class.java)
+                            // intent.putExtra("RECEIVER_ID", user.userId)
+                            // context.startActivity(intent)
+                        },
                         modifier = Modifier.weight(1f).height(54.dp),
                         shape = RoundedCornerShape(16.dp),
                         border = androidx.compose.foundation.BorderStroke(1.dp, ProfileAccentTeal)
@@ -293,6 +312,7 @@ fun GuideProfilePremiumPreview() {
                 isGuide = true
             ),
             isLoading = false,
+            isOwner = false,
             onBack = {}
         )
     }
