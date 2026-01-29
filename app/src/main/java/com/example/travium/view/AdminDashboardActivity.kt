@@ -187,6 +187,17 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
     val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.PickMultipleVisualMedia()) { uris -> selectedImageUris = uris }
     val cameraPositionState = rememberCameraPositionState { position = CameraPosition.fromLatLngZoom(LatLng(28.3949, 84.1240), 7f) }
 
+    // Fixed Map States wrapped in remember
+    val mapProperties = remember(mapType) {
+        MapProperties(
+            mapStyleOptions = MapStyleOptions(TRAVEL_MAP_STYLE),
+            mapType = mapType
+        )
+    }
+    val mapUiSettings = remember {
+        MapUiSettings(zoomControlsEnabled = false, scrollGesturesEnabled = true, mapToolbarEnabled = true)
+    }
+
     val searchPlace = {
         coroutineScope.launch {
             try {
@@ -218,13 +229,21 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                 }
                 val query = if (hotelSearchQuery.isNotBlank()) hotelSearchQuery else "Hotels"
                 val results = withContext(Dispatchers.IO) {
-                    geocoder.getFromLocationName("$query near $placeName", 10)
+                    // Search near the destination coordinates for better precision
+                    geocoder.getFromLocationName(query, 10, 
+                        destinationLocation!!.latitude - 0.1, destinationLocation!!.longitude - 0.1,
+                        destinationLocation!!.latitude + 0.1, destinationLocation!!.longitude + 0.1
+                    )
                 }
                 foundHotels.clear()
                 results?.forEach { addr ->
                     foundHotels.add(HotelLocation(addr.featureName ?: "Hotel", addr.latitude, addr.longitude))
                 }
-                if (foundHotels.isEmpty()) Toast.makeText(context, "No hotels found nearby", Toast.LENGTH_SHORT).show()
+                if (foundHotels.isNotEmpty()) {
+                    cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(destinationLocation!!, 15f))
+                } else {
+                    Toast.makeText(context, "No results found nearby", Toast.LENGTH_SHORT).show()
+                }
             } catch (e: Exception) {
                 Toast.makeText(context, "Hotel search failed", Toast.LENGTH_SHORT).show()
             }
@@ -235,15 +254,15 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
         AlertDialog(
             onDismissRequest = { showHotelNameDialog = null },
             containerColor = AdminCardNavy,
-            title = { Text("Set Recommendation Name", color = Color.White, fontWeight = FontWeight.Bold) },
+            title = { Text("Add Recommendation", color = Color.White, fontWeight = FontWeight.Bold) },
             text = {
                 Column {
-                    Text("What should the users see as the name for this pin?", color = AdminSoftGray, fontSize = 14.sp)
+                    Text("Name this location for the user guide:", color = AdminSoftGray, fontSize = 14.sp)
                     Spacer(Modifier.height(12.dp))
                     OutlinedTextField(
                         value = tempHotelName,
                         onValueChange = { tempHotelName = it },
-                        label = { Text("Name") },
+                        label = { Text("Display Name") },
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = AdminAccentTeal),
                         shape = RoundedCornerShape(12.dp)
@@ -257,7 +276,7 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                         tempHotelName = ""
                         showHotelNameDialog = null
                     }
-                }) { Text("Confirm Pin", color = AdminAccentTeal, fontWeight = FontWeight.Bold) }
+                }) { Text("Confirm Mark", color = AdminAccentTeal, fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
                 TextButton(onClick = { showHotelNameDialog = null }) { Text("Cancel", color = Color.White) }
@@ -340,7 +359,7 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                             leadingIcon = { Icon(Icons.Default.LocationOn, null, tint = AdminAccentTeal, modifier = Modifier.size(18.dp)) },
                             trailingIcon = { 
                                 IconButton(onClick = { searchExistingHotels() }) { 
-                                    Icon(Icons.Default.Add, "Search Hotels", tint = AdminAccentTeal) 
+                                    Icon(Icons.Default.Search, "Search Hotels", tint = AdminAccentTeal) 
                                 } 
                             },
                             colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedContainerColor = AdminCardNavy, unfocusedContainerColor = AdminCardNavy),
@@ -355,10 +374,8 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                         GoogleMap(
                             modifier = Modifier.fillMaxSize(),
                             cameraPositionState = cameraPositionState,
-                            properties = MapProperties(
-                                mapStyleOptions = MapStyleOptions(TRAVEL_MAP_STYLE),
-                                mapType = mapType
-                            ),
+                            properties = mapProperties,
+                            uiSettings = mapUiSettings,
                             onMapLongClick = { latLng -> 
                                 if (destinationLocation == null) {
                                     destinationLocation = latLng
@@ -376,7 +393,7 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                                 ) 
                             }
                             
-                            // Found Hotels Pins (Green pins from search results)
+                            // Found Hotels Pins (Green markers from search results)
                             foundHotels.forEach { hotel ->
                                 Marker(
                                     state = rememberMarkerState(key = "found_${hotel.latitude}_${hotel.longitude}", position = LatLng(hotel.latitude, hotel.longitude)),
@@ -393,7 +410,7 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                                 )
                             }
 
-                            // Recommended Pins (Orange pins officially added)
+                            // Officially Added Hotels Pins (Orange)
                             hotelLocations.forEach { hotelLoc ->
                                 Marker(
                                     state = rememberMarkerState(key = "added_${hotelLoc.latitude}_${hotelLoc.longitude}", position = LatLng(hotelLoc.latitude, hotelLoc.longitude)), 
@@ -449,8 +466,7 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                     if (success) { 
                         placeName = ""; accommodations = ""; selectedImageUris = emptyList()
-                        destinationLocation = null; hotelLocations.clear(); foundHotels.clear()
-                        placeSearchQuery = ""; hotelSearchQuery = ""
+                        destinationLocation = null; hotelLocations.clear(); foundHotels.clear(); placeSearchQuery = ""; hotelSearchQuery = ""
                     }
                 }
             },
@@ -533,7 +549,7 @@ fun AdminGuideCard(guide: GuideModel, onDelete: () -> Unit) {
                             painter = rememberAsyncImagePainter(url),
                             contentDescription = null,
                             modifier = Modifier
-                                .size(140.dp, 90.dp)
+                                .size(160.dp, 110.dp)
                                 .clip(RoundedCornerShape(12.dp)),
                             contentScale = ContentScale.Crop
                         )
@@ -562,7 +578,7 @@ fun AdminGuideCard(guide: GuideModel, onDelete: () -> Unit) {
                             )
                             guide.hotels.forEach { hotel ->
                                 Marker(
-                                    state = rememberMarkerState(key = "manage_hotel_${hotel.name}", position = LatLng(hotel.latitude, hotel.longitude)), 
+                                    state = rememberMarkerState(key = "manage_hotel_${hotel.name}_${hotel.latitude}", position = LatLng(hotel.latitude, hotel.longitude)), 
                                     title = hotel.name, 
                                     icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
                                 )
