@@ -1,4 +1,4 @@
-package com.example.travium.Model
+package com.example.travium.model
 
 data class SettingModel(
     val userId: String = "",

@@ -1,10 +1,15 @@
 package com.example.travium.viewmodel
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.travium.model.UserModel
 import com.example.travium.repository.UserRepo
 
 class UserViewModel(private val repo: UserRepo) : ViewModel() {
+
+    private val _allUsers = MutableLiveData<List<UserModel>>()
+    val allUsers: LiveData<List<UserModel>> = _allUsers
 
     fun login(
         email: String, password: String,
@@ -26,6 +31,10 @@ class UserViewModel(private val repo: UserRepo) : ViewModel() {
         repo.forgetPassword(email, callback)
     }
 
+    fun changePassword(newPassword: String, callback: (Boolean, String) -> Unit) {
+        repo.changePassword(newPassword, callback)
+    }
+
     fun addUserToDatabase(
         userId: String,
         userModel: UserModel,
@@ -36,5 +45,19 @@ class UserViewModel(private val repo: UserRepo) : ViewModel() {
 
     fun getUserById(userId: String, callback: (UserModel?) -> Unit) {
         repo.getUserById(userId, callback)
+    }
+
+    fun getAllUsers() {
+        repo.getAllUsers { success, message, userList ->
+            if (success && userList != null) {
+                _allUsers.value = userList
+            } else {
+                _allUsers.value = emptyList()
+            }
+        }
+    }
+
+    fun searchUsers(query: String, callback: (List<UserModel>) -> Unit) {
+        repo.searchUsers(query, callback)
     }
 }

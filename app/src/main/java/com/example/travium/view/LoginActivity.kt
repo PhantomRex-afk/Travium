@@ -83,7 +83,6 @@ class LoginActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginBody(viewModel: UserViewModel? = null) {
-
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var adminPassword by remember { mutableStateOf("") }
@@ -94,7 +93,6 @@ fun LoginBody(viewModel: UserViewModel? = null) {
     var selectedRole by remember { mutableStateOf("User") }
 
     val context = LocalContext.current
-
     val primaryColor = Color(0xFF6C63FF)
     val secondaryColor = Color(0xFF4ECDC4)
     val cardBackground = Color(0xCC1A1A1A)

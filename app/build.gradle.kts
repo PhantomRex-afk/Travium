@@ -41,19 +41,24 @@ android {
 }
 
 dependencies {
-    implementation("androidx.compose.runtime:runtime-livedata:1.10.0")
+    implementation("com.google.maps.android:maps-compose:7.0.0")
+    implementation("com.google.android.gms:play-services-maps:20.0.0")
+
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation(libs.androidx.compose.runtime.livedata)
+    implementation("com.cloudinary:cloudinary-android:2.1.0")
+    implementation(libs.coil.compose)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
+    implementation("com.cloudinary:cloudinary-android:2.1.0")
+    implementation("io.coil-kt.coil3:coil-compose:3.3.0")
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-    implementation(libs.coil.compose)
-    implementation("com.cloudinary:cloudinary-android:2.1.0")
-    implementation("io.coil-kt.coil3:coil-compose:3.3.0")
+    implementation(libs.androidx.compose.material.icons.extended)
     
     // Cloudinary
     implementation(libs.cloudinary.android)
@@ -71,5 +76,4 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-
 }

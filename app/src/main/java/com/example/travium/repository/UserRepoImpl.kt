@@ -10,6 +10,8 @@ import com.google.firebase.database.ValueEventListener
 class UserRepoImpl : UserRepo {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseDatabase.getInstance().getReference("users")
+    private val followersRef = FirebaseDatabase.getInstance().getReference("followers")
+    private val followingRef = FirebaseDatabase.getInstance().getReference("following")
 
     override fun register(email: String, password: String, callback: (Boolean, String, String) -> Unit) {
         auth.createUserWithEmailAndPassword(email, password)
@@ -52,7 +54,69 @@ class UserRepoImpl : UserRepo {
             }
     }
 
+    override fun changePassword(newPassword: String, callback: (Boolean, String) -> Unit) {
+        auth.currentUser?.updatePassword(newPassword)
+            ?.addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    callback(true, "Password changed successfully")
+                } else {
+                    callback(false, task.exception?.message ?: "Failed to change password")
+                }
+            } ?: callback(false, "User not logged in")
+    }
 
+    override fun followUser(currentUserId: String, targetUserId: String, callback: (Boolean, String) -> Unit) {
+        followingRef.child(currentUserId).child(targetUserId).setValue(true)
+            .addOnSuccessListener {
+                followersRef.child(targetUserId).child(currentUserId).setValue(true)
+                    .addOnSuccessListener { callback(true, "Followed successfully") }
+                    .addOnFailureListener { callback(false, it.message ?: "Failed to update followers") }
+            }
+            .addOnFailureListener { callback(false, it.message ?: "Failed to update following") }
+    }
+
+    override fun unfollowUser(currentUserId: String, targetUserId: String, callback: (Boolean, String) -> Unit) {
+        followingRef.child(currentUserId).child(targetUserId).removeValue()
+            .addOnSuccessListener {
+                followersRef.child(targetUserId).child(currentUserId).removeValue()
+                    .addOnSuccessListener { callback(true, "Unfollowed successfully") }
+                    .addOnFailureListener { callback(false, it.message ?: "Failed to update followers") }
+            }
+            .addOnFailureListener { callback(false, it.message ?: "Failed to update following") }
+    }
+
+    override fun getFollowersCount(userId: String, callback: (Long) -> Unit) {
+        followersRef.child(userId).addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                callback(snapshot.childrenCount)
+            }
+            override fun onCancelled(error: DatabaseError) {
+                callback(0)
+            }
+        })
+    }
+
+    override fun getFollowingCount(userId: String, callback: (Long) -> Unit) {
+        followingRef.child(userId).addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                callback(snapshot.childrenCount)
+            }
+            override fun onCancelled(error: DatabaseError) {
+                callback(0)
+            }
+        })
+    }
+
+    override fun isFollowing(currentUserId: String, targetUserId: String, callback: (Boolean) -> Unit) {
+        followingRef.child(currentUserId).child(targetUserId).addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                callback(snapshot.exists())
+            }
+            override fun onCancelled(error: DatabaseError) {
+                callback(false)
+            }
+        })
+    }
 
     override fun addUserToDatabase(userId: String, userModel: UserModel, callback: (Boolean, String) -> Unit) {
         db.child(userId).setValue(userModel)
@@ -76,5 +140,48 @@ class UserRepoImpl : UserRepo {
                 callback(null)
             }
         })
+    }
+
+    override fun getAllUsers(callback: (Boolean, String, List<UserModel>?) -> Unit) {
+        db.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val userList = mutableListOf<UserModel>()
+                for (userSnapshot in snapshot.children) {
+                    val user = userSnapshot.getValue(UserModel::class.java)
+                    user?.let { userList.add(it) }
+                }
+                callback(true, "Users retrieved successfully", userList)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                callback(false, error.message, null)
+            }
+        })
+    }
+    override fun searchUsers(query: String, callback: (List<UserModel>) -> Unit) {
+        val database = FirebaseDatabase.getInstance()
+        val usersRef = database.getReference("users")
+
+        usersRef.orderByChild("username")
+            .startAt(query.lowercase())
+            .endAt(query.lowercase() + "\uf8ff")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val users = mutableListOf<UserModel>()
+                for (child in snapshot.children) {
+                    val user = child.getValue(UserModel::class.java)
+                    user?.let {
+                        // Also check fullName if you want to search by both username and fullName
+                        if (it.username.contains(query, ignoreCase = true) ||
+                            it.fullName.contains(query, ignoreCase = true)) {
+                            users.add(it)
+                        }
+                    }
+                }
+                callback(users)
+            }
+            .addOnFailureListener {
+                callback(emptyList())
+            }
     }
 }
