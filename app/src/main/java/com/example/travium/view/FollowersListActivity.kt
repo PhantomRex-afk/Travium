@@ -100,7 +100,7 @@ fun FollowersListBody() {
     LaunchedEffect(userId) {
         if (userId.isNotEmpty()) {
             loadFollowers(userId, currentUserId, userRepository) { followers ->
-                followerDetails = followers
+                followerDetails = followers.filter { it.id != userId }
                 isLoading = false
             }
         } else {
@@ -125,7 +125,7 @@ fun FollowersListBody() {
                 title = {
                     if (!isSearching) {
                         Text(
-                            "Followers (${followerDetails.size})",
+                            "Followers (${filteredFollowers.size})",
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 18.sp,
                             color = Color.White

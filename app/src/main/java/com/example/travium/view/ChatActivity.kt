@@ -286,17 +286,17 @@ fun ChatBody(
                                 }
                                 when (message.messageType) {
                                     "image" -> ImageMessageBubble(
-                                        message = message,
+                                        chatMessage = message,
                                         isSentByMe = message.senderId == currentUserId,
                                         onLongPress = { showMessageOptions(context, message, chatViewModel) }
                                     )
                                     "document" -> DocumentMessageBubble(
-                                        message = message,
+                                        chatMessage = message,
                                         isSentByMe = message.senderId == currentUserId,
                                         onLongPress = { showMessageOptions(context, message, chatViewModel) }
                                     )
                                     else -> MessageBubble(
-                                        message = message,
+                                        chatMessage = message,
                                         isSentByMe = message.senderId == currentUserId,
                                         onLongPress = { showMessageOptions(context, message, chatViewModel) }
                                     )
@@ -374,7 +374,7 @@ fun MessageInputBar(
     ) {
         if (isUploading) {
             LinearProgressIndicator(
-                progress = uploadProgress,
+                progress = { uploadProgress },
                 modifier = Modifier.fillMaxWidth(),
                 color = Color(0xFF00FFFF)
             )
@@ -457,7 +457,7 @@ fun DateHeader(timestamp: Long) {
 }
 
 @Composable
-fun MessageBubble(message: ChatMessage, isSentByMe: Boolean, onLongPress: (ChatMessage) -> Unit) {
+fun MessageBubble(chatMessage: ChatMessage, isSentByMe: Boolean, onLongPress: (ChatMessage) -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = if (isSentByMe) Alignment.End else Alignment.Start
@@ -466,12 +466,12 @@ fun MessageBubble(message: ChatMessage, isSentByMe: Boolean, onLongPress: (ChatM
             shape = RoundedCornerShape(16.dp),
             color = if (isSentByMe) Color(0xFF005C4B) else Color(0xFF202C33),
             modifier = Modifier.pointerInput(Unit) {
-                detectTapGestures(onLongPress = { onLongPress(message) })
+                detectTapGestures(onLongPress = { onLongPress(chatMessage) })
             }
         ) {
-            if(message.messageText.isNotEmpty()) {
+            if(chatMessage.messageText.isNotEmpty()) {
                 Text(
-                    text = message.messageText, 
+                    text = chatMessage.messageText, 
                     modifier = Modifier.padding(10.dp),
                     color = Color.White
                 )
@@ -481,7 +481,7 @@ fun MessageBubble(message: ChatMessage, isSentByMe: Boolean, onLongPress: (ChatM
 }
 
 @Composable
-fun ImageMessageBubble(message: ChatMessage, isSentByMe: Boolean, onLongPress: (ChatMessage) -> Unit) {
+fun ImageMessageBubble(chatMessage: ChatMessage, isSentByMe: Boolean, onLongPress: (ChatMessage) -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = if (isSentByMe) Alignment.End else Alignment.Start
@@ -490,11 +490,11 @@ fun ImageMessageBubble(message: ChatMessage, isSentByMe: Boolean, onLongPress: (
             shape = RoundedCornerShape(16.dp),
             color = if (isSentByMe) Color(0xFF005C4B) else Color(0xFF202C33),
             modifier = Modifier.pointerInput(Unit) {
-                detectTapGestures(onLongPress = { onLongPress(message) })
+                detectTapGestures(onLongPress = { onLongPress(chatMessage) })
             }
         ) {
             AsyncImage(
-                model = message.mediaUrl,
+                model = chatMessage.mediaUrl,
                 contentDescription = "Image message",
                 modifier = Modifier.size(200.dp).padding(4.dp).clip(RoundedCornerShape(12.dp)),
                 contentScale = ContentScale.Crop
@@ -504,7 +504,7 @@ fun ImageMessageBubble(message: ChatMessage, isSentByMe: Boolean, onLongPress: (
 }
 
 @Composable
-fun DocumentMessageBubble(message: ChatMessage, isSentByMe: Boolean, onLongPress: (ChatMessage) -> Unit) {
+fun DocumentMessageBubble(chatMessage: ChatMessage, isSentByMe: Boolean, onLongPress: (ChatMessage) -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = if (isSentByMe) Alignment.End else Alignment.Start
@@ -513,7 +513,7 @@ fun DocumentMessageBubble(message: ChatMessage, isSentByMe: Boolean, onLongPress
             shape = RoundedCornerShape(16.dp),
             color = if (isSentByMe) Color(0xFF005C4B) else Color(0xFF202C33),
             modifier = Modifier.pointerInput(Unit) {
-                detectTapGestures(onLongPress = { onLongPress(message) }) }
+                detectTapGestures(onLongPress = { onLongPress(chatMessage) }) }
         ) {
             Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Description, contentDescription = "Document", tint = Color.White)
