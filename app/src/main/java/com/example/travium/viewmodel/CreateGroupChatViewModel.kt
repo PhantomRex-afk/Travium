@@ -76,16 +76,11 @@ class CreateGroupChatViewModel : ViewModel() {
 
         _uiState.value = CreateGroupUiState.Loading
 
-        userRepo?.getAllUsers { success, message, users ->
-            if (success && users != null) {
-                // Filter out current user
-                val otherUsers = users.filter { it.userId != currentUserId }
-                _availableContacts.value = otherUsers
-                _uiState.value = CreateGroupUiState.Success
-            } else {
-                _uiState.value = CreateGroupUiState.Error("Failed to load users: ${message ?: "Unknown error"}")
-                _availableContacts.value = emptyList()
-            }
+        userRepo?.getAllUsers { users ->
+            // Filter out current user
+            val otherUsers = users.filter { it.userId != currentUserId }
+            _availableContacts.value = otherUsers
+            _uiState.value = CreateGroupUiState.Success
         }
     }
 
@@ -104,12 +99,7 @@ class CreateGroupChatViewModel : ViewModel() {
 
         _uiState.value = CreateGroupUiState.Loading
 
-        userRepo?.getAllUsers { success, message, allUsers ->
-            if (!success || allUsers == null) {
-                _uiState.value = CreateGroupUiState.Error("Failed to load users: ${message ?: "Unknown error"}")
-                return@getAllUsers
-            }
-
+        userRepo?.getAllUsers { allUsers ->
             val otherUsers = allUsers.filter { it.userId != currentUserId }
             if (otherUsers.isEmpty()) {
                 _availableContacts.value = emptyList()
@@ -118,7 +108,7 @@ class CreateGroupChatViewModel : ViewModel() {
             }
 
             val filteredContacts = mutableListOf<UserModel>()
-            val checksCompleted = mutableListOf<Boolean>()
+            var checksCompletedCount = 0
 
             otherUsers.forEach { user ->
                 // Check if there's any follow relationship
@@ -128,9 +118,9 @@ class CreateGroupChatViewModel : ViewModel() {
                             filteredContacts.add(user)
                         }
 
-                        checksCompleted.add(true)
+                        checksCompletedCount++
 
-                        if (checksCompleted.size == otherUsers.size) {
+                        if (checksCompletedCount == otherUsers.size) {
                             _availableContacts.value = filteredContacts
                             _uiState.value = CreateGroupUiState.Success
                         }
@@ -193,7 +183,7 @@ class CreateGroupChatViewModel : ViewModel() {
         val members = selectedUsers.map { it.userId } + currentUserId
         val memberNames = selectedUsers.map { it.fullName.ifEmpty { "User" } } +
                 (currentUserInfo?.fullName?.takeIf { it.isNotEmpty() } ?: "User")
-        val memberPhotos = selectedUsers.mapNotNull { it.profileImageUrl } +
+        val memberPhotos = selectedUsers.map { it.profileImageUrl } +
                 (_groupImage.value ?: currentUserInfo?.profileImageUrl ?: "")
 
         _uiState.value = CreateGroupUiState.Loading
@@ -252,7 +242,7 @@ class CreateGroupChatViewModel : ViewModel() {
         val members = selectedUsers.map { it.userId } + currentUserId
         val memberNames = selectedUsers.map { it.fullName.ifEmpty { "User" } } +
                 (currentUserInfo?.fullName?.takeIf { it.isNotEmpty() } ?: "User")
-        val memberPhotos = selectedUsers.mapNotNull { it.profileImageUrl } +
+        val memberPhotos = selectedUsers.map { it.profileImageUrl } +
                 (groupImage ?: currentUserInfo?.profileImageUrl ?: "")
 
         groupChatRepo?.createGroup(

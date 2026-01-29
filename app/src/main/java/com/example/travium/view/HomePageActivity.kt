@@ -67,7 +67,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.travium.R
-import com.example.travium.model.ChatRoom
 import com.example.travium.model.NotificationModel
 import com.example.travium.model.UserModel
 import com.example.travium.repository.MakePostRepoImpl
@@ -236,7 +235,7 @@ fun MainScreen(
                         1 -> HomeScreenBody()
                         2 -> MakePostBody(selectedImageUri = selectedImageUri, onPickImage = onPickImage)
                         3 -> ChatScreen()
-                        4 -> ProfileScreen(userId = currentUserId)
+                        4 -> ProfileScreen()
                         else -> HomeScreenBody()
                     }
                 }
