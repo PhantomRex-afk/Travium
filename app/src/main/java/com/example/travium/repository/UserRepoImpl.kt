@@ -260,4 +260,30 @@ class UserRepoImpl : UserRepo {
             }
         })
     }
+    override fun searchUsers(query: String, callback: (List<UserModel>) -> Unit) {
+        val database = FirebaseDatabase.getInstance()
+        val usersRef = database.getReference("users")
+
+        usersRef.orderByChild("username")
+            .startAt(query.lowercase())
+            .endAt(query.lowercase() + "\uf8ff")
+            .get()
+            .addOnSuccessListener { snapshot ->
+                val users = mutableListOf<UserModel>()
+                for (child in snapshot.children) {
+                    val user = child.getValue(UserModel::class.java)
+                    user?.let {
+                        // Also check fullName if you want to search by both username and fullName
+                        if (it.username.contains(query, ignoreCase = true) ||
+                            it.fullName.contains(query, ignoreCase = true)) {
+                            users.add(it)
+                        }
+                    }
+                }
+                callback(users)
+            }
+            .addOnFailureListener {
+                callback(emptyList())
+            }
+    }
 }

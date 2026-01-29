@@ -41,7 +41,10 @@ import com.example.travium.repository.UserRepoImpl
 import com.example.travium.viewmodel.MakePostViewModel
 import com.example.travium.viewmodel.UserViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 
 // Travel-themed dark colors
 val TravelDeepNavy = Color(0xFF0F172A)
@@ -71,19 +74,30 @@ fun HomeScreenBody() {
     }
 
     LaunchedEffect(searchQuery) {
-        if (searchQuery.isNotEmpty()) {
+        if (searchQuery.isNotBlank()) {
+            isSearching = true
             val usersRef = FirebaseDatabase.getInstance().getReference("users")
-            usersRef.orderByChild("username").startAt(searchQuery).endAt(searchQuery + "\uf8ff")
-                .get().addOnSuccessListener { snapshot ->
+            usersRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
                     val users = mutableListOf<UserModel>()
+                    val lowercasedQuery = searchQuery.lowercase()
                     for (child in snapshot.children) {
                         val user = child.getValue(UserModel::class.java)
-                        if (user != null) users.add(user)
+                        if (user != null && (user.username.lowercase().contains(lowercasedQuery) || user.fullName.lowercase().contains(lowercasedQuery))) {
+                            users.add(user)
+                        }
                     }
-                    searchResults = users
+                    searchResults = users.sortedWith(compareBy({ !it.username.lowercase().startsWith(lowercasedQuery) && !it.fullName.lowercase().startsWith(lowercasedQuery) }, { it.username }))
+                    isSearching = false
                 }
+
+                override fun onCancelled(error: DatabaseError) {
+                    isSearching = false
+                }
+            })
         } else {
             searchResults = emptyList()
+            isSearching = false
         }
     }
 
@@ -99,7 +113,7 @@ fun HomeScreenBody() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(16.dp),
-                placeholder = { Text("Search", color = TravelSoftGray) },
+                placeholder = { Text("Search for users...", color = TravelSoftGray) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TravelAccentTeal) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
@@ -120,17 +134,30 @@ fun HomeScreenBody() {
                 singleLine = true
             )
 
-            if (searchQuery.isNotEmpty()) {
-                // Search Results
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(horizontal = 16.dp)
-                ) {
-                    items(searchResults) { user ->
-                        UserSearchItem(user = user) {
-                            val intent = Intent(context, OtherUserProfileActivity::class.java)
-                            intent.putExtra("userId", user.userId)
-                            context.startActivity(intent)
+            if (searchQuery.isNotBlank()) {
+                when {
+                    isSearching -> {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = TravelAccentTeal)
+                        }
+                    }
+                    searchResults.isEmpty() -> {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("No users found.", color = TravelSoftGray, fontSize = 16.sp)
+                        }
+                    }
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(horizontal = 16.dp)
+                        ) {
+                            items(searchResults) { user ->
+                                UserSearchItem(user = user) {
+                                    val intent = Intent(context, ProfileActivity::class.java)
+                                    intent.putExtra("USER_ID", user.userId)
+                                    context.startActivity(intent)
+                                }
+                            }
                         }
                     }
                 }
@@ -227,7 +254,6 @@ fun UserSearchItem(user: UserModel, onClick: () -> Unit) {
 @Composable
 fun PostAuthorHeader(userId: String, userViewModel: UserViewModel) {
     var user by remember { mutableStateOf<UserModel?>(null) }
-    val context = LocalContext.current
 
     LaunchedEffect(userId) {
         userViewModel.getUserById(userId) { fetchedUser ->
@@ -237,13 +263,7 @@ fun PostAuthorHeader(userId: String, userViewModel: UserViewModel) {
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
-                val intent = Intent(context, OtherUserProfileActivity::class.java)
-                intent.putExtra("userId", userId)
-                context.startActivity(intent)
-            }
+        modifier = Modifier.fillMaxWidth()
     ) {
         // Placeholder for user avatar
         Box(

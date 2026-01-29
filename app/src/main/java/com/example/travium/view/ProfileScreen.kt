@@ -45,13 +45,12 @@ import com.google.firebase.ktx.Firebase
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(userId: String) {
     val context = LocalContext.current
-    val user = Firebase.auth.currentUser
+    val currentUserId = Firebase.auth.currentUser?.uid
     
     val postViewModel = remember { MakePostViewModel(MakePostRepoImpl()) }
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
-    val allPosts by postViewModel.allPosts.observeAsState(initial = emptyList())
 
     var fullName by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
@@ -68,39 +67,34 @@ fun ProfileScreen() {
     val cyanAccent = Color(0xFF00FFFF)
 
     // Fetch user data and posts from Firebase
-    LaunchedEffect(user?.uid) {
-        if (user != null) {
-            val database = Firebase.database
-            
-            // Fetch User Details
-            val userRef = database.getReference("users").child(user.uid)
-            userRef.addValueEventListener(object : ValueEventListener {
+    LaunchedEffect(userId) {
+        val database = Firebase.database
+        val userRef = database.getReference("users").child(userId)
+        userRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                fullName = snapshot.child("fullName").getValue(String::class.java) ?: "Anonymous"
+                username = snapshot.child("username").getValue(String::class.java) ?: ""
+                bio = snapshot.child("bio").getValue(String::class.java) ?: "No bio yet"
+                profileImageUrl = snapshot.child("profileImageUrl").getValue(String::class.java)
+            }
+            override fun onCancelled(error: DatabaseError) {}
+        })
+
+        val postsRef = database.getReference("posts")
+        postsRef.orderByChild("userId").equalTo(userId)
+            .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
-                    fullName = snapshot.child("fullName").getValue(String::class.java) ?: "Anonymous"
-                    username = snapshot.child("username").getValue(String::class.java) ?: ""
-                    bio = snapshot.child("bio").getValue(String::class.java) ?: "No bio yet"
-                    profileImageUrl = snapshot.child("profileImageUrl").getValue(String::class.java)
+                    val posts = mutableListOf<MakePostModel>()
+                    for (postSnapshot in snapshot.children) {
+                        val post = postSnapshot.getValue(MakePostModel::class.java)
+                        if (post != null) {
+                            posts.add(post)
+                        }
+                    }
+                    userPosts = posts.reversed()
                 }
                 override fun onCancelled(error: DatabaseError) {}
             })
-
-            // Fetch User Posts
-            val postsRef = database.getReference("posts")
-            postsRef.orderByChild("userId").equalTo(user.uid)
-                .addValueEventListener(object : ValueEventListener {
-                    override fun onDataChange(snapshot: DataSnapshot) {
-                        val posts = mutableListOf<MakePostModel>()
-                        for (postSnapshot in snapshot.children) {
-                            val post = postSnapshot.getValue(MakePostModel::class.java)
-                            if (post != null) {
-                                posts.add(post)
-                            }
-                        }
-                        userPosts = posts.reversed() // Show newest first
-                    }
-                    override fun onCancelled(error: DatabaseError) {}
-                })
-        }
     }
 
     Box(modifier = Modifier.fillMaxSize().background(darkNavy)) {
@@ -108,157 +102,160 @@ fun ProfileScreen() {
             columns = GridCells.Fixed(3),
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            /* Header Section with Glassmorphism feel */
+            /* Header Section */
             item(span = { GridItemSpan(maxLineSpan) }) {
-                Card(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 24.dp),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = midnightBlue.copy(alpha = 0.5f)),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Surface(
+                        shape = CircleShape,
+                        border = BorderStroke(2.dp, cyanAccent),
+                        color = Color.Transparent,
+                        modifier = Modifier.size(100.dp)
                     ) {
-                        // Profile Image with ring
-                        Box(contentAlignment = Alignment.Center) {
-                            Box(
-                                modifier = Modifier
-                                    .size(110.dp)
-                                    .background(
-                                        Brush.sweepGradient(listOf(cyanAccent, Color.Blue, cyanAccent)),
-                                        CircleShape
-                                    )
-                            )
-                            Surface(
-                                shape = CircleShape,
-                                color = darkNavy,
-                                modifier = Modifier.size(104.dp)
-                            ) {
-                                Image(
-                                    painter = rememberAsyncImagePainter(
-                                        profileImageUrl ?: R.drawable.profile
-                                    ),
-                                    contentDescription = "Profile Image",
-                                    modifier = Modifier
-                                        .padding(4.dp)
-                                        .clip(CircleShape),
-                                    contentScale = ContentScale.Crop
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        // Username handle
-                        Text(
-                            if (username.isNotEmpty()) "@$username" else fullName,
-                            color = cyanAccent,
-                            fontWeight = FontWeight.ExtraBold,
-                            fontSize = 24.sp,
-                            letterSpacing = 1.sp
+                        Image(
+                            painter = rememberAsyncImagePainter(
+                                profileImageUrl ?: R.drawable.blastoise
+                            ),
+                            contentDescription = "Profile Image",
+                            modifier = Modifier
+                                .padding(4.dp)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
                         )
-                        
-                        Text(
-                            bio,
-                            color = Color.White.copy(alpha = 0.7f),
-                            fontSize = 14.sp,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
+                    }
 
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Text(
+                        if (username.isNotEmpty()) "@$username" else fullName,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    )
+                    Text(
+                        bio,
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 14.sp
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        ProfileStatColumn(userPosts.size.toString(), "Posts", cyanAccent)
+                        ProfileStatColumn("0", "Followers", cyanAccent)
+                        ProfileStatColumn("0", "Following", cyanAccent)
+                    }
+
+                    if (userId != currentUserId) {
                         Spacer(modifier = Modifier.height(24.dp))
-
-                        // Modern Stats Layout
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            ProfileStatBox(userPosts.size.toString(), "POSTS", cyanAccent)
-                            ProfileStatBox("10B", "FOLLOWERS", cyanAccent)
-                            ProfileStatBox("0", "FOLLOWING", cyanAccent)
-                        }
-
-                        Spacer(modifier = Modifier.height(24.dp))
-                        
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Button(
-                                onClick = {
-                                },
-                                modifier = Modifier.weight(1f).height(48.dp),
-                                shape = RoundedCornerShape(14.dp),
+                                onClick = {},
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = cyanAccent,
-                                    contentColor = darkNavy
+                                    containerColor = midnightBlue,
+                                    contentColor = Color.White
                                 )
                             ) {
-                                Text("FOLLOW", fontWeight = FontWeight.Bold)
+                                Text("Follow", fontWeight = FontWeight.Bold)
                             }
-                            OutlinedButton(
-                                onClick = { 
-                                },
-                                modifier = Modifier.weight(1f).height(48.dp),
-                                shape = RoundedCornerShape(14.dp),
-                                border = BorderStroke(1.dp, cyanAccent),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = cyanAccent
+                            Button(
+                                onClick = {},
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = midnightBlue,
+                                    contentColor = Color.White
                                 )
                             ) {
-                                Text("MESSAGE", fontWeight = FontWeight.Bold)
+                                Text("Message", fontWeight = FontWeight.Bold)
                             }
                         }
                     }
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Divider(color = Color.White.copy(alpha = 0.1f), thickness = 1.dp)
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
 
-            /* Gallery Grid with staggered feel using card elevation */
             items(userPosts) { post ->
-                Card(
+                Box(
                     modifier = Modifier
                         .aspectRatio(1f)
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(RoundedCornerShape(4.dp))
                         .clickable { 
                             selectedPostId = post.postId
                             isSheetOpen = true
-                        },
-                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                    border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.1f))
+                        }
                 ) {
-                    Box {
-                        Image(
-                            painter = rememberAsyncImagePainter(post.imageUrl),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                        
-                        // Glassy count overlay
-                        Box(
+                    Image(
+                        painter = rememberAsyncImagePainter(post.imageUrl),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f)),
+                                    startY = 100f
+                                )
+                            ),
+                        contentAlignment = Alignment.BottomStart
+                    ) {
+                        Row(
                             modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(8.dp)
-                                .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                .padding(6.dp)
+                                .fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     imageVector = Icons.Default.Favorite,
-                                    contentDescription = null,
+                                    contentDescription = "Likes",
                                     tint = Color.White,
-                                    modifier = Modifier.size(12.dp)
+                                    modifier = Modifier.size(14.dp)
                                 )
-                                Spacer(Modifier.width(4.dp))
+                                Spacer(Modifier.width(2.dp))
                                 Text(
                                     text = post.likes.size.toString(),
                                     color = Color.White,
-                                    fontSize = 10.sp,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    painter = painterResource(R.drawable.comment),
+                                    contentDescription = "Comments",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(Modifier.width(2.dp))
+                                Text(
+                                    text = post.comments.size.toString(),
+                                    color = Color.White,
+                                    fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -299,15 +296,10 @@ fun ProfileScreen() {
 }
 
 @Composable
-fun ProfileStatBox(value: String, label: String, accentColor: Color) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .background(Color.White.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-    ) {
-        Text(value, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
-        Text(label, color = accentColor, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+fun ProfileStatColumn(value: String, label: String, accentColor: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(value, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        Text(label, color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
     }
 }
 
@@ -315,6 +307,6 @@ fun ProfileStatBox(value: String, label: String, accentColor: Color) {
 @Composable
 fun ProfileScreenPreview() {
     TraviumTheme {
-        ProfileScreen()
+        ProfileScreen(userId = "preview")
     }
 }
