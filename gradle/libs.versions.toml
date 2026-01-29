@@ -16,6 +16,7 @@ firebaseBom = "32.3.0"
 coil = "2.6.0"
 cloudinaryAndroid = "2.1.0"
 firebaseStorage = "21.0.0"
+firebaseFirestore = "26.1.0"
 mapsCompose = "7.0.0"
 playServicesMaps = "20.0.0"
 
@@ -43,6 +44,7 @@ firebase-database = { group = "com.google.firebase", name = "firebase-database",
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth", version.ref = "firebaseAuth" }
 firebase-ai = { group = "com.google.firebase", name = "firebase-ai", version.ref = "firebaseAi" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore", version.ref = "firebaseFirestore" }
 maps-compose = { group = "com.google.maps.android", name = "maps-compose", version.ref = "mapsCompose" }
 play-services-maps = { group = "com.google.android.gms", name = "play-services-maps", version.ref = "playServicesMaps" }
 

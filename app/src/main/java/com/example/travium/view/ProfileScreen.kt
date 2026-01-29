@@ -36,12 +36,14 @@ import com.example.travium.repository.UserRepoImpl
 import com.example.travium.ui.theme.TraviumTheme
 import com.example.travium.viewmodel.MakePostViewModel
 import com.example.travium.viewmodel.UserViewModel
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.ktx.database
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.database.database
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

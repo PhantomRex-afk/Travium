@@ -5,6 +5,15 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera.autofocus"
+        android:required="false" />
 
     <application
         android:allowBackup="true"
@@ -16,6 +25,48 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Travium"
         tools:replace="android:fullBackupContent">
+
+        <activity
+            android:name=".view.HotelSelectionActivity"
+            android:exported="false"
+            android:label="@string/title_activity_hotel_selection"
+            android:theme="@style/Theme.Travium" />
+        <activity
+            android:name=".view.CreateBookingActivity"
+            android:exported="false"
+            android:label="@string/title_activity_create_booking"
+            android:theme="@style/Theme.Travium" />
+        <activity
+            android:name=".view.CreateGroupChatActivity"
+            android:exported="false"
+            android:label="@string/title_activity_create_group_chat"
+            android:theme="@style/Theme.Travium" />
+        <activity
+            android:name=".view.ChatScreen"
+            android:exported="false"
+            android:label="@string/title_activity_chat_screen"
+            android:theme="@style/Theme.Travium" />
+        <activity
+            android:name=".view.FollowingListActivity"
+            android:exported="false"
+            android:label="@string/title_activity_following_list"
+            android:theme="@style/Theme.Travium" />
+        <activity
+            android:name=".view.FollowersListActivity"
+            android:exported="false"
+            android:label="@string/title_activity_followers_list"
+            android:theme="@style/Theme.Travium" />
+        <activity
+            android:name=".view.GroupChatActivity"
+            android:exported="false"
+            android:label="@string/title_activity_group_chat"
+            android:theme="@style/Theme.Travium" />
+        <activity
+            android:name=".view.ChatActivity"
+            android:exported="false"
+            android:label="@string/title_activity_chat"
+            android:theme="@style/Theme.Travium" />
+
 
         <!-- Google Maps API Key -->
         <meta-data
