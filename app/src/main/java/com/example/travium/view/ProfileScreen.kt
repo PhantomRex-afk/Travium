@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,20 +57,20 @@ import com.example.travium.repository.UserRepoImpl
 import com.example.travium.ui.theme.TraviumTheme
 import com.example.travium.viewmodel.MakePostViewModel
 import com.example.travium.viewmodel.UserViewModel
-import com.google.firebase.Firebase
-import com.google.firebase.auth.auth
-import com.google.firebase.auth.ktx.auth
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.database
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen(userId: String) {
+fun ProfileScreen(userId: String? = null) {
     val context = LocalContext.current
-    val currentUserId = Firebase.auth.currentUser?.uid
+    val auth = FirebaseAuth.getInstance()
+    val currentUserId = auth.currentUser?.uid
+    val effectiveUserId = userId ?: currentUserId
     
     val postViewModel = remember { MakePostViewModel(MakePostRepoImpl()) }
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
@@ -93,49 +94,53 @@ fun ProfileScreen(userId: String) {
     val darkNavy = Color(0xFF000033)
     val cyanAccent = Color(0xFF00FFFF)
 
-    LaunchedEffect(userId, currentUserId) {
-        val database = Firebase.database
-        val userRef = database.getReference("users").child(userId)
-        userRef.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                fullName = snapshot.child("fullName").getValue(String::class.java) ?: "Anonymous"
-                username = snapshot.child("username").getValue(String::class.java) ?: ""
-                bio = snapshot.child("bio").getValue(String::class.java) ?: "No bio yet"
-                profileImageUrl = snapshot.child("profileImageUrl").getValue(String::class.java)
-            }
-            override fun onCancelled(error: DatabaseError) {}
-        })
-
-        val postsRef = database.getReference("posts")
-        postsRef.orderByChild("userId").equalTo(userId)
-            .addValueEventListener(object : ValueEventListener {
+    LaunchedEffect(effectiveUserId, currentUserId) {
+        if (effectiveUserId != null) {
+            val database = FirebaseDatabase.getInstance()
+            val userRef = database.getReference("users").child(effectiveUserId)
+            userRef.addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
-                    val posts = mutableListOf<MakePostModel>()
-                    for (postSnapshot in snapshot.children) {
-                        val post = postSnapshot.getValue(MakePostModel::class.java)
-                        if (post != null) posts.add(post)
+                    fullName = snapshot.child("fullName").getValue(String::class.java) ?: "Anonymous"
+                    username = snapshot.child("username").getValue(String::class.java) ?: ""
+                    bio = snapshot.child("bio").getValue(String::class.java) ?: "No bio yet"
+                    profileImageUrl = snapshot.child("profileImageUrl").getValue(String::class.java)
+                }
+                override fun onCancelled(error: DatabaseError) {}
+            })
+
+            val postsRef = database.getReference("posts")
+            postsRef.orderByChild("userId").equalTo(effectiveUserId)
+                .addValueEventListener(object : ValueEventListener {
+                    override fun onDataChange(snapshot: DataSnapshot) {
+                        val posts = mutableListOf<MakePostModel>()
+                        for (postSnapshot in snapshot.children) {
+                            val post = postSnapshot.getValue(MakePostModel::class.java)
+                            if (post != null) posts.add(post)
+                        }
+                        userPosts = posts.reversed()
                     }
-                    userPosts = posts.reversed()
-                }
-                override fun onCancelled(error: DatabaseError) {}
-            })
+                    override fun onCancelled(error: DatabaseError) {}
+                })
 
-        if (currentUserId != null) {
-            userViewModel.isFollowing(currentUserId, userId) { following ->
-                isFollowing = following
+            if (currentUserId != null && effectiveUserId != currentUserId) {
+                userViewModel.isFollowing(currentUserId, effectiveUserId) { following ->
+                    isFollowing = following
+                }
             }
-            val currentUserRef = database.getReference("users").child(currentUserId)
-            currentUserRef.addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    currentUserName = snapshot.child("fullName").getValue(String::class.java) ?: ""
-                }
+            
+            if (currentUserId != null) {
+                val currentUserRef = database.getReference("users").child(currentUserId)
+                currentUserRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                    override fun onDataChange(snapshot: DataSnapshot) {
+                        currentUserName = snapshot.child("fullName").getValue(String::class.java) ?: ""
+                    }
+                    override fun onCancelled(error: DatabaseError) {}
+                })
+            }
 
-                override fun onCancelled(error: DatabaseError) {}
-            })
+            userViewModel.getFollowersCount(effectiveUserId) { count -> followersCount = count }
+            userViewModel.getFollowingCount(effectiveUserId) { count -> followingCount = count }
         }
-
-        userViewModel.getFollowersCount(userId) { count -> followersCount = count }
-        userViewModel.getFollowingCount(userId) { count -> followingCount = count }
     }
 
     Box(modifier = Modifier.fillMaxSize().background(darkNavy)) {
@@ -143,191 +148,184 @@ fun ProfileScreen(userId: String) {
             columns = GridCells.Fixed(3),
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            /* Header Section with Glassmorphism feel */
             item(span = { GridItemSpan(maxLineSpan) }) {
-                Column(
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = midnightBlue.copy(alpha = 0.5f)),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.1f))
                 ) {
-                    Surface(
-                        shape = CircleShape,
-                        border = BorderStroke(2.dp, cyanAccent),
-                        color = Color.Transparent,
-                        modifier = Modifier.size(100.dp)
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Image(
-                            painter = rememberAsyncImagePainter(
-                                model = profileImageUrl ?: R.drawable.blastoise
-                            ),
-                            contentDescription = "Profile Image",
-                            modifier = Modifier
-                                .padding(4.dp)
-                                .clip(CircleShape),
-                            contentScale = ContentScale.Crop
+                        // Profile Image with ring
+                        Box(contentAlignment = Alignment.Center) {
+                            Box(
+                                modifier = Modifier
+                                    .size(110.dp)
+                                    .background(
+                                        Brush.sweepGradient(listOf(cyanAccent, Color.Blue, cyanAccent)),
+                                        CircleShape
+                                    )
+                            )
+                            Surface(
+                                shape = CircleShape,
+                                color = darkNavy,
+                                modifier = Modifier.size(104.dp)
+                            ) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(
+                                        model = profileImageUrl ?: R.drawable.profile
+                                    ),
+                                    contentDescription = "Profile Image",
+                                    modifier = Modifier
+                                        .padding(4.dp)
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Username handle
+                        Text(
+                            if (username.isNotEmpty()) "@$username" else fullName,
+                            color = cyanAccent,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 24.sp,
+                            letterSpacing = 1.sp
                         )
-                    }
+                        
+                        Text(
+                            bio,
+                            color = Color.White.copy(alpha = 0.7f),
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Text(
-                        if (username.isNotEmpty()) "@$username" else fullName,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 20.sp
-                    )
-                    Text(
-                        bio,
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 14.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        ProfileStatColumn(userPosts.size.toString(), "Posts", cyanAccent)
-                        ProfileStatColumn(followersCount.toString(), "Followers", cyanAccent) {
-                            val intent = Intent(context, FollowersListActivity::class.java)
-                            intent.putExtra("USER_ID", userId)
-                            context.startActivity(intent)
-                        }
-                        ProfileStatColumn(followingCount.toString(), "Following", cyanAccent) {
-                            val intent = Intent(context, FollowingListActivity::class.java)
-                            intent.putExtra("USER_ID", userId)
-                            context.startActivity(intent)
-                        }
-                    }
-
-                    if (userId != currentUserId && currentUserId != null) {
                         Spacer(modifier = Modifier.height(24.dp))
+
+                        // Modern Stats Layout
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.SpaceEvenly
                         ) {
-                            Button(
-                                onClick = {
-                                    if (isFollowing) {
-                                        userViewModel.unfollowUser(currentUserId, userId) { success, message ->
-                                            if (success) {
-                                                isFollowing = false
-                                            }
-                                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                                        }
-                                    } else {
-                                        userViewModel.followUser(currentUserId, userId) { success, message ->
-                                            if (success) {
-                                                isFollowing = true
-                                            }
-                                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if(isFollowing) midnightBlue else cyanAccent,
-                                    contentColor = if(isFollowing) Color.White else darkNavy
-                                )
-                            ) {
-                                Text(if(isFollowing) "Unfollow" else "Follow", fontWeight = FontWeight.Bold)
+                            ProfileStatBox(userPosts.size.toString(), "POSTS", cyanAccent) { }
+                            ProfileStatBox(followersCount.toString(), "FOLLOWERS", cyanAccent) {
+                                // Navigate to Followers List logic
                             }
-                            Button(
-                                onClick = {
-                                    val intent = Intent(context, ChatActivity::class.java)
-                                    intent.putExtra("receiverId", userId)
-                                    intent.putExtra("receiverName", fullName)
-                                    intent.putExtra("receiverImage", profileImageUrl)
-                                    intent.putExtra("currentUserId", currentUserId)
-                                    intent.putExtra("currentUserName", currentUserName)
-                                    context.startActivity(intent)
-                                },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = midnightBlue,
-                                    contentColor = Color.White
-                                )
+                            ProfileStatBox(followingCount.toString(), "FOLLOWING", cyanAccent) {
+                                // Navigate to Following List logic
+                            }
+                        }
+
+                        if (effectiveUserId != currentUserId && currentUserId != null && effectiveUserId != null) {
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Text("Message", fontWeight = FontWeight.Bold)
+                                Button(
+                                    onClick = {
+                                        if (isFollowing) {
+                                            userViewModel.unfollowUser(currentUserId, effectiveUserId) { success, message ->
+                                                if (success) {
+                                                    isFollowing = false
+                                                }
+                                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                            }
+                                        } else {
+                                            userViewModel.followUser(currentUserId, effectiveUserId) { success, message ->
+                                                if (success) {
+                                                    isFollowing = true
+                                                }
+                                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f).height(48.dp),
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if(isFollowing) midnightBlue else cyanAccent,
+                                        contentColor = if(isFollowing) Color.White else darkNavy
+                                    )
+                                ) {
+                                    Text(if(isFollowing) "UNFOLLOW" else "FOLLOW", fontWeight = FontWeight.Bold)
+                                }
+                                OutlinedButton(
+                                    onClick = { 
+                                        val intent = Intent(context, ChatActivity::class.java)
+                                        intent.putExtra("receiverId", effectiveUserId)
+                                        intent.putExtra("receiverName", fullName)
+                                        intent.putExtra("receiverImage", profileImageUrl)
+                                        intent.putExtra("currentUserId", currentUserId)
+                                        intent.putExtra("currentUserName", currentUserName)
+                                        context.startActivity(intent)
+                                    },
+                                    modifier = Modifier.weight(1f).height(48.dp),
+                                    shape = RoundedCornerShape(14.dp),
+                                    border = BorderStroke(1.dp, cyanAccent),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = cyanAccent
+                                    )
+                                ) {
+                                    Text("MESSAGE", fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
                     }
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Divider(color = Color.White.copy(alpha = 0.1f), thickness = 1.dp)
-                    Spacer(modifier = Modifier.height(16.dp))
                 }
             }
 
+            /* Gallery Grid with Like and Comment Overlays */
             items(userPosts) { post ->
-                Box(
+                Card(
                     modifier = Modifier
                         .aspectRatio(1f)
-                        .clip(RoundedCornerShape(4.dp))
+                        .clip(RoundedCornerShape(16.dp))
                         .clickable { 
                             selectedPostId = post.postId
                             isSheetOpen = true
-                        }
+                        },
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    border = BorderStroke(0.5.dp, Color.White.copy(alpha = 0.1f))
                 ) {
-                    Image(
-                        painter = rememberAsyncImagePainter(post.imageUrl),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f)),
-                                    startY = 100f
-                                )
-                            ),
-                        contentAlignment = Alignment.BottomStart
-                    ) {
-                        Row(
+                    Box {
+                        Image(
+                            painter = rememberAsyncImagePainter(post.imageUrl),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        
+                        // Glassy count overlay
+                        Box(
                             modifier = Modifier
-                                .padding(6.dp)
-                                .fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                .align(Alignment.BottomEnd)
+                                .padding(8.dp)
+                                .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(8.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     imageVector = Icons.Default.Favorite,
-                                    contentDescription = "Likes",
+                                    contentDescription = null,
                                     tint = Color.White,
-                                    modifier = Modifier.size(14.dp)
+                                    modifier = Modifier.size(12.dp)
                                 )
-                                Spacer(Modifier.width(2.dp))
+                                Spacer(Modifier.width(4.dp))
                                 Text(
                                     text = post.likes.size.toString(),
                                     color = Color.White,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    painter = painterResource(R.drawable.comment),
-                                    contentDescription = "Comments",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(Modifier.width(2.dp))
-                                Text(
-                                    text = post.comments.size.toString(),
-                                    color = Color.White,
-                                    fontSize = 11.sp,
+                                    fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -344,15 +342,23 @@ fun ProfileScreen(userId: String) {
                 ModalBottomSheet(
                     onDismissRequest = { isSheetOpen = false },
                     sheetState = sheetState,
-                    containerColor = TravelCardNavy,
-                    dragHandle = { BottomSheetDefaults.DragHandle(color = TravelSoftGray) },
+                    containerColor = Color(0xFF1E293B),
+                    dragHandle = { BottomSheetDefaults.DragHandle(color = Color(0xFF94A3B8)) },
                     modifier = Modifier.fillMaxHeight(0.9f)
                 ) {
-                    CommentSection(
-                        post = latestPost,
-                        postViewModel = postViewModel,
-                        userViewModel = userViewModel
-                    )
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        PostCard(
+                            post = latestPost,
+                            postViewModel = postViewModel,
+                            userViewModel = userViewModel,
+                            onCommentClick = {} // Already in comment view
+                        )
+                        CommentSection(
+                            post = latestPost,
+                            postViewModel = postViewModel,
+                            userViewModel = userViewModel
+                        )
+                    }
                 }
             }
         }
@@ -360,13 +366,17 @@ fun ProfileScreen(userId: String) {
 }
 
 @Composable
-fun ProfileStatColumn(value: String, label: String, accentColor: Color, onClick: (() -> Unit)? = null) {
+fun ProfileStatBox(value: String, label: String, accentColor: Color, onClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = (if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color.White.copy(alpha = 0.05f))
+            .clickable { onClick() }
+            .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        Text(value, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-        Text(label, color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
+        Text(value, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp)
+        Text(label, color = accentColor, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
     }
 }
 

@@ -11,6 +11,9 @@ class UserViewModel(private val repo: UserRepo) : ViewModel() {
     private val _allUsers = MutableLiveData<List<UserModel>>()
     val allUsers: LiveData<List<UserModel>> = _allUsers
 
+    private val _bannedUsers = MutableLiveData<List<UserModel>>()
+    val bannedUsers: LiveData<List<UserModel>> = _bannedUsers
+
     fun login(
         email: String, password: String,
         callback: (Boolean, String) -> Unit
@@ -48,13 +51,23 @@ class UserViewModel(private val repo: UserRepo) : ViewModel() {
     }
 
     fun getAllUsers() {
-        repo.getAllUsers { success, message, userList ->
-            if (success && userList != null) {
-                _allUsers.value = userList
-            } else {
-                _allUsers.value = emptyList()
-            }
+        repo.getAllUsers { userList ->
+            _allUsers.value = userList
         }
+    }
+
+    fun getBannedUsers() {
+        repo.getBannedUsers { userList ->
+            _bannedUsers.value = userList
+        }
+    }
+
+    fun banUser(userId: String, callback: (Boolean, String) -> Unit) {
+        repo.banUser(userId, callback)
+    }
+
+    fun unbanUser(userId: String, callback: (Boolean, String) -> Unit) {
+        repo.unbanUser(userId, callback)
     }
 
     fun followUser(currentUserId: String, targetUserId: String, callback: (Boolean, String) -> Unit) {
