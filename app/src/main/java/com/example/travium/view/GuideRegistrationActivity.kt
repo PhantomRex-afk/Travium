@@ -1,5 +1,6 @@
 package com.example.travium.view
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -17,7 +18,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -30,9 +32,12 @@ import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,6 +46,8 @@ import com.example.travium.R
 import com.example.travium.repository.GuideRepoImpl
 import com.example.travium.view.ui.theme.TraviumTheme
 import com.example.travium.viewmodel.GuideViewModel
+import java.text.SimpleDateFormat
+import java.util.*
 
 class GuideRegistrationActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,8 +65,14 @@ class GuideRegistrationActivity : ComponentActivity() {
                 GuideRegistrationScreen(
                     isLoading = isLoading,
                     status = status,
-                    onRegister = { fullName, age, gender, email, phone, location, experience, specialties, bio ->
-                        viewModel.registerGuide(fullName, age, gender, email, phone, location, experience, specialties, bio)
+                    onRegister = { fullName, dob, gender, email, phone, location, experience, specialties, bio ->
+                        viewModel.registerGuide(fullName, dob, gender, email, phone, location, experience, specialties, bio)
+                    },
+                    onSuccess = {
+                        val intent = Intent(this, HomePageActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                        finish()
                     },
                     clearStatus = { viewModel.clearStatus() },
                     onBack = { finish() }
@@ -75,6 +88,7 @@ fun GuideRegistrationScreen(
     isLoading: Boolean,
     status: String?,
     onRegister: (String, String, String, String, String, String, String, String, String) -> Unit,
+    onSuccess: () -> Unit,
     clearStatus: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -82,7 +96,7 @@ fun GuideRegistrationScreen(
 
     // Form states
     var fullName by remember { mutableStateOf("") }
-    var age by remember { mutableStateOf("") }
+    var dob by remember { mutableStateOf("") }
     var gender by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
@@ -91,9 +105,13 @@ fun GuideRegistrationScreen(
     var specialties by remember { mutableStateOf("") }
     var bio by remember { mutableStateOf("") }
 
-    // Dropdown states
+    // UI States
+    var showValidationError by remember { mutableStateOf(false) }
     var districtExpanded by remember { mutableStateOf(false) }
     var genderExpanded by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    
+    val datePickerState = rememberDatePickerState(yearRange = 1900..Calendar.getInstance().get(Calendar.YEAR))
     
     val genders = listOf("Male", "Female", "Other")
     val districts = remember {
@@ -117,7 +135,7 @@ fun GuideRegistrationScreen(
         status?.let {
             Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
             if (it.contains("success", ignoreCase = true)) {
-                onBack()
+                onSuccess()
             }
             clearStatus()
         }
@@ -128,7 +146,42 @@ fun GuideRegistrationScreen(
     val secondaryColor = Color(0xFF4ECDC4)
     val textFieldBg = Color(0x33FFFFFF)
 
+    if (showValidationError) {
+        AlertDialog(
+            onDismissRequest = { showValidationError = false },
+            containerColor = Color(0xFF1A1A1A),
+            icon = { Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = primaryColor) },
+            title = { Text("Missing Details", color = White, fontWeight = FontWeight.Bold) },
+            text = { Text("Please ensure all fields are filled before submitting your application.", color = White.copy(alpha = 0.8f)) },
+            confirmButton = {
+                TextButton(onClick = { showValidationError = false }) {
+                    Text("OK", color = primaryColor, fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
+
     Scaffold { padding ->
+        if (showDatePicker) {
+            DatePickerDialog(
+                onDismissRequest = { showDatePicker = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showDatePicker = false
+                        datePickerState.selectedDateMillis?.let {
+                            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.US)
+                            dob = sdf.format(it)
+                        }
+                    }) { Text("OK", color = primaryColor) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDatePicker = false }) { Text("Cancel", color = primaryColor) }
+                }
+            ) {
+                DatePicker(state = datePickerState)
+            }
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -175,48 +228,45 @@ fun GuideRegistrationScreen(
                     )
                 }
 
-                LazyColumn(
+                Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(bottom = 24.dp)
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    item {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                            Box(
-                                modifier = Modifier
-                                    .size(72.dp)
-                                    .background(primaryColor.copy(alpha = 0.2f), CircleShape)
-                                    .border(1.dp, primaryColor.copy(alpha = 0.4f), CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Person, contentDescription = null, tint = White, modifier = Modifier.size(32.dp))
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Text(
-                                "Join as a Guide",
-                                style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 28.sp, color = White)
-                            )
-                            Text(
-                                "Fill out the details below",
-                                style = TextStyle(fontSize = 14.sp, color = White.copy(alpha = 0.7f))
-                            )
-                        }
+                    // Header
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "Join as a Guide",
+                            style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 28.sp, color = White)
+                        )
+                        Text(
+                            "Fill out the details below",
+                            style = TextStyle(fontSize = 14.sp, color = White.copy(alpha = 0.7f))
+                        )
                     }
 
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.cardColors(containerColor = cardBackground)
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Form Card
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = cardBackground)
+                    ) {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(horizontal = 20.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            contentPadding = PaddingValues(vertical = 24.dp)
                         ) {
-                            Column(
-                                modifier = Modifier.padding(20.dp),
-                                verticalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                GuideSectionHeader("Personal Info", primaryColor)
-                                
+                            item { GuideSectionHeader("Personal Info", primaryColor) }
+                            
+                            item {
                                 OutlinedTextField(
                                     value = fullName,
                                     onValueChange = { fullName = it },
@@ -226,18 +276,28 @@ fun GuideRegistrationScreen(
                                     colors = guidePremiumTextFieldColors(primaryColor, textFieldBg),
                                     singleLine = true
                                 )
+                            }
 
+                            item {
                                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                    OutlinedTextField(
-                                        value = age,
-                                        onValueChange = { age = it },
-                                        placeholder = { Text("Age") },
-                                        modifier = Modifier.weight(1f),
-                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                        shape = RoundedCornerShape(16.dp),
-                                        colors = guidePremiumTextFieldColors(primaryColor, textFieldBg),
-                                        singleLine = true
-                                    )
+                                    Box(modifier = Modifier.weight(1f).clickable { showDatePicker = true }) {
+                                        OutlinedTextField(
+                                            value = dob,
+                                            onValueChange = {},
+                                            enabled = false,
+                                            placeholder = { Text("Birth Date") },
+                                            modifier = Modifier.fillMaxWidth(),
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                disabledTextColor = White,
+                                                disabledContainerColor = textFieldBg,
+                                                disabledBorderColor = Color.Transparent,
+                                                disabledPlaceholderColor = White.copy(alpha = 0.6f),
+                                                disabledTrailingIconColor = White.copy(alpha = 0.7f)
+                                            ),
+                                            trailingIcon = { Icon(Icons.Filled.DateRange, "Select Date", tint = White.copy(alpha = 0.7f)) },
+                                            shape = RoundedCornerShape(16.dp)
+                                        )
+                                    }
                                     
                                     Box(modifier = Modifier.weight(1f)) {
                                         OutlinedTextField(
@@ -260,7 +320,7 @@ fun GuideRegistrationScreen(
                                         DropdownMenu(
                                             expanded = genderExpanded,
                                             onDismissRequest = { genderExpanded = false },
-                                            modifier = Modifier.background(cardBackground)
+                                            modifier = Modifier.background(Color(0xFF1A1A1A))
                                         ) {
                                             genders.forEach { selection ->
                                                 DropdownMenuItem(
@@ -274,9 +334,11 @@ fun GuideRegistrationScreen(
                                         }
                                     }
                                 }
+                            }
 
-                                GuideSectionHeader("Contact Info", primaryColor)
+                            item { GuideSectionHeader("Contact Info", primaryColor) }
 
+                            item {
                                 OutlinedTextField(
                                     value = email,
                                     onValueChange = { email = it },
@@ -287,7 +349,9 @@ fun GuideRegistrationScreen(
                                     colors = guidePremiumTextFieldColors(primaryColor, textFieldBg),
                                     singleLine = true
                                 )
+                            }
 
+                            item {
                                 OutlinedTextField(
                                     value = phone,
                                     onValueChange = { phone = it },
@@ -298,7 +362,9 @@ fun GuideRegistrationScreen(
                                     colors = guidePremiumTextFieldColors(primaryColor, textFieldBg),
                                     singleLine = true
                                 )
+                            }
 
+                            item {
                                 Box(modifier = Modifier.fillMaxWidth()) {
                                     OutlinedTextField(
                                         value = location,
@@ -320,7 +386,7 @@ fun GuideRegistrationScreen(
                                         DropdownMenu(
                                             expanded = districtExpanded,
                                             onDismissRequest = { districtExpanded = false },
-                                            modifier = Modifier.fillMaxWidth(0.8f).background(cardBackground)
+                                            modifier = Modifier.fillMaxWidth(0.8f).background(Color(0xFF1A1A1A))
                                         ) {
                                             filteredDistricts.take(5).forEach { district ->
                                                 DropdownMenuItem(
@@ -334,9 +400,11 @@ fun GuideRegistrationScreen(
                                         }
                                     }
                                 }
+                            }
 
-                                GuideSectionHeader("Professional Exp.", primaryColor)
+                            item { GuideSectionHeader("Professional Exp.", primaryColor) }
 
+                            item {
                                 OutlinedTextField(
                                     value = experience,
                                     onValueChange = { experience = it },
@@ -347,7 +415,9 @@ fun GuideRegistrationScreen(
                                     colors = guidePremiumTextFieldColors(primaryColor, textFieldBg),
                                     singleLine = true
                                 )
+                            }
 
+                            item {
                                 OutlinedTextField(
                                     value = specialties,
                                     onValueChange = { specialties = it },
@@ -357,7 +427,9 @@ fun GuideRegistrationScreen(
                                     colors = guidePremiumTextFieldColors(primaryColor, textFieldBg),
                                     singleLine = true
                                 )
+                            }
 
+                            item {
                                 OutlinedTextField(
                                     value = bio,
                                     onValueChange = { bio = it },
@@ -367,30 +439,49 @@ fun GuideRegistrationScreen(
                                     colors = guidePremiumTextFieldColors(primaryColor, textFieldBg),
                                     maxLines = 5
                                 )
-
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(52.dp)
-                                        .clip(RoundedCornerShape(16.dp))
-                                        .background(brush = Brush.horizontalGradient(listOf(primaryColor, secondaryColor)))
-                                        .clickable {
-                                            if (validateForm(fullName, email, phone, location)) {
-                                                onRegister(fullName, age, gender, email, phone, location, experience, specialties, bio)
-                                            } else {
-                                                Toast.makeText(context, "Please fill required fields", Toast.LENGTH_SHORT).show()
-                                            }
-                                        },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (isLoading) CircularProgressIndicator(color = White, modifier = Modifier.size(24.dp))
-                                    else Text("Submit Application", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, color = White))
-                                }
                             }
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Submit Application Button - Outside the Card
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(brush = Brush.horizontalGradient(listOf(primaryColor, secondaryColor)))
+                            .clickable {
+                                if (fullName.isBlank() || dob.isBlank() || gender.isBlank() || email.isBlank() || phone.isBlank() || location.isBlank() || experience.isBlank() || specialties.isBlank() || bio.isBlank()) {
+                                    showValidationError = true
+                                } else if (!isOver18(dob)) {
+                                    Toast.makeText(context, "You must be 18 or older to register", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    onRegister(fullName, dob, gender, email, phone, location, experience, specialties, bio)
+                                }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isLoading) CircularProgressIndicator(color = White, modifier = Modifier.size(24.dp))
+                        else Text("Submit Application", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, color = White))
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Sign In Button - Outside the Card
+                    Text(
+                        buildAnnotatedString {
+                            withStyle(SpanStyle(White.copy(alpha = 0.8f))) { append("Already have an account? ") }
+                            withStyle(SpanStyle(secondaryColor, fontWeight = FontWeight.Bold)) { append("Sign In") }
+                        },
+                        modifier = Modifier
+                            .padding(bottom = 24.dp)
+                            .clickable { 
+                                val intent = Intent(context, HomePageActivity::class.java)
+                                context.startActivity(intent)
+                            }
+                    )
                 }
             }
         }
@@ -404,7 +495,7 @@ fun GuideSectionHeader(title: String, color: Color) {
         fontSize = 16.sp,
         fontWeight = FontWeight.Bold,
         color = color,
-        modifier = Modifier.padding(vertical = 4.dp)
+        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
     )
 }
 
@@ -421,8 +512,22 @@ fun guidePremiumTextFieldColors(primaryColor: Color, textFieldBg: Color) = TextF
     unfocusedPlaceholderColor = White.copy(alpha = 0.6f)
 )
 
-fun validateForm(name: String, email: String, phone: String, loc: String): Boolean {
-    return name.isNotBlank() && email.isNotBlank() && phone.isNotBlank() && loc.isNotBlank()
+fun validateForm(name: String, dob: String, email: String, phone: String, loc: String): Boolean {
+    return name.isNotBlank() && dob.isNotBlank() && email.isNotBlank() && phone.isNotBlank() && loc.isNotBlank()
+}
+
+fun isOver18(dob: String): Boolean {
+    if (dob.isEmpty()) return false
+    val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.US)
+    val birthDate = try { sdf.parse(dob) } catch(e: Exception) { null } ?: return false
+    val today = Calendar.getInstance()
+    val birth = Calendar.getInstance().apply { time = birthDate }
+    
+    var age = today.get(Calendar.YEAR) - birth.get(Calendar.YEAR)
+    if (today.get(Calendar.DAY_OF_YEAR) < birth.get(Calendar.DAY_OF_YEAR)) {
+        age--
+    }
+    return age >= 18
 }
 
 @Preview(showBackground = true)
@@ -433,6 +538,7 @@ fun GuideRegistrationPreview() {
             isLoading = false,
             status = null,
             onRegister = { _, _, _, _, _, _, _, _, _ -> },
+            onSuccess = {},
             clearStatus = {},
             onBack = {}
         )
