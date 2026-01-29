@@ -11,6 +11,7 @@ data class GuideModel(
     val yearsOfExperience: String = "",
     val specialties: String = "",
     val bio: String = "",
+    val profileImageUri: String = "",
     val status: String = "pending", // pending, approved, rejected
     val timestamp: Long = System.currentTimeMillis()
 )

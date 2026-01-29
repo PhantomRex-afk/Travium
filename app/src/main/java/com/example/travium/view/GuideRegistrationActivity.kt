@@ -66,18 +66,27 @@ fun GuideRegistrationScreen(
     var specialties by remember { mutableStateOf("") }
     var bio by remember { mutableStateOf("") }
 
-    // Dropdown state
-    var expanded by remember { mutableStateOf(false) }
-    val districts = listOf(
-        "Achham", "Arghakhanchi", "Baglung", "Baitadi", "Bajhang", "Bajura", "Banke", "Bara", "Bardiya", "Bhaktapur",
-        "Bhojpur", "Chitwan", "Dadeldhura", "Dailekh", "Dang", "Darchula", "Dhading", "Dhankuta", "Dhanusa", "Dolakha",
-        "Dolpa", "Doti", "Gorkha", "Gulmi", "Humla", "Ilam", "Jajarkot", "Jhapa", "Jumla", "Kailali", "Kalikot",
-        "Kanchanpur", "Kapilvastu", "Kaski", "Kathmandu", "Kavrepalanchok", "Khotang", "Lalitpur", "Lamjung", "Mahottari",
-        "Makwanpur", "Manang", "Morang", "Mugu", "Mustang", "Myagdi", "Nawalpur", "Parasi", "Nuwakot", "Okhaldhunga",
-        "Palpa", "Panchthar", "Parbat", "Parsa", "Pyuthan", "Ramechhap", "Rasuwa", "Rautahat", "Rolpa", "Rukum East",
-        "Rukum West", "Rupandehi", "Salyan", "Sankhuwasabha", "Saptari", "Sarlahi", "Sindhuli", "Sindhupalchok", "Siraha",
-        "Solukhumbu", "Sunsari", "Surkhet", "Syangja", "Tanahu", "Taplejung", "Terhathum", "Udayapur"
-    ).sorted()
+    // Dropdown states
+    var districtExpanded by remember { mutableStateOf(false) }
+    var genderExpanded by remember { mutableStateOf(false) }
+    
+    val genders = listOf("Male", "Female", "Other")
+    val districts = remember {
+        listOf(
+            "Achham", "Arghakhanchi", "Baglung", "Baitadi", "Bajhang", "Bajura", "Banke", "Bara", "Bardiya", "Bhaktapur",
+            "Bhojpur", "Chitwan", "Dadeldhura", "Dailekh", "Dang", "Darchula", "Dhading", "Dhankuta", "Dhanusa", "Dolakha",
+            "Dolpa", "Doti", "Gorkha", "Gulmi", "Humla", "Ilam", "Jajarkot", "Jhapa", "Jumla", "Kailali", "Kalikot",
+            "Kanchanpur", "Kapilvastu", "Kaski", "Kathmandu", "Kavrepalanchok", "Khotang", "Lalitpur", "Lamjung", "Mahottari",
+            "Makwanpur", "Manang", "Morang", "Mugu", "Mustang", "Myagdi", "Nawalpur", "Parasi", "Nuwakot", "Okhaldhunga",
+            "Palpa", "Panchthar", "Parbat", "Parsa", "Pyuthan", "Ramechhap", "Rasuwa", "Rautahat", "Rolpa", "Rukum East",
+            "Rukum West", "Rupandehi", "Salyan", "Sankhuwasabha", "Saptari", "Sarlahi", "Sindhuli", "Sindhupalchok", "Siraha",
+            "Solukhumbu", "Sunsari", "Surkhet", "Syangja", "Tanahu", "Taplejung", "Terhathum", "Udayapur"
+        ).sorted()
+    }
+
+    val filteredDistricts = remember(location) {
+        if (location.isEmpty()) districts else districts.filter { it.contains(location, ignoreCase = true) }
+    }
 
     LaunchedEffect(status) {
         status?.let {
@@ -127,13 +136,37 @@ fun GuideRegistrationScreen(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         shape = RoundedCornerShape(12.dp)
                     )
-                    OutlinedTextField(
-                        value = gender,
-                        onValueChange = { gender = it },
-                        label = { Text("Gender") },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
-                    )
+                    
+                    ExposedDropdownMenuBox(
+                        expanded = genderExpanded,
+                        onExpandedChange = { genderExpanded = !genderExpanded },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        OutlinedTextField(
+                            value = gender,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("Gender") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = genderExpanded) },
+                            modifier = Modifier.menuAnchor().fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = genderExpanded,
+                            onDismissRequest = { genderExpanded = false }
+                        ) {
+                            genders.forEach { selection ->
+                                DropdownMenuItem(
+                                    text = { Text(selection) },
+                                    onClick = {
+                                        gender = selection
+                                        genderExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
@@ -158,33 +191,38 @@ fun GuideRegistrationScreen(
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
+                // AutoComplete District Selector
                 ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = !expanded },
+                    expanded = districtExpanded,
+                    onExpandedChange = { districtExpanded = it },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     OutlinedTextField(
                         value = location,
-                        onValueChange = {},
-                        readOnly = true,
+                        onValueChange = { 
+                            location = it
+                            districtExpanded = true 
+                        },
                         label = { Text("District") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = districtExpanded) },
                         modifier = Modifier.menuAnchor().fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
                     )
-                    ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        districts.forEach { district ->
-                            DropdownMenuItem(
-                                text = { Text(district) },
-                                onClick = {
-                                    location = district
-                                    expanded = false
-                                }
-                            )
+                    if (filteredDistricts.isNotEmpty()) {
+                        ExposedDropdownMenu(
+                            expanded = districtExpanded,
+                            onDismissRequest = { districtExpanded = false }
+                        ) {
+                            filteredDistricts.forEach { district ->
+                                DropdownMenuItem(
+                                    text = { Text(district) },
+                                    onClick = {
+                                        location = district
+                                        districtExpanded = false
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -261,6 +299,6 @@ fun validateForm(name: String, email: String, phone: String, loc: String): Boole
 @Composable
 fun GuideRegistrationPreview() {
     TraviumTheme {
-        // Mock UI Preview
+
     }
 }

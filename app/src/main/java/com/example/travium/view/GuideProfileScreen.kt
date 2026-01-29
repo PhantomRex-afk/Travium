@@ -130,7 +130,7 @@ fun GuideProfileContent(
                     ) {
                         Image(
                             painter = rememberAsyncImagePainter(
-                                R.drawable.profile // Placeholder for now
+                                model = if (guide.profileImageUri.isNotEmpty()) guide.profileImageUri else R.drawable.profile
                             ),
                             contentDescription = "Profile Image",
                             modifier = Modifier
@@ -204,7 +204,7 @@ fun GuideProfileContent(
                     }
                 }
 
-                /* Stats */
+                /* Stats - These are placeholders as they aren't in the GuideModel yet */
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Row(
                         modifier = Modifier
@@ -212,9 +212,9 @@ fun GuideProfileContent(
                             .padding(vertical = 16.dp),
                         horizontalArrangement = Arrangement.SpaceAround
                     ) {
-                        GuideStatCard("4.8", "Rating")
-                        GuideStatCard("120", "Trips")
-                        GuideStatCard("50+", "Reviews")
+                        GuideStatCard("New", "Rating")
+                        GuideStatCard("0", "Trips")
+                        GuideStatCard("0", "Reviews")
                     }
                 }
 
