@@ -1,7 +1,10 @@
 package com.example.travium.view
 
+import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -30,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
 import coil.compose.rememberAsyncImagePainter
 import com.example.travium.repository.GroupChatRepoImpl
 import com.example.travium.model.UserModel
@@ -39,6 +43,7 @@ import com.example.travium.viewmodel.CreateGroupUiState
 import com.example.travium.viewmodel.ValidationResult
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
+import java.io.File
 
 class CreateGroupChatActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -98,6 +103,7 @@ fun CreateGroupChatScreen(
 
     var searchQuery by remember { mutableStateOf("") }
     var showImagePicker by remember { mutableStateOf(false) }
+    var cameraImageUri by remember { mutableStateOf<Uri?>(null) }
 
     // Filter contacts based on search
     val filteredContacts = if (searchQuery.isBlank()) {
@@ -109,15 +115,65 @@ fun CreateGroupChatScreen(
         }
     }
 
-    // Image picker launcher
+    // Camera launcher
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        if (success) {
+            // Handle the captured image
+            Toast.makeText(context, "Photo taken successfully", Toast.LENGTH_SHORT).show()
+            // Set the image from camera
+            cameraImageUri?.let { uri ->
+                viewModel.setGroupImage(uri.toString())
+            }
+        } else {
+            Toast.makeText(context, "Failed to take photo", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Camera permission launcher
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // Permission granted, open camera
+            val timeStamp = System.currentTimeMillis()
+            val storageDir = context.cacheDir
+            val imageFile = File.createTempFile(
+                "group_photo_${timeStamp}",
+                ".jpg",
+                storageDir
+            )
+
+            // Update the cameraImageUri state
+            val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    imageFile
+                )
+            } else {
+                Uri.fromFile(imageFile)
+            }
+
+            cameraImageUri = uri
+
+            // Launch camera with the URI
+            cameraLauncher.launch(uri)
+        } else {
+            Toast.makeText(context, "Camera permission denied", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Image picker launcher for gallery
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri: Uri? ->
         uri?.let {
             // Handle image upload - you can implement Cloudinary upload here
             Toast.makeText(context, "Image selected", Toast.LENGTH_SHORT).show()
-            // For now, just set a placeholder
-            viewModel.setGroupImage("https://via.placeholder.com/150")
+            // Set the image URI
+            viewModel.setGroupImage(it.toString())
         }
     }
 
@@ -416,7 +472,10 @@ fun CreateGroupChatScreen(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(filteredContacts) { user ->
+                        items(
+                            items = filteredContacts,
+                            key = { user -> user.userId }
+                        ) { user ->
                             UserSelectionItem(
                                 user = user,
                                 isSelected = selectedContacts.contains(user.userId),
@@ -528,8 +587,8 @@ fun CreateGroupChatScreen(
                     OutlinedButton(
                         onClick = {
                             showImagePicker = false
-                            // Implement camera functionality here
-                            Toast.makeText(context, "Camera not implemented", Toast.LENGTH_SHORT).show()
+                            // Check camera permission first
+                            cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.outlinedButtonColors(

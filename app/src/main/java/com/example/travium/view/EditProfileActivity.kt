@@ -39,9 +39,9 @@ import com.example.travium.repository.ProfileRepoImpl
 import com.example.travium.repository.UserRepoImpl
 import com.example.travium.ui.theme.TraviumTheme
 import com.example.travium.viewmodel.UserViewModel
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.database.ktx.database
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
+import com.google.firebase.database.database
 
 class EditProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,7 +63,7 @@ fun EditProfileBody(viewModel: UserViewModel? = null) {
     val context = LocalContext.current
     val currentUser = Firebase.auth.currentUser
     val profileRepo = remember { ProfileRepoImpl(context) }
-    
+
     var name by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var bio by remember { mutableStateOf("") }
@@ -176,7 +176,7 @@ fun EditProfileBody(viewModel: UserViewModel? = null) {
                     onClick = {
                         if (currentUser == null) return@Button
                         isLoading = true
-                        
+
                         val updateProfile = { imageUrl: String? ->
                             val updatedUser = hashMapOf(
                                 "fullName" to name,
@@ -188,7 +188,7 @@ fun EditProfileBody(viewModel: UserViewModel? = null) {
                             if (imageUrl != null) {
                                 updatedUser["profileImageUrl"] = imageUrl
                             }
-                            
+
                             Firebase.database.getReference("users").child(currentUser.uid)
                                 .updateChildren(updatedUser as Map<String, Any>)
                                 .addOnCompleteListener { task ->
@@ -234,7 +234,7 @@ fun EditProfileBody(viewModel: UserViewModel? = null) {
 @Composable
 fun ModernEditField(label: String, value: String, onValueChange: (String) -> Unit) {
     val cyanAccent = Color(0xFF00FFFF)
-    
+
     TextField(
         value = value,
         onValueChange = onValueChange,
