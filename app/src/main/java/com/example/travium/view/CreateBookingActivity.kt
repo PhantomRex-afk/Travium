@@ -25,6 +25,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.travium.model.BookingModel
+import com.example.travium.model.HotelModel
 import com.example.travium.repository.BookingRepoImpl
 import com.example.travium.repository.HotelRepoImpl
 import com.example.travium.viewmodel.BookingViewModel
@@ -39,26 +40,10 @@ class CreateBookingActivity : ComponentActivity() {
 
         val hotelId = intent.getStringExtra("hotelId") ?: ""
         val roomType = intent.getStringExtra("roomType") ?: "Standard"
-        val pricePerNight = intent.getDoubleExtra("pricePerNight", 0.0)
+        val pricePerNight = intent.getDoubleExtra("pricePerNight", 100.0)
         val maxGuests = intent.getIntExtra("maxGuests", 2)
-        val maxRooms = intent.getIntExtra("maxRooms", 1)
-        val availableRooms = intent.getIntExtra("availableRooms", 0)
-
-        // Create ViewModel Factory
-        val viewModelFactory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return when {
-                    modelClass.isAssignableFrom(BookingViewModel::class.java) -> {
-                        BookingViewModel(BookingRepoImpl()) as T
-                    }
-                    modelClass.isAssignableFrom(HotelViewModel::class.java) -> {
-                        HotelViewModel(HotelRepoImpl()) as T
-                    }
-                    else -> throw IllegalArgumentException("Unknown ViewModel class")
-                }
-            }
-        }
+        val maxRooms = intent.getIntExtra("maxRooms", 5)
+        val availableRooms = intent.getIntExtra("availableRooms", 5)
 
         setContent {
             CreateBookingScreen(
@@ -72,8 +57,7 @@ class CreateBookingActivity : ComponentActivity() {
                     Toast.makeText(this, "Booking created successfully!", Toast.LENGTH_SHORT).show()
                     finish()
                 },
-                onBack = { finish() },
-                viewModelFactory = viewModelFactory
+                onBack = { finish() }
             )
         }
     }
@@ -89,19 +73,28 @@ fun CreateBookingScreen(
     maxRooms: Int,
     availableRooms: Int,
     onBookingCreated: (String) -> Unit,
-    onBack: () -> Unit,
-    viewModelFactory: ViewModelProvider.Factory
+    onBack: () -> Unit
 ) {
     val context = LocalContext.current
 
-    // Use the factory with viewModel
-    val bookingViewModel: BookingViewModel = viewModel(factory = viewModelFactory)
-    val hotelViewModel: HotelViewModel = viewModel(factory = viewModelFactory)
+    // ViewModels
+    val bookingViewModel: BookingViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return BookingViewModel(BookingRepoImpl()) as T
+            }
+        }
+    )
+
+    val hotelViewModel: HotelViewModel = viewModel(
+        factory = HotelViewModelFactory(HotelRepoImpl())
+    )
 
     // Current user info
-    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
-    val currentUserName = FirebaseAuth.getInstance().currentUser?.displayName ?: "Guest"
-    val currentUserEmail = FirebaseAuth.getInstance().currentUser?.email ?: ""
+    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: "user123"
+    val currentUserName = FirebaseAuth.getInstance().currentUser?.displayName ?: "Guest User"
+    val currentUserEmail = FirebaseAuth.getInstance().currentUser?.email ?: "guest@example.com"
 
     // State variables
     var checkInDate by remember { mutableStateOf("") }
@@ -112,7 +105,7 @@ fun CreateBookingScreen(
     var userPhone by remember { mutableStateOf("") }
 
     // Hotel information
-    var hotelInfo by remember { mutableStateOf<com.example.travium.model.HotelModel?>(null) }
+    var hotelInfo by remember { mutableStateOf<HotelModel?>(null) }
 
     // Date pickers
     val calendar = Calendar.getInstance()
@@ -122,9 +115,6 @@ fun CreateBookingScreen(
     val nights = calculateNights(checkInDate, checkOutDate)
     val totalPrice = nights * numberOfRooms * pricePerNight
 
-    // Get UI state
-    val bookingUiState = bookingViewModel.uiState.value
-
     // Define common text field colors
     val textFieldColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = Color.White,
@@ -133,17 +123,9 @@ fun CreateBookingScreen(
         unfocusedBorderColor = Color.Gray,
         focusedLabelColor = Color.Gray,
         unfocusedLabelColor = Color.Gray,
-        focusedPlaceholderColor = Color.Gray,
-        unfocusedPlaceholderColor = Color.Gray,
-        focusedLeadingIconColor = Color.Gray,
-        unfocusedLeadingIconColor = Color.Gray,
-        focusedTrailingIconColor = Color.Gray,
-        unfocusedTrailingIconColor = Color.Gray,
         cursorColor = Color(0xFF00B4D8),
         focusedContainerColor = Color(0xFF0A1A2F),
         unfocusedContainerColor = Color(0xFF0A1A2F),
-        disabledContainerColor = Color(0xFF0A1A2F),
-        errorContainerColor = Color(0xFF0A1A2F),
     )
 
     // Define disabled text field colors
@@ -151,11 +133,11 @@ fun CreateBookingScreen(
         disabledTextColor = Color.White,
         disabledBorderColor = Color.Gray,
         disabledLabelColor = Color.Gray,
-        disabledPlaceholderColor = Color.Gray,
-        disabledLeadingIconColor = Color.Gray,
-        disabledTrailingIconColor = Color.Gray,
         disabledContainerColor = Color(0xFF0A1A2F),
     )
+
+    // Get hotel info from ViewModel
+    val selectedHotel by hotelViewModel.selectedHotel.collectAsState()
 
     // Load hotel information
     LaunchedEffect(key1 = hotelId) {
@@ -164,25 +146,10 @@ fun CreateBookingScreen(
         }
     }
 
-    // Observe hotel information
-    LaunchedEffect(key1 = hotelViewModel.selectedHotel) {
-        hotelViewModel.selectedHotel.value?.let { hotel ->
-            hotelInfo = hotel
-        }
-    }
-
-    // Listen for UI state changes
-    LaunchedEffect(key1 = bookingUiState) {
-        when (bookingUiState) {
-            is com.example.travium.viewmodel.BookingUiState.BookingCreated -> {
-                val bookingId = bookingUiState.booking.bookingId
-                onBookingCreated(bookingId)
-            }
-            is com.example.travium.viewmodel.BookingUiState.Error -> {
-                val error = bookingUiState.message
-                Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
-            }
-            else -> {}
+    // Update hotel info when selectedHotel changes
+    LaunchedEffect(selectedHotel) {
+        selectedHotel?.let {
+            hotelInfo = it
         }
     }
 
@@ -191,7 +158,7 @@ fun CreateBookingScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Book ${hotelInfo?.hotelName ?: "Hotel"}",
+                        "Book ${hotelInfo?.name ?: "Hotel"}",
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
@@ -232,7 +199,7 @@ fun CreateBookingScreen(
                     modifier = Modifier.padding(16.dp)
                 ) {
                     Text(
-                        text = hotelInfo?.hotelName ?: "Loading...",
+                        text = hotelInfo?.name ?: "Loading...",
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
@@ -249,9 +216,10 @@ fun CreateBookingScreen(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "${hotelInfo!!.city}, ${hotelInfo!!.country}",
+                                text = hotelInfo!!.address,
                                 color = Color.Gray,
-                                fontSize = 14.sp
+                                fontSize = 14.sp,
+                                maxLines = 2
                             )
                         }
                     }
@@ -268,20 +236,21 @@ fun CreateBookingScreen(
                         fontSize = 14.sp
                     )
 
-                    // Hotel Policies
-                    if (hotelInfo?.policies?.isNotEmpty() == true) {
+                    // Contact info
+                    if (hotelInfo?.contactNumber?.isNotEmpty() == true) {
                         Spacer(modifier = Modifier.height(8.dp))
                         HorizontalDivider(color = Color.Gray, thickness = 0.5.dp)
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Hotel Policies:",
-                            color = Color.Gray,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        hotelInfo!!.policies.take(2).forEach { policy ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Phone,
+                                contentDescription = "Phone",
+                                tint = Color.Gray,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "• ${policy.title}",
+                                text = "Contact: ${hotelInfo!!.contactNumber}",
                                 color = Color.Gray,
                                 fontSize = 12.sp
                             )
@@ -314,7 +283,7 @@ fun CreateBookingScreen(
                         value = currentUserName,
                         onValueChange = {},
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Name") },
+                        label = { Text("Name", color = Color.Gray) },
                         enabled = false,
                         colors = disabledTextFieldColors
                     )
@@ -325,7 +294,7 @@ fun CreateBookingScreen(
                         value = currentUserEmail,
                         onValueChange = {},
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Email") },
+                        label = { Text("Email", color = Color.Gray) },
                         enabled = false,
                         colors = disabledTextFieldColors
                     )
@@ -336,8 +305,8 @@ fun CreateBookingScreen(
                         value = userPhone,
                         onValueChange = { userPhone = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Phone Number") },
-                        placeholder = { Text("Enter your phone number") },
+                        label = { Text("Phone Number", color = Color.Gray) },
+                        placeholder = { Text("Enter your phone number", color = Color.Gray) },
                         colors = textFieldColors
                     )
                 }
@@ -372,8 +341,8 @@ fun CreateBookingScreen(
                             value = checkInDate,
                             onValueChange = {},
                             modifier = Modifier.weight(1f),
-                            label = { Text("Check-in Date") },
-                            placeholder = { Text("Select date") },
+                            label = { Text("Check-in Date", color = Color.Gray) },
+                            placeholder = { Text("Select date", color = Color.Gray) },
                             enabled = false,
                             colors = disabledTextFieldColors
                         )
@@ -411,8 +380,8 @@ fun CreateBookingScreen(
                             value = checkOutDate,
                             onValueChange = {},
                             modifier = Modifier.weight(1f),
-                            label = { Text("Check-out Date") },
-                            placeholder = { Text("Select date") },
+                            label = { Text("Check-out Date", color = Color.Gray) },
+                            placeholder = { Text("Select date", color = Color.Gray) },
                             enabled = false,
                             colors = disabledTextFieldColors
                         )
@@ -534,8 +503,8 @@ fun CreateBookingScreen(
                         value = specialRequests,
                         onValueChange = { specialRequests = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Special Requests (Optional)") },
-                        placeholder = { Text("Any special requests?") },
+                        label = { Text("Special Requests (Optional)", color = Color.Gray) },
+                        placeholder = { Text("Any special requests?", color = Color.Gray) },
                         maxLines = 3,
                         colors = textFieldColors
                     )
@@ -579,7 +548,7 @@ fun CreateBookingScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Taxes & Fees", color = Color.Gray)
+                        Text("Taxes & Fees (10%)", color = Color.Gray)
                         Text("$${(totalPrice * 0.1).format(2)}", color = Color.White)
                     }
 
@@ -630,9 +599,9 @@ fun CreateBookingScreen(
 
                     // Create booking
                     val booking = BookingModel(
+                        bookingId = "",
                         hotelId = hotelId,
-                        hotelName = hotelInfo?.hotelName ?: "Unknown Hotel",
-                        hotelOwnerId = hotelInfo?.hotelOwnerId ?: "",
+                        hotelName = hotelInfo?.name ?: "Unknown Hotel",
                         userId = currentUserId,
                         userName = currentUserName,
                         userEmail = currentUserEmail,
@@ -642,13 +611,20 @@ fun CreateBookingScreen(
                         numberOfGuests = numberOfGuests,
                         numberOfRooms = numberOfRooms,
                         roomType = roomType,
-                        totalPrice = totalPrice * 1.1, // Including taxes
+                        pricePerNight = pricePerNight,
+                        totalPrice = totalPrice * 1.1,
+                        status = "pending",
                         specialRequests = specialRequests,
-                        cancellationPolicy = hotelInfo?.policies?.find { it.title.contains("cancellation", ignoreCase = true) }?.description
-                            ?: "Free cancellation up to 24 hours before check-in"
+                        createdAt = System.currentTimeMillis()
                     )
 
-                    bookingViewModel.createBooking(booking)
+                    bookingViewModel.createBooking(booking) { success, message ->
+                        if (success) {
+                            onBookingCreated(booking.bookingId)
+                        } else {
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -657,22 +633,17 @@ fun CreateBookingScreen(
                     containerColor = Color(0xFF00B4D8),
                     contentColor = Color.White
                 ),
-                enabled = bookingUiState !is com.example.travium.viewmodel.BookingUiState.Loading &&
-                        hotelInfo != null &&
+                enabled = hotelInfo != null &&
+                        checkInDate.isNotEmpty() &&
+                        checkOutDate.isNotEmpty() &&
+                        userPhone.isNotEmpty() &&
                         numberOfRooms <= availableRooms
             ) {
-                if (bookingUiState is com.example.travium.viewmodel.BookingUiState.Loading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = Color.White
-                    )
-                } else {
-                    Text(
-                        text = "Confirm Booking - $${(totalPrice * 1.1).format(2)}",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
-                    )
-                }
+                Text(
+                    text = "Confirm Booking - $${(totalPrice * 1.1).format(2)}",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
             }
         }
     }
