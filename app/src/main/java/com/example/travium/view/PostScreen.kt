@@ -1,6 +1,7 @@
 package com.example.travium.view
 
 import android.app.Activity
+import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -198,7 +199,12 @@ fun MakePostBody(
                                     )
                                     makePostViewModel.createPost(post) { success, message ->
                                         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                                        if (success) activity.finish()
+                                        if (success) {
+                                            val intent = Intent(context, HomePageActivity::class.java)
+                                            intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                                            context.startActivity(intent)
+                                            activity.finish()
+                                        }
                                     }
                                 } else {
                                     Toast.makeText(context, "Upload failed", Toast.LENGTH_SHORT).show()
@@ -208,7 +214,12 @@ fun MakePostBody(
                             val post = MakePostModel(userId = userId, caption = caption, location = location)
                             makePostViewModel.createPost(post) { success, message ->
                                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                                if (success) activity.finish()
+                                if (success) {
+                                    val intent = Intent(context, HomePageActivity::class.java)
+                                    intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                                    context.startActivity(intent)
+                                    activity.finish()
+                                }
                             }
                         }
                     }

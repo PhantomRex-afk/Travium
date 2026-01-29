@@ -49,9 +49,15 @@ class UserViewModel(private val repo: UserRepo) : ViewModel() {
 
     fun getAllUsers() {
         repo.getAllUsers { success, message, userList ->
-            if (success) {
+            if (success && userList != null) {
                 _allUsers.value = userList
+            } else {
+                _allUsers.value = emptyList()
             }
         }
+    }
+
+    fun searchUsers(query: String, callback: (List<UserModel>) -> Unit) {
+        repo.searchUsers(query, callback)
     }
 }
