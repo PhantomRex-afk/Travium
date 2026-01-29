@@ -169,6 +169,21 @@ fun MainScreen(
                             containerColor = TravelCardNavy
                         ),
                         actions = {
+                            IconButton(
+                                onClick = {
+                                    context.startActivity(
+                                        Intent(context, HotelSelectionActivity::class.java)
+                                    )
+                                }
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.outline_hotel_24),
+                                    contentDescription = "Hotels",
+                                    tint = Color.White
+                                )
+                            }
+
+
                             IconButton(onClick = { showNotifications = !showNotifications }) {
                                 BadgedBox(
                                     badge = {

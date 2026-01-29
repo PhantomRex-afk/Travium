@@ -1,3 +1,4 @@
+// HotelSelectionActivity.kt (updated with working filters)
 package com.example.travium.view
 
 import android.content.Intent
@@ -21,11 +22,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
+import com.example.travium.model.HotelModel
+import com.example.travium.repository.HotelRepoImpl
 import com.example.travium.viewmodel.HotelViewModel
 import kotlin.math.roundToInt
 
@@ -35,16 +40,15 @@ class HotelSelectionActivity : ComponentActivity() {
 
         setContent {
             HotelSelectionScreen(
-                onHotelSelected = { hotel, roomType ->
+                onHotelSelected = { hotel ->
+                    // Since your HotelModel doesn't have roomTypes, we'll use default values
                     val intent = Intent(this, CreateBookingActivity::class.java).apply {
                         putExtra("hotelId", hotel.hotelId)
-                        putExtra("hotelName", hotel.hotelName)
-                        putExtra("hotelOwnerId", hotel.hotelOwnerId)
-                        putExtra("roomType", roomType.name)
-                        putExtra("pricePerNight", roomType.pricePerNight)
-                        putExtra("maxGuests", roomType.maxGuests)
-                        putExtra("maxRooms", roomType.maxRooms)
-                        putExtra("availableRooms", roomType.availableRooms)
+                        putExtra("roomType", "Standard Room") // Default room type
+                        putExtra("pricePerNight", extractMinPrice(hotel.priceRange)) // Extract min price from range
+                        putExtra("maxGuests", 2) // Default guests
+                        putExtra("maxRooms", 5) // Default max rooms
+                        putExtra("availableRooms", 5) // Default available rooms
                     }
                     startActivity(intent)
                 },
@@ -52,37 +56,58 @@ class HotelSelectionActivity : ComponentActivity() {
             )
         }
     }
+
+    private fun extractMinPrice(priceRange: String): Double {
+        return try {
+            // Extract numbers from price range like "$100-$200" or "100-200"
+            val numbers = priceRange.replace("[^0-9-]".toRegex(), "")
+            val parts = numbers.split("-")
+            if (parts.isNotEmpty()) parts[0].toDouble() else 100.0
+        } catch (e: Exception) {
+            100.0 // Default price
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HotelSelectionScreen(
-    onHotelSelected: (com.example.travium.model.HotelModel, com.example.travium.model.RoomType) -> Unit,
+    onHotelSelected: (HotelModel) -> Unit,
     onBack: () -> Unit
 ) {
-    // FIX: Initialize ViewModel properly
-    val viewModel: HotelViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val context = LocalContext.current
+    val viewModel: HotelViewModel = viewModel(
+        factory = HotelViewModelFactory(HotelRepoImpl())
+    )
 
-    // State for search
+    // State for search and filters
     var searchQuery by remember { mutableStateOf("") }
-    var selectedCity by remember { mutableStateOf("") }
+    var selectedLocation by remember { mutableStateOf("") }
     var selectedGuests by remember { mutableIntStateOf(1) }
     var minPrice by remember { mutableStateOf("") }
     var maxPrice by remember { mutableStateOf("") }
+    var showFilters by remember { mutableStateOf(false) }
+
+    // State for filtered hotels
+    var filteredHotels by remember { mutableStateOf<List<HotelModel>>(emptyList()) }
 
     // State for room type selection
-    var showRoomTypesDialog by remember { mutableStateOf(false) }
-    var selectedHotel by remember { mutableStateOf<com.example.travium.model.HotelModel?>(null) }
+    var showHotelDetailsDialog by remember { mutableStateOf(false) }
+    var selectedHotel by remember { mutableStateOf<HotelModel?>(null) }
 
     // Fetch hotels on initial load
     LaunchedEffect(key1 = Unit) {
         viewModel.getAllHotels()
     }
 
-    // Get the hotels list from ViewModel - FIX: Use value property
-    val hotels = viewModel.hotels.value ?: emptyList()
-    val uiState = viewModel.uiState.value
-    val searchResults = viewModel.searchResults.value ?: emptyList()
+    // Get the hotels list from ViewModel
+    val allHotels by viewModel.allHotels.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+
+    // Update filtered hotels when allHotels changes
+    LaunchedEffect(allHotels) {
+        filteredHotels = allHotels
+    }
 
     // Define common text field colors
     val textFieldColors = OutlinedTextFieldDefaults.colors(
@@ -92,17 +117,9 @@ fun HotelSelectionScreen(
         unfocusedBorderColor = Color.Gray,
         focusedLabelColor = Color.Gray,
         unfocusedLabelColor = Color.Gray,
-        focusedPlaceholderColor = Color.Gray,
-        unfocusedPlaceholderColor = Color.Gray,
-        focusedLeadingIconColor = Color.Gray,
-        unfocusedLeadingIconColor = Color.Gray,
-        focusedTrailingIconColor = Color.Gray,
-        unfocusedTrailingIconColor = Color.Gray,
         cursorColor = Color(0xFF00B4D8),
         focusedContainerColor = Color(0xFF0A1A2F),
         unfocusedContainerColor = Color(0xFF0A1A2F),
-        disabledContainerColor = Color(0xFF0A1A2F),
-        errorContainerColor = Color(0xFF0A1A2F),
     )
 
     Scaffold(
@@ -110,7 +127,7 @@ fun HotelSelectionScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Select Hotel & Room",
+                        "Select Hotel",
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
@@ -121,6 +138,17 @@ fun HotelSelectionScreen(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back",
                             tint = Color.White
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = { showFilters = !showFilters }
+                    ) {
+                        Icon(
+                            if (showFilters) Icons.Default.FilterAlt else Icons.Default.FilterList,
+                            contentDescription = "Filters",
+                            tint = if (showFilters) Color(0xFF00B4D8) else Color.White
                         )
                     }
                 },
@@ -136,117 +164,207 @@ fun HotelSelectionScreen(
                 .padding(paddingValues)
                 .background(Color(0xFF0A1A2F))
         ) {
-            // Search and Filter Section
+            // Search Bar
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 colors = CardDefaults.cardColors(
                     containerColor = Color(0xFF1A2A3F)
                 )
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Search Bar
                     OutlinedTextField(
                         value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Search hotels...") },
-                        leadingIcon = {
-                            Icon(Icons.Default.Search, contentDescription = "Search")
-                        },
-                        colors = textFieldColors
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Filters Row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // City Filter
-                        OutlinedTextField(
-                            value = selectedCity,
-                            onValueChange = { selectedCity = it },
-                            modifier = Modifier.weight(1f),
-                            label = { Text("City") },
-                            placeholder = { Text("Any") },
-                            colors = textFieldColors
-                        )
-
-                        // Guests Filter
-                        OutlinedTextField(
-                            value = selectedGuests.toString(),
-                            onValueChange = {
-                                it.toIntOrNull()?.let { guests ->
-                                    if (guests > 0) selectedGuests = guests
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                            label = { Text("Guests") },
-                            colors = textFieldColors
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // Min Price
-                        OutlinedTextField(
-                            value = minPrice,
-                            onValueChange = { minPrice = it },
-                            modifier = Modifier.weight(1f),
-                            label = { Text("Min Price") },
-                            placeholder = { Text("0") },
-                            colors = textFieldColors
-                        )
-
-                        // Max Price
-                        OutlinedTextField(
-                            value = maxPrice,
-                            onValueChange = { maxPrice = it },
-                            modifier = Modifier.weight(1f),
-                            label = { Text("Max Price") },
-                            placeholder = { Text("500") },
-                            colors = textFieldColors
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Apply Filters Button
-                    Button(
-                        onClick = {
-                            val minPriceValue = minPrice.toDoubleOrNull()
-                            val maxPriceValue = maxPrice.toDoubleOrNull()
-
-                            viewModel.searchHotels(
-                                city = selectedCity.ifEmpty { null },
-                                country = null,
-                                minPrice = minPriceValue,
-                                maxPrice = maxPriceValue,
-                                guests = selectedGuests
+                        onValueChange = {
+                            searchQuery = it
+                            applyFilters(
+                                allHotels = allHotels,
+                                searchQuery = it,
+                                location = selectedLocation,
+                                guests = selectedGuests,
+                                minPrice = minPrice,
+                                maxPrice = maxPrice,
+                                onResult = { filteredHotels = it }
                             )
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF00B4D8),
-                            contentColor = Color.White
-                        )
+                        modifier = Modifier.weight(1f),
+                        label = { Text("Search hotels...", color = Color.Gray) },
+                        leadingIcon = {
+                            Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.Gray)
+                        },
+                        colors = textFieldColors,
+                        singleLine = true
+                    )
+                }
+            }
+
+            // Filters Section (Collapsible)
+            if (showFilters) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color(0xFF1A2A3F)
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
                     ) {
-                        Text("Apply Filters", fontWeight = FontWeight.Bold)
+                        // Location Filter
+                        OutlinedTextField(
+                            value = selectedLocation,
+                            onValueChange = { selectedLocation = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("Location", color = Color.Gray) },
+                            placeholder = { Text("City or area", color = Color.Gray) },
+                            leadingIcon = {
+                                Icon(Icons.Default.LocationOn, contentDescription = "Location", tint = Color.Gray)
+                            },
+                            colors = textFieldColors
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Price Range Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Min Price
+                            OutlinedTextField(
+                                value = minPrice,
+                                onValueChange = { minPrice = it },
+                                modifier = Modifier.weight(1f),
+                                label = { Text("Min Price", color = Color.Gray) },
+                                placeholder = { Text("0", color = Color.Gray) },
+                                leadingIcon = {
+                                    Icon(Icons.Default.AttachMoney, contentDescription = "Min Price", tint = Color.Gray, modifier = Modifier.size(16.dp))
+                                },
+                                colors = textFieldColors
+                            )
+
+                            // Max Price
+                            OutlinedTextField(
+                                value = maxPrice,
+                                onValueChange = { maxPrice = it },
+                                modifier = Modifier.weight(1f),
+                                label = { Text("Max Price", color = Color.Gray) },
+                                placeholder = { Text("500", color = Color.Gray) },
+                                leadingIcon = {
+                                    Icon(Icons.Default.AttachMoney, contentDescription = "Max Price", tint = Color.Gray, modifier = Modifier.size(16.dp))
+                                },
+                                colors = textFieldColors
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Guests Filter
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Guests:",
+                                color = Color.White,
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            IconButton(
+                                onClick = {
+                                    if (selectedGuests > 1) {
+                                        selectedGuests--
+                                        applyFilters(
+                                            allHotels = allHotels,
+                                            searchQuery = searchQuery,
+                                            location = selectedLocation,
+                                            guests = selectedGuests,
+                                            minPrice = minPrice,
+                                            maxPrice = maxPrice,
+                                            onResult = { filteredHotels = it }
+                                        )
+                                    }
+                                },
+                                enabled = selectedGuests > 1
+                            ) {
+                                Icon(Icons.Default.Remove, contentDescription = "Decrease", tint = Color(0xFF00B4D8))
+                            }
+
+                            Text(
+                                text = "$selectedGuests",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp)
+                            )
+
+                            IconButton(
+                                onClick = {
+                                    selectedGuests++
+                                    applyFilters(
+                                        allHotels = allHotels,
+                                        searchQuery = searchQuery,
+                                        location = selectedLocation,
+                                        guests = selectedGuests,
+                                        minPrice = minPrice,
+                                        maxPrice = maxPrice,
+                                        onResult = { filteredHotels = it }
+                                    )
+                                },
+                                enabled = selectedGuests < 10
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = "Increase", tint = Color(0xFF00B4D8))
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Apply Filters Button
+                        Button(
+                            onClick = {
+                                applyFilters(
+                                    allHotels = allHotels,
+                                    searchQuery = searchQuery,
+                                    location = selectedLocation,
+                                    guests = selectedGuests,
+                                    minPrice = minPrice,
+                                    maxPrice = maxPrice,
+                                    onResult = { filteredHotels = it }
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF00B4D8),
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text("Apply Filters", fontWeight = FontWeight.Bold)
+                        }
+
+                        // Clear Filters Button
+                        TextButton(
+                            onClick = {
+                                searchQuery = ""
+                                selectedLocation = ""
+                                selectedGuests = 1
+                                minPrice = ""
+                                maxPrice = ""
+                                filteredHotels = allHotels
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Clear Filters", color = Color(0xFF00B4D8))
+                        }
                     }
                 }
             }
 
             // Hotels List
-            if (uiState is com.example.travium.viewmodel.HotelUiState.Loading) {
+            if (isLoading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -254,37 +372,96 @@ fun HotelSelectionScreen(
                     CircularProgressIndicator(color = Color(0xFF00B4D8))
                 }
             } else {
-                val displayedHotels = if (searchResults.isNotEmpty()) {
-                    searchResults
-                } else {
-                    hotels
-                }
-
-                if (displayedHotels.isEmpty()) {
+                if (filteredHotels.isEmpty()) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = if (searchResults.isEmpty()) {
-                                "No hotels available"
-                            } else {
-                                "No hotels match your filters"
-                            },
-                            color = Color.Gray,
-                            fontSize = 16.sp
-                        )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Hotel,
+                                contentDescription = "No Hotels",
+                                tint = Color.Gray,
+                                modifier = Modifier.size(64.dp)
+                            )
+                            Text(
+                                text = if (showFilters || searchQuery.isNotEmpty()) {
+                                    "No hotels match your search criteria"
+                                } else {
+                                    "No hotels available"
+                                },
+                                color = Color.Gray,
+                                fontSize = 16.sp
+                            )
+                            if (showFilters || searchQuery.isNotEmpty()) {
+                                TextButton(
+                                    onClick = {
+                                        searchQuery = ""
+                                        selectedLocation = ""
+                                        selectedGuests = 1
+                                        minPrice = ""
+                                        maxPrice = ""
+                                        filteredHotels = allHotels
+                                    }
+                                ) {
+                                    Text("Clear Filters", color = Color(0xFF00B4D8))
+                                }
+                            }
+                        }
                     }
                 } else {
+                    // Results count
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFF1A2A3F)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                "${filteredHotels.size} hotels found",
+                                color = Color.Gray,
+                                fontSize = 14.sp
+                            )
+                            if (filteredHotels.size != allHotels.size) {
+                                TextButton(
+                                    onClick = {
+                                        searchQuery = ""
+                                        selectedLocation = ""
+                                        selectedGuests = 1
+                                        minPrice = ""
+                                        maxPrice = ""
+                                        filteredHotels = allHotels
+                                    }
+                                ) {
+                                    Text("Clear", color = Color(0xFF00B4D8), fontSize = 12.sp)
+                                }
+                            }
+                        }
+                    }
+
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(displayedHotels) { hotel ->
+                        items(filteredHotels) { hotel ->
                             HotelCard(
                                 hotel = hotel,
-                                onSelect = { selectedHotel = hotel; showRoomTypesDialog = true }
+                                onClick = {
+                                    selectedHotel = hotel
+                                    showHotelDetailsDialog = true
+                                }
                             )
                         }
                     }
@@ -293,32 +470,102 @@ fun HotelSelectionScreen(
         }
     }
 
-    // Room Type Selection Dialog
-    if (showRoomTypesDialog && selectedHotel != null) {
+    // Hotel Details Dialog
+    if (showHotelDetailsDialog && selectedHotel != null) {
         AlertDialog(
-            onDismissRequest = { showRoomTypesDialog = false },
+            onDismissRequest = { showHotelDetailsDialog = false },
             title = {
                 Text(
-                    "Select Room Type at ${selectedHotel!!.hotelName}",
+                    selectedHotel!!.name,
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
-                LazyColumn {
-                    items(selectedHotel!!.roomTypes) { roomType ->
-                        RoomTypeCard(
-                            roomType = roomType,
-                            onSelect = {
-                                onHotelSelected(selectedHotel!!, roomType)
-                                showRoomTypesDialog = false
-                            }
+                Column {
+                    // Rating
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Star,
+                            contentDescription = "Rating",
+                            tint = Color(0xFFFFD700),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            "${selectedHotel!!.rating} (${selectedHotel!!.reviewCount} reviews)",
+                            color = Color.White
                         )
                     }
+
+                    // Price
+                    Text(
+                        "Price Range: ${selectedHotel!!.priceRange}",
+                        color = Color(0xFF00B4D8),
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    // Contact
+                    Text(
+                        "📞 ${selectedHotel!!.contactNumber}",
+                        color = Color.Gray,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    // Address
+                    Text(
+                        "📍 ${selectedHotel!!.address}",
+                        color = Color.Gray,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    // Amenities
+                    if (selectedHotel!!.amenities.isNotEmpty()) {
+                        Text(
+                            "Amenities:",
+                            color = Color.White,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                        Text(
+                            selectedHotel!!.amenities.joinToString(", "),
+                            color = Color.Gray,
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+
+                    // Description
+                    Text(
+                        selectedHotel!!.description,
+                        color = Color.Gray,
+                        fontSize = 14.sp
+                    )
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showRoomTypesDialog = false }) {
+                Button(
+                    onClick = {
+                        onHotelSelected(selectedHotel!!)
+                        showHotelDetailsDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF00B4D8)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Book Now")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showHotelDetailsDialog = false },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     Text("Cancel", color = Color(0xFF00B4D8))
                 }
             },
@@ -329,28 +576,92 @@ fun HotelSelectionScreen(
     }
 }
 
+// Filter function
+private fun applyFilters(
+    allHotels: List<HotelModel>,
+    searchQuery: String,
+    location: String,
+    guests: Int,
+    minPrice: String,
+    maxPrice: String,
+    onResult: (List<HotelModel>) -> Unit
+) {
+    var filtered = allHotels
+
+    // Apply search query filter
+    if (searchQuery.isNotBlank()) {
+        filtered = filtered.filter { hotel ->
+            hotel.name.contains(searchQuery, ignoreCase = true) ||
+                    hotel.address.contains(searchQuery, ignoreCase = true) ||
+                    hotel.description.contains(searchQuery, ignoreCase = true) ||
+                    hotel.amenities.any { it.contains(searchQuery, ignoreCase = true) }
+        }
+    }
+
+    // Apply location filter
+    if (location.isNotBlank()) {
+        filtered = filtered.filter { hotel ->
+            hotel.address.contains(location, ignoreCase = true)
+        }
+    }
+
+    // Apply price filter
+    if (minPrice.isNotBlank()) {
+        val minPriceValue = minPrice.toDoubleOrNull() ?: 0.0
+        filtered = filtered.filter { hotel ->
+            try {
+                val priceRange = hotel.priceRange.replace("[^0-9.-]".toRegex(), "")
+                val parts = priceRange.split("-")
+                val hotelMinPrice = parts.getOrNull(0)?.toDoubleOrNull() ?: 0.0
+                hotelMinPrice >= minPriceValue
+            } catch (e: Exception) {
+                true // If price parsing fails, include the hotel
+            }
+        }
+    }
+
+    if (maxPrice.isNotBlank()) {
+        val maxPriceValue = maxPrice.toDoubleOrNull() ?: Double.MAX_VALUE
+        filtered = filtered.filter { hotel ->
+            try {
+                val priceRange = hotel.priceRange.replace("[^0-9.-]".toRegex(), "")
+                val parts = priceRange.split("-")
+                val hotelMinPrice = parts.getOrNull(0)?.toDoubleOrNull() ?: 0.0
+                hotelMinPrice <= maxPriceValue
+            } catch (e: Exception) {
+                true // If price parsing fails, include the hotel
+            }
+        }
+    }
+
+    onResult(filtered)
+}
+
 @Composable
 fun HotelCard(
-    hotel: com.example.travium.model.HotelModel,
-    onSelect: () -> Unit
+    hotel: HotelModel,
+    onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onSelect() },
+            .clickable { onClick() },
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFF1A2A3F)
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             // Hotel Image
-            if (hotel.images.isNotEmpty()) {
+            if (hotel.imageUrls.isNotEmpty()) {
                 Image(
-                    painter = rememberAsyncImagePainter(hotel.images.first()),
-                    contentDescription = hotel.hotelName,
+                    painter = rememberAsyncImagePainter(
+                        model = hotel.imageUrls.firstOrNull() ?: ""
+                    ),
+                    contentDescription = hotel.name,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(200.dp)
+                        .height(180.dp)
                         .clip(RoundedCornerShape(8.dp)),
                     contentScale = ContentScale.Crop
                 )
@@ -364,10 +675,13 @@ fun HotelCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = hotel.hotelName,
+                    text = hotel.name,
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
+                    fontSize = 18.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
                 )
 
                 // Rating
@@ -380,14 +694,9 @@ fun HotelCard(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = hotel.rating.toString(),
+                        text = "%.1f".format(hotel.rating),
                         color = Color(0xFFFFD700),
                         fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = " (${hotel.totalReviews})",
-                        color = Color.Gray,
-                        fontSize = 12.sp
                     )
                 }
             }
@@ -404,17 +713,17 @@ fun HotelCard(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "${hotel.city}, ${hotel.country}",
+                    text = hotel.address,
                     color = Color.Gray,
-                    fontSize = 14.sp
+                    fontSize = 14.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Price Range
-            val minRoomPrice = hotel.roomTypes.minOfOrNull { it.pricePerNight } ?: 0.0
-
+            // Price and Reviews
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -422,23 +731,23 @@ fun HotelCard(
             ) {
                 Column {
                     Text(
-                        text = "From",
+                        text = "Price Range",
                         color = Color.Gray,
                         fontSize = 12.sp
                     )
                     Text(
-                        text = "$${minRoomPrice.roundToInt()} / night",
+                        text = hotel.priceRange,
                         color = Color(0xFF00B4D8),
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     )
                 }
 
-                // Available Room Types
+                // Review count
                 Text(
-                    text = "${hotel.roomTypes.size} room types",
+                    text = "${hotel.reviewCount} reviews",
                     color = Color.Gray,
-                    fontSize = 14.sp
+                    fontSize = 12.sp
                 )
             }
 
@@ -448,7 +757,7 @@ fun HotelCard(
             if (hotel.amenities.isNotEmpty()) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.Default.Check,
+                        Icons.Default.CheckCircle,
                         contentDescription = "Amenities",
                         tint = Color(0xFF00B4D8),
                         modifier = Modifier.size(16.dp)
@@ -458,96 +767,10 @@ fun HotelCard(
                         text = hotel.amenities.take(3).joinToString(" • "),
                         color = Color.Gray,
                         fontSize = 12.sp,
-                        maxLines = 1
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun RoomTypeCard(
-    roomType: com.example.travium.model.RoomType,
-    onSelect: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .clickable { onSelect() },
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF0A1A2F)
-        ),
-        border = CardDefaults.outlinedCardBorder()
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = roomType.name,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-
-                Text(
-                    text = "$${roomType.pricePerNight} / night",
-                    color = Color(0xFF00B4D8),
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Capacity
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = "Capacity",
-                    tint = Color.Gray,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "${roomType.maxGuests} guests max",
-                    color = Color.Gray,
-                    fontSize = 14.sp
-                )
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Availability
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.MeetingRoom,
-                    contentDescription = "Availability",
-                    tint = if (roomType.availableRooms > 0) Color(0xFF00B4D8) else Color.Red,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = if (roomType.availableRooms > 0) {
-                        "${roomType.availableRooms} rooms available"
-                    } else {
-                        "Sold out"
-                    },
-                    color = if (roomType.availableRooms > 0) Color.Gray else Color.Red,
-                    fontSize = 14.sp
-                )
-            }
-
-            if (roomType.amenities.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Amenities: ${roomType.amenities.take(3).joinToString(", ")}",
-                    color = Color.Gray,
-                    fontSize = 12.sp,
-                    maxLines = 2
-                )
             }
         }
     }

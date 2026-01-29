@@ -41,6 +41,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -90,7 +91,6 @@ class AdminDashboardActivity : ComponentActivity() {
             val guideViewModel = remember { GuideViewModel(GuideRepoImpl()) }
             var selectedIndex by remember { mutableIntStateOf(0) }
             var selectedGuideForEdit by remember { mutableStateOf<GuideModel?>(null) }
-
             val context = LocalContext.current
             var showLogoutDialog by remember { mutableStateOf(false) }
 
@@ -159,6 +159,7 @@ class AdminDashboardActivity : ComponentActivity() {
                                     val items = listOf(
                                         Triple("Home", R.drawable.outline_home_24, "Home"),
                                         Triple("Add", R.drawable.addbox, "Add Guide"),
+                                        Triple("Hotels", R.drawable.outline_hotel_24, "Hotels"),
                                         Triple("Manage", R.drawable.outline_map_pin_review_24, "Manage Guides"),
                                         Triple("Users", R.drawable.profile, "Users List")
                                     )
@@ -184,8 +185,9 @@ class AdminDashboardActivity : ComponentActivity() {
                         selectedGuideForEdit != null -> EditGuideScreen(selectedGuideForEdit!!, guideViewModel) { selectedGuideForEdit = null }
                         selectedIndex == 0 -> AdminHomeFeed(postViewModel, userViewModel)
                         selectedIndex == 1 -> AddGuideScreen(guideViewModel)
-                        selectedIndex == 2 -> AdminGuideList(guideViewModel) { selectedGuideForEdit = it }
-                        selectedIndex == 3 -> AdminUsersList(userViewModel)
+                        selectedIndex == 2 -> AdminHotelScreen()
+                        selectedIndex == 3 -> AdminGuideList(guideViewModel) { selectedGuideForEdit = it }
+                        selectedIndex == 4 -> AdminUsersList(userViewModel)
                     }
                 }
             }
@@ -193,6 +195,25 @@ class AdminDashboardActivity : ComponentActivity() {
     }
 }
 
+@Composable
+fun AdminHotelScreen() {
+    val context = LocalContext.current
+    HotelScreen(
+        onAddHotel = {
+            // Start AddHotelActivity (the actual Activity, not a composable)
+            val intent = Intent(context, AddHotelActivity::class.java)
+            context.startActivity(intent)
+        },
+        onViewHotel = { hotelId ->
+            Toast.makeText(context, "View hotel: $hotelId", Toast.LENGTH_SHORT).show()
+            // You might want to navigate to a ViewHotelActivity here
+        },
+        onEditHotel = { hotelId ->
+            Toast.makeText(context, "Edit hotel: $hotelId", Toast.LENGTH_SHORT).show()
+            // You might want to navigate to an EditHotelActivity here
+        }
+    )
+}
 @Composable
 fun EditGuideScreen(guide: GuideModel, guideViewModel: GuideViewModel, onComplete: () -> Unit) {
     val context = LocalContext.current
@@ -766,6 +787,58 @@ fun AdminPostCard(post: MakePostModel, postViewModel: MakePostViewModel, userVie
 @Composable
 fun AdminPlaceholderScreen(title: String) {
     Box(modifier = Modifier.fillMaxSize().background(AdminDeepNavy), contentAlignment = Alignment.Center) { Text(text = title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp) }
+}
+
+@Composable
+fun AdminHomeScreen() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Welcome Admin",
+            style = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Manage your travel platform efficiently",
+            style = TextStyle(fontSize = 16.sp, color = AdminSoftGray)
+        )
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Quick stats or actions
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            StatCard(icon = Icons.Default.Person, label = "Users", value = "1.2K")
+            StatCard(icon = Icons.Default.LocationOn, label = "Guides", value = "45")
+            StatCard(icon = Icons.Default.Hotel, label = "Hotels", value = "89")
+        }
+    }
+}
+
+@Composable
+fun StatCard(icon: ImageVector, label: String, value: String) {
+    Card(
+        modifier = Modifier.size(100.dp),
+        colors = CardDefaults.cardColors(containerColor = AdminCardNavy),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(icon, null, tint = AdminAccentTeal, modifier = Modifier.size(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(value, color = Color.White, fontWeight = FontWeight.Bold)
+            Text(label, color = AdminSoftGray, fontSize = 12.sp)
+        }
+    }
 }
 
 @Preview(showBackground = true)

@@ -1,7 +1,7 @@
+// HotelRepo.kt
 package com.example.travium.repository
 
 import com.example.travium.model.HotelModel
-import com.example.travium.model.RoomType
 import com.google.firebase.firestore.DocumentSnapshot
 
 interface HotelRepo {

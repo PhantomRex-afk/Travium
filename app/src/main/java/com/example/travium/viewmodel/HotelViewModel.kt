@@ -1,56 +1,141 @@
+// HotelViewModel.kt
 package com.example.travium.viewmodel
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.travium.model.HotelModel
-import com.example.travium.repository.HotelRepo
 import com.example.travium.repository.HotelRepoImpl
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class HotelViewModel(
-    private val hotelRepo: HotelRepo = HotelRepoImpl()
-) : ViewModel() {
+// Rename to avoid conflict with AddHotelViewModel
+class HotelViewModel(private val hotelRepo: HotelRepoImpl) : ViewModel() {
 
-    private val _uiState = MutableLiveData<HotelUiState>(HotelUiState.Idle)
-    val uiState: LiveData<HotelUiState> = _uiState
+    private val _allHotels = MutableStateFlow<List<HotelModel>>(emptyList())
+    val allHotels: StateFlow<List<HotelModel>> = _allHotels.asStateFlow()
 
-    private val _hotels = MutableLiveData<List<HotelModel>>(emptyList())
-    val hotels: LiveData<List<HotelModel>> = _hotels
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    private val _selectedHotel = MutableLiveData<HotelModel?>()
-    val selectedHotel: LiveData<HotelModel?> = _selectedHotel
+    private val _selectedHotel = MutableStateFlow<HotelModel?>(null)
+    val selectedHotel: StateFlow<HotelModel?> = _selectedHotel.asStateFlow()
 
-    private val _searchResults = MutableLiveData<List<HotelModel>>(emptyList())
-    val searchResults: LiveData<List<HotelModel>> = _searchResults
+    init {
+        getAllHotels()
+    }
 
     fun getAllHotels() {
-        _uiState.value = HotelUiState.Loading
-
         viewModelScope.launch {
-            hotelRepo.getAllHotels { result ->
-                result.onSuccess { hotels ->
-                    _hotels.value = hotels
-                    _uiState.value = HotelUiState.Success("Hotels loaded")
-                }.onFailure { exception ->
-                    _uiState.value = HotelUiState.Error("Failed to load hotels: ${exception.message}")
+            _isLoading.value = true
+            try {
+                hotelRepo.getAllHotels { result ->
+                    result.onSuccess { hotels ->
+                        _allHotels.value = hotels
+                    }.onFailure { error ->
+                        error.printStackTrace()
+                    }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                _isLoading.value = false
             }
         }
     }
 
     fun getHotelById(hotelId: String) {
-        _uiState.value = HotelUiState.Loading
-
         viewModelScope.launch {
-            hotelRepo.getHotelById(hotelId) { result ->
-                result.onSuccess { hotel ->
-                    _selectedHotel.value = hotel
-                    _uiState.value = HotelUiState.Success("Hotel details loaded")
-                }.onFailure { exception ->
-                    _uiState.value = HotelUiState.Error("Failed to load hotel: ${exception.message}")
+            _isLoading.value = true
+            try {
+                hotelRepo.getHotelById(hotelId) { result ->
+                    result.onSuccess { hotel ->
+                        _selectedHotel.value = hotel
+                    }.onFailure { error ->
+                        error.printStackTrace()
+                        _selectedHotel.value = null
+                    }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _selectedHotel.value = null
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun addHotel(
+        context: Context,
+        hotel: HotelModel,
+        imageUris: List<Uri>,
+        callback: (Boolean, String) -> Unit
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val success = hotelRepo.addHotel(context, hotel, imageUris)
+                if (success) {
+                    getAllHotels() // Refresh the list
+                    callback(true, "Hotel added successfully!")
+                } else {
+                    callback(false, "Failed to add hotel")
+                }
+            } catch (e: Exception) {
+                callback(false, "Error: ${e.message}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun updateHotel(
+        context: Context,
+        hotelId: String,
+        hotel: HotelModel,
+        imageUris: List<Uri> = emptyList(),
+        callback: (Boolean, String) -> Unit
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val success = hotelRepo.updateHotel(context, hotelId, hotel, imageUris)
+                if (success) {
+                    getAllHotels()
+                    callback(true, "Hotel updated successfully!")
+                } else {
+                    callback(false, "Failed to update hotel")
+                }
+            } catch (e: Exception) {
+                callback(false, "Error: ${e.message}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun deleteHotel(
+        hotelId: String,
+        callback: (Boolean, String) -> Unit
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                hotelRepo.deleteHotel(hotelId) { result ->
+                    result.onSuccess {
+                        getAllHotels() // Refresh the list
+                        callback(true, "Hotel deleted successfully!")
+                    }.onFailure { error ->
+                        callback(false, "Failed to delete hotel: ${error.message}")
+                    }
+                }
+            } catch (e: Exception) {
+                callback(false, "Error: ${e.message}")
+            } finally {
+                _isLoading.value = false
             }
         }
     }
@@ -62,53 +147,28 @@ class HotelViewModel(
         maxPrice: Double? = null,
         guests: Int? = null
     ) {
-        _uiState.value = HotelUiState.Loading
-
         viewModelScope.launch {
-            hotelRepo.searchHotels(city, country, minPrice, maxPrice, guests) { result ->
-                result.onSuccess { hotels ->
-                    _searchResults.value = hotels
-                    _uiState.value = HotelUiState.Success("Search completed")
-                }.onFailure { exception ->
-                    _uiState.value = HotelUiState.Error("Search failed: ${exception.message}")
+            _isLoading.value = true
+            try {
+                hotelRepo.searchHotels(city, country, minPrice, maxPrice, guests) { result ->
+                    result.onSuccess { hotels ->
+                        // For search, you might want to store in a separate state
+                        // For now, we'll just update the main list
+                        _allHotels.value = hotels
+                    }.onFailure { error ->
+                        error.printStackTrace()
+                    }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                _isLoading.value = false
             }
         }
     }
 
-    fun setSelectedHotel(hotel: HotelModel?) {
-        _selectedHotel.value = hotel
+    // Helper method to get hotel by ID from current state
+    fun getHotelByIdFromState(hotelId: String): HotelModel? {
+        return _allHotels.value.find { it.hotelId == hotelId }
     }
-
-    fun clearSearchResults() {
-        _searchResults.value = emptyList()
-    }
-
-    fun clearUiState() {
-        _uiState.value = HotelUiState.Idle
-    }
-
-    // Start real-time listeners for hotel owners
-    fun startListeningToOwnerHotels(ownerId: String) {
-        hotelRepo.listenToHotelsByOwner(ownerId) { hotels ->
-            _hotels.value = hotels
-        }
-    }
-
-    fun stopListening() {
-        hotelRepo.stopListening()
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        stopListening()
-    }
-}
-
-sealed class HotelUiState {
-    object Idle : HotelUiState()
-    object Loading : HotelUiState()
-    data class Success(val message: String) : HotelUiState()
-    data class Error(val message: String) : HotelUiState()
-    data class HotelSelected(val hotel: HotelModel) : HotelUiState()
 }
