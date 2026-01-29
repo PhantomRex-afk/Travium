@@ -41,7 +41,6 @@
         <activity android:name=".view.OtherUserProfileActivity" android:exported="false" />
         <activity android:name=".view.GuideProfileScreen" android:exported="true" />
         <activity android:name=".view.GuideRegistrationActivity" android:exported="true" />
-        <activity android:name=".view.AdminNotificationActivity" android:exported="false" />
         <activity android:name=".view.CustomerSupportActivity" android:exported="false" />
         <activity android:name=".view.AdminDashboardActivity" android:exported="false" />
         <activity android:name=".view.FavouriteActivity" android:exported="false" />
@@ -50,7 +49,6 @@
         <activity android:name=".view.DisplayTripGroupActivity" android:exported="false" />
         <activity android:name=".view.SetTripGroupActivity" android:exported="false" />
         <activity android:name=".view.MainActivity" android:exported="false" />
-        <activity android:name=".view.ProfileActivity" android:exported="false" />
         <activity android:name=".view.ChatListScreen" android:exported="false" />
         <activity android:name=".view.ChatScreen" android:exported="false" />
         <activity android:name=".view.ChatBox" android:exported="false" />
