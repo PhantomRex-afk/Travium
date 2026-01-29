@@ -1,5 +1,6 @@
 package com.example.travium.view
 
+import android.content.Intent
 import android.location.Geocoder
 import android.net.Uri
 import android.os.Bundle
@@ -90,6 +91,38 @@ class AdminDashboardActivity : ComponentActivity() {
             var selectedIndex by remember { mutableIntStateOf(0) }
             var selectedGuideForEdit by remember { mutableStateOf<GuideModel?>(null) }
 
+            val context = LocalContext.current
+            var showLogoutDialog by remember { mutableStateOf(false) }
+
+            if (showLogoutDialog) {
+                AlertDialog(
+                    onDismissRequest = { showLogoutDialog = false },
+                    containerColor = AdminCardNavy,
+                    title = { Text("Logout", color = Color.White) },
+                    text = { Text("Are you sure you want to logout?", color = AdminSoftGray) },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                showLogoutDialog = false
+                                val intent = Intent(context, LoginActivity::class.java)
+                                intent.flags =
+                                    Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                context.startActivity(intent)
+                                finish()
+                            }
+                        ) {
+                            Text("Logout", color = AdminAlertRed)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showLogoutDialog = false }) {
+                            Text("Cancel", color = AdminSoftGray)
+                        }
+                    }
+                )
+            }
+
+
             Scaffold(
                 containerColor = AdminDeepNavy,
                 topBar = {
@@ -109,7 +142,9 @@ class AdminDashboardActivity : ComponentActivity() {
                                             Icon(Icons.Default.ArrowBack, null, tint = Color.White)
                                         }
                                     }
-                                }
+                                },
+                                actions = { IconButton(onClick = { /* Handle Notifications */ }) { BadgedBox( badge = { } ) { Icon( painter = painterResource(R.drawable.notification), contentDescription = "Notifications", tint = Color.White ) } }
+                                    IconButton(onClick = { showLogoutDialog = true }) { Icon( imageVector = Icons.Default.Logout, contentDescription = "Logout", tint = Color.White ) } }
                             )
                             HorizontalDivider(color = Color.White.copy(alpha = 0.1f), thickness = 0.5.dp)
                         }
