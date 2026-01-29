@@ -19,4 +19,6 @@
     <string name="title_activity_add_favourite">AddFavouriteActivity</string>
     <string name="title_activity_admin_dashboard">AdminDashboardActivity</string>
     <string name="title_activity_change_password">ChangePasswordActivity</string>
+    <string name="title_activity_admin_notification">AdminNotificationActivity</string>
+    <string name="title_activity_customer_support">CustomerSupportActivity</string>
 </resources>
