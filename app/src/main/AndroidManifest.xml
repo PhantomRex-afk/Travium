@@ -21,8 +21,6 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyAFkQIPVR4sRSnGM71XWWZwxSYa5SmPuVU" />
 
-
-
         <activity
             android:name=".view.SplashActivity"
             android:exported="true"
@@ -33,221 +31,30 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".view.LoginActivity"
-            android:exported="true"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".view.RegisterActivity"
-            android:exported="true"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".view.ForgetPasswordActivity"
-            android:exported="true"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".view.HomePageActivity"
-            android:exported="true"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".view.SettingsActivity"
-            android:exported="true"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".view.EditProfileActivity"
-            android:exported="true"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".view.ChangePasswordActivity"
-            android:exported="true"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".view.OtherUserProfileActivity"
-            android:exported="true"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".view.AdminNotificationActivity"
-            android:exported="true"
-            android:label="@string/title_activity_admin_notification"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".view.CustomerSupportActivity"
-            android:exported="true"
-            android:label="@string/title_activity_customer_support"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-        <activity
-            android:name=".view.AdminDashboardActivity"
-            android:exported="true"
-            android:label="@string/title_activity_admin_dashboard"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".view.FavouriteActivity"
-            android:exported="true"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".view.AddFavouriteActivity"
-            android:exported="true"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".view.ReportActivity"
-            android:exported="true"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".view.DisplayTripGroupActivity"
-            android:exported="true"
-            android:label="@string/title_activity_display_trip_group"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".view.SetTripGroupActivity"
-            android:exported="true"
-            android:label="@string/title_activity_set_trip_group"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".view.MainActivity"
-            android:exported="true"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".view.ProfileActivity"
-            android:exported="true"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".view.ChatListScreen"
-            android:exported="true"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".view.ChatScreen"
-            android:exported="true"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".view.ChatBox"
-            android:exported="true"
-            android:theme="@style/Theme.Travium">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
+        <activity android:name=".view.LoginActivity" android:exported="false" />
+        <activity android:name=".view.RegisterActivity" android:exported="false" />
+        <activity android:name=".view.ForgetPasswordActivity" android:exported="false" />
+        <activity android:name=".view.HomePageActivity" android:exported="false" />
+        <activity android:name=".view.SettingsActivity" android:exported="false" />
+        <activity android:name=".view.EditProfileActivity" android:exported="false" />
+        <activity android:name=".view.ChangePasswordActivity" android:exported="false" />
+        <activity android:name=".view.OtherUserProfileActivity" android:exported="false" />
+        <activity android:name=".view.GuideProfileScreen" android:exported="true" />
+        <activity android:name=".view.GuideRegistrationActivity" android:exported="true" />
+        <activity android:name=".view.AdminNotificationActivity" android:exported="false" />
+        <activity android:name=".view.CustomerSupportActivity" android:exported="false" />
+        <activity android:name=".view.AdminDashboardActivity" android:exported="false" />
+        <activity android:name=".view.FavouriteActivity" android:exported="false" />
+        <activity android:name=".view.AddFavouriteActivity" android:exported="false" />
+        <activity android:name=".view.ReportActivity" android:exported="false" />
+        <activity android:name=".view.DisplayTripGroupActivity" android:exported="false" />
+        <activity android:name=".view.SetTripGroupActivity" android:exported="false" />
+        <activity android:name=".view.MainActivity" android:exported="false" />
+        <activity android:name=".view.ProfileActivity" android:exported="false" />
+        <activity android:name=".view.ChatListScreen" android:exported="false" />
+        <activity android:name=".view.ChatScreen" android:exported="false" />
+        <activity android:name=".view.ChatBox" android:exported="false" />
+        
     </application>
 
 </manifest>

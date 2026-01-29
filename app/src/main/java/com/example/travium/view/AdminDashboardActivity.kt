@@ -46,12 +46,14 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.travium.R
 import com.example.travium.model.AdminNotificationModel
 import com.example.travium.model.MakePostModel
+import com.example.travium.model.ReportModel
 import com.example.travium.model.UserModel
 import com.example.travium.repository.AdminNotificationRepoImpl
 import com.example.travium.repository.MakePostRepoImpl
 import com.example.travium.repository.UserRepoImpl
 import com.example.travium.viewmodel.AdminNotificationViewModel
 import com.example.travium.viewmodel.MakePostViewModel
+import com.example.travium.viewmodel.NotificationViewModel
 import com.example.travium.viewmodel.UserViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -80,6 +82,7 @@ class AdminDashboardActivity : ComponentActivity() {
             val adminNotifyViewModel: AdminNotificationViewModel = viewModel {
                 AdminNotificationViewModel(AdminNotificationRepoImpl())
             }
+            val reportsViewModel: NotificationViewModel = viewModel()
 
             var selectedIndex by remember { mutableIntStateOf(0) }
             var showNotifications by remember { mutableStateOf(false) }
@@ -219,7 +222,10 @@ class AdminDashboardActivity : ComponentActivity() {
                     enter = slideInVertically(animationSpec = tween(durationMillis = 300)) { fullHeight -> -fullHeight },
                     exit = slideOutVertically(animationSpec = tween(durationMillis = 300)) { fullHeight -> -fullHeight }
                 ) {
-                    AdminNotificationPanel(viewModel = adminNotifyViewModel)
+                    AdminNotificationAndReportPanel(
+                        adminNotifyViewModel = adminNotifyViewModel,
+                        reportsViewModel = reportsViewModel
+                    )
                 }
             }
         }
@@ -227,47 +233,93 @@ class AdminDashboardActivity : ComponentActivity() {
 }
 
 @Composable
-fun AdminNotificationPanel(viewModel: AdminNotificationViewModel) {
-    val notifications by viewModel.notifications.collectAsState()
-    val isLoading by viewModel.loading.collectAsState()
-    var showSendDialog by remember { mutableStateOf(false) }
+fun AdminNotificationAndReportPanel(
+    adminNotifyViewModel: AdminNotificationViewModel,
+    reportsViewModel: NotificationViewModel
+) {
+    var selectedTab by remember { mutableIntStateOf(0) }
+    val tabs = listOf("Broadcast Alerts", "User Reports")
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .fillMaxHeight(0.7f)
+            .fillMaxHeight(0.8f)
             .padding(top = 100.dp, start = 12.dp, end = 12.dp, bottom = 12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
         colors = CardDefaults.cardColors(containerColor = AdminCardNavy),
         shape = RoundedCornerShape(24.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        Column {
+            TabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = Color.Transparent,
+                contentColor = AdminAccentTeal,
+                divider = {},
+                indicator = { tabPositions ->
+                    SecondaryIndicator(
+                        Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                        color = AdminAccentTeal
+                    )
+                }
             ) {
-                Text("Sent Notifications", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                IconButton(onClick = { showSendDialog = true }) {
-                    Icon(Icons.Default.Add, contentDescription = "Send New", tint = AdminAccentTeal)
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTab == index,
+                        onClick = { selectedTab = index },
+                        text = {
+                            Text(
+                                title,
+                                style = TextStyle(
+                                    fontSize = 14.sp,
+                                    fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal
+                                )
+                            )
+                        },
+                        unselectedContentColor = AdminSoftGray
+                    )
                 }
             }
-            
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color.White.copy(alpha = 0.1f))
 
-            if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = AdminAccentTeal)
+            Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                when (selectedTab) {
+                    0 -> AdminBroadcastTab(adminNotifyViewModel)
+                    1 -> AdminReportsTab(reportsViewModel)
                 }
-            } else if (notifications.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No history found", color = AdminSoftGray)
-                }
-            } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    items(notifications) { notification ->
-                        AdminNotifyItem(notification, onDelete = { viewModel.deleteNotification(notification.notificationId) })
-                    }
+            }
+        }
+    }
+}
+
+@Composable
+fun AdminBroadcastTab(viewModel: AdminNotificationViewModel) {
+    val notifications by viewModel.notifications.collectAsState()
+    val isLoading by viewModel.loading.collectAsState()
+    var showSendDialog by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Broadcast History", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            IconButton(onClick = { showSendDialog = true }) {
+                Icon(Icons.Default.Add, contentDescription = "Send New", tint = AdminAccentTeal)
+            }
+        }
+
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = AdminAccentTeal)
+            }
+        } else if (notifications.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("No alerts sent yet", color = AdminSoftGray)
+            }
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                items(notifications) { notification ->
+                    AdminNotifyItem(notification, onDelete = { viewModel.deleteNotification(notification.notificationId) })
                 }
             }
         }
@@ -281,7 +333,7 @@ fun AdminNotificationPanel(viewModel: AdminNotificationViewModel) {
         AlertDialog(
             onDismissRequest = { showSendDialog = false },
             containerColor = AdminCardNavy,
-            title = { Text("Global Alert", color = Color.White) },
+            title = { Text("New System Alert", color = Color.White) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
@@ -323,7 +375,7 @@ fun AdminNotificationPanel(viewModel: AdminNotificationViewModel) {
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = AdminAccentTeal)
                 ) {
-                    Text("Broadcast")
+                    Text("Send Alert")
                 }
             },
             dismissButton = {
@@ -332,6 +384,80 @@ fun AdminNotificationPanel(viewModel: AdminNotificationViewModel) {
                 }
             }
         )
+    }
+}
+
+@Composable
+fun AdminReportsTab(viewModel: NotificationViewModel) {
+    val reports by viewModel.reports.collectAsState()
+    val loading by viewModel.loading.collectAsState()
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Text("User Safety Reports", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.padding(bottom = 12.dp))
+
+        if (loading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = AdminAccentTeal)
+            }
+        } else if (reports.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Clean sheet! No reports found.", color = AdminSoftGray)
+            }
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                items(reports) { report ->
+                    AdminReportItem(report)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AdminReportItem(report: ReportModel) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = AdminDeepNavy)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "URGENT REPORT",
+                    fontWeight = FontWeight.Bold,
+                    color = AdminAlertRed,
+                    fontSize = 10.sp
+                )
+                Text(
+                    text = SimpleDateFormat("MMM dd, HH:mm", Locale.getDefault()).format(Date(report.timestamp)),
+                    fontSize = 10.sp,
+                    color = AdminSoftGray
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = "Reason: ${report.reason}", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+            Text(text = "Reported ID: ${report.reportedUserId}", color = AdminSoftGray, fontSize = 11.sp)
+            
+            if (report.additionalDetails.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(AdminCardNavy, RoundedCornerShape(8.dp))
+                        .padding(8.dp)
+                ) {
+                    Text(
+                        text = report.additionalDetails,
+                        fontSize = 12.sp,
+                        color = Color.White.copy(alpha = 0.8f)
+                    )
+                }
+            }
+        }
     }
 }
 
