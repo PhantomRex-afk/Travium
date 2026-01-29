@@ -31,4 +31,5 @@ interface UserRepo {
     fun getFollowersCount(userId: String, callback: (Long) -> Unit)
     fun getFollowingCount(userId: String, callback: (Long) -> Unit)
     fun isFollowing(currentUserId: String, targetUserId: String, callback: (Boolean) -> Unit)
+    fun searchUsers(query: String, callback: (List<UserModel>) -> Unit)
 }
