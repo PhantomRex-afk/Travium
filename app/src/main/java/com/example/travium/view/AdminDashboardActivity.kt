@@ -71,7 +71,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-// Note: TRAVEL_MAP_STYLE is defined in GuideScreen.kt to avoid conflict
+// Note: Map styles are centrally defined in MapStyles.kt
 
 // Enhanced Admin-themed colors
 val AdminDeepNavy = Color(0xFF0F172A)
@@ -172,13 +172,17 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
     var selectedImageUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var isPublishing by remember { mutableStateOf(false) }
     
+    // Map State
     var destinationLocation by remember { mutableStateOf<LatLng?>(null) }
     val hotelLocations = remember { mutableStateListOf<HotelLocation>() }
     var showHotelNameDialog by remember { mutableStateOf<LatLng?>(null) }
     var tempHotelName by remember { mutableStateOf("") }
     var mapType by remember { mutableStateOf(MapType.NORMAL) }
     
+    // Search States
     var placeSearchQuery by remember { mutableStateOf("") }
+    var hotelSearchQuery by remember { mutableStateOf("") }
+    val foundHotels = remember { mutableStateListOf<HotelLocation>() }
 
     val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.PickMultipleVisualMedia()) { uris -> selectedImageUris = uris }
     val cameraPositionState = rememberCameraPositionState { position = CameraPosition.fromLatLngZoom(LatLng(28.3949, 84.1240), 7f) }
@@ -186,7 +190,7 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
     val searchPlace = {
         coroutineScope.launch {
             try {
-                val query = if (placeSearchQuery.lowercase().contains("nepal")) placeSearchQuery else "${placeSearchQuery}, Nepal"
+                val query = if (placeSearchQuery.lowercase().contains("nepal")) placeSearchQuery else "$placeSearchQuery, Nepal"
                 val addresses = withContext(Dispatchers.IO) {
                     geocoder.getFromLocationName(query, 1)
                 }
@@ -194,7 +198,7 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                     val address = addresses[0]
                     val latLng = LatLng(address.latitude, address.longitude)
                     destinationLocation = latLng
-                    cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(latLng, 15f))
+                    cameraPositionState.animate(CameraUpdateFactory.newLatLngZoom(latLng, 14f))
                     if (placeName.isBlank()) placeName = address.featureName ?: ""
                 } else {
                     Toast.makeText(context, "Place not found in Nepal", Toast.LENGTH_SHORT).show()
@@ -205,18 +209,46 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
         }
     }
 
+    val searchExistingHotels = {
+        coroutineScope.launch {
+            try {
+                if (destinationLocation == null) {
+                    Toast.makeText(context, "Pin a destination first", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                val query = if (hotelSearchQuery.isNotBlank()) hotelSearchQuery else "Hotels"
+                val results = withContext(Dispatchers.IO) {
+                    geocoder.getFromLocationName("$query near $placeName", 10)
+                }
+                foundHotels.clear()
+                results?.forEach { addr ->
+                    foundHotels.add(HotelLocation(addr.featureName ?: "Hotel", addr.latitude, addr.longitude))
+                }
+                if (foundHotels.isEmpty()) Toast.makeText(context, "No hotels found nearby", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(context, "Hotel search failed", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     if (showHotelNameDialog != null) {
         AlertDialog(
             onDismissRequest = { showHotelNameDialog = null },
             containerColor = AdminCardNavy,
-            title = { Text("Hotel Name", color = Color.White) },
+            title = { Text("Set Recommendation Name", color = Color.White, fontWeight = FontWeight.Bold) },
             text = {
-                OutlinedTextField(
-                    value = tempHotelName,
-                    onValueChange = { tempHotelName = it },
-                    label = { Text("Enter hotel name") },
-                    colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = AdminAccentTeal)
-                )
+                Column {
+                    Text("What should the users see as the name for this pin?", color = AdminSoftGray, fontSize = 14.sp)
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = tempHotelName,
+                        onValueChange = { tempHotelName = it },
+                        label = { Text("Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedBorderColor = AdminAccentTeal),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
             },
             confirmButton = {
                 TextButton(onClick = {
@@ -225,7 +257,10 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                         tempHotelName = ""
                         showHotelNameDialog = null
                     }
-                }) { Text("Add", color = AdminAccentTeal) }
+                }) { Text("Confirm Pin", color = AdminAccentTeal, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showHotelNameDialog = null }) { Text("Cancel", color = Color.White) }
             }
         )
     }
@@ -242,6 +277,7 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
             shape = RoundedCornerShape(12.dp)
         )
 
+        // Integrated Image Picker
         Card(modifier = Modifier.fillMaxWidth().height(160.dp), colors = CardDefaults.cardColors(containerColor = AdminCardNavy), shape = RoundedCornerShape(16.dp)) {
             if (selectedImageUris.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize().clickable { launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }, contentAlignment = Alignment.Center) {
@@ -269,11 +305,13 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
             }
         }
 
+        // Map Section with Search
         Column {
-            Text("Set Location & Hotels", color = Color.White, fontWeight = FontWeight.Bold)
+            Text("Set Location & Recommendations", color = Color.White, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             Box(modifier = Modifier.fillMaxWidth().height(450.dp).clip(RoundedCornerShape(20.dp)).border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(20.dp))) {
                 Column {
+                    // Place Search Bar
                     OutlinedTextField(
                         value = placeSearchQuery,
                         onValueChange = { placeSearchQuery = it },
@@ -292,6 +330,27 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                         shape = RoundedCornerShape(8.dp)
                     )
 
+                    // Hotel Search Bar (only shows if destination is pinned)
+                    if (destinationLocation != null) {
+                        OutlinedTextField(
+                            value = hotelSearchQuery,
+                            onValueChange = { hotelSearchQuery = it },
+                            placeholder = { Text("Find real hotels nearby...", color = AdminSoftGray, fontSize = 12.sp) },
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
+                            leadingIcon = { Icon(Icons.Default.LocationOn, null, tint = AdminAccentTeal, modifier = Modifier.size(18.dp)) },
+                            trailingIcon = { 
+                                IconButton(onClick = { searchExistingHotels() }) { 
+                                    Icon(Icons.Default.Add, "Search Hotels", tint = AdminAccentTeal) 
+                                } 
+                            },
+                            colors = OutlinedTextFieldDefaults.colors(focusedTextColor = Color.White, unfocusedTextColor = Color.White, focusedContainerColor = AdminCardNavy, unfocusedContainerColor = AdminCardNavy),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            keyboardActions = KeyboardActions(onSearch = { searchExistingHotels() }),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                    }
+
                     Box(modifier = Modifier.fillMaxSize()) {
                         GoogleMap(
                             modifier = Modifier.fillMaxSize(),
@@ -300,7 +359,14 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                                 mapStyleOptions = MapStyleOptions(TRAVEL_MAP_STYLE),
                                 mapType = mapType
                             ),
-                            onMapLongClick = { latLng -> if (destinationLocation == null) destinationLocation = latLng else showHotelNameDialog = latLng }
+                            onMapLongClick = { latLng -> 
+                                if (destinationLocation == null) {
+                                    destinationLocation = latLng
+                                } else {
+                                    showHotelNameDialog = latLng
+                                    tempHotelName = ""
+                                }
+                            }
                         ) {
                             destinationLocation?.let { LatLngPos ->
                                 Marker(
@@ -310,15 +376,34 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                                 ) 
                             }
                             
+                            // Found Hotels Pins (Green pins from search results)
+                            foundHotels.forEach { hotel ->
+                                Marker(
+                                    state = rememberMarkerState(key = "found_${hotel.latitude}_${hotel.longitude}", position = LatLng(hotel.latitude, hotel.longitude)),
+                                    title = hotel.name,
+                                    snippet = "Tap to Mark & Name",
+                                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN),
+                                    onClick = { 
+                                        if (!hotelLocations.any { it.latitude == hotel.latitude }) {
+                                            showHotelNameDialog = LatLng(hotel.latitude, hotel.longitude)
+                                            tempHotelName = hotel.name
+                                        }
+                                        true
+                                    }
+                                )
+                            }
+
+                            // Recommended Pins (Orange pins officially added)
                             hotelLocations.forEach { hotelLoc ->
                                 Marker(
-                                    state = rememberMarkerState(key = "admin_add_${hotelLoc.name}", position = LatLng(hotelLoc.latitude, hotelLoc.longitude)), 
+                                    state = rememberMarkerState(key = "added_${hotelLoc.latitude}_${hotelLoc.longitude}", position = LatLng(hotelLoc.latitude, hotelLoc.longitude)), 
                                     title = hotelLoc.name, 
                                     icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)
                                 ) 
                             }
                         }
                         
+                        // Map Type Toggles
                         Column(modifier = Modifier.align(Alignment.TopStart).padding(8.dp).background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(8.dp))) {
                             IconButton(onClick = { mapType = MapType.NORMAL }) { Icon(Icons.Default.Map, null, tint = if (mapType == MapType.NORMAL) AdminAccentTeal else Color.White) }
                             IconButton(onClick = { mapType = MapType.HYBRID }) { Icon(Icons.Default.Satellite, null, tint = if (mapType == MapType.HYBRID) AdminAccentTeal else Color.White) }
@@ -328,6 +413,7 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                 }
             }
             
+            // Pinned Hotels Chip List
             if (hotelLocations.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -361,7 +447,11 @@ fun AddGuideScreen(guideViewModel: GuideViewModel) {
                 guideViewModel.addGuide(context, placeName, selectedImageUris, accommodations) { success, message ->
                     isPublishing = false
                     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                    if (success) { placeName = ""; accommodations = ""; selectedImageUris = emptyList(); destinationLocation = null; hotelLocations.clear(); placeSearchQuery = "" }
+                    if (success) { 
+                        placeName = ""; accommodations = ""; selectedImageUris = emptyList()
+                        destinationLocation = null; hotelLocations.clear(); foundHotels.clear()
+                        placeSearchQuery = ""; hotelSearchQuery = ""
+                    }
                 }
             },
             enabled = !isPublishing,
@@ -418,7 +508,7 @@ fun AdminGuideCard(guide: GuideModel, onDelete: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) { 
                     Icon(Icons.Default.LocationOn, null, tint = AdminAccentTeal, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = guide.placeName, color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 18.sp) 
+                    Text(text = guide.placeName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp) 
                 }
                 Row {
                     IconButton(onClick = { isExpanded = !isExpanded }) {

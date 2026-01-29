@@ -1,5 +1,6 @@
 package com.example.travium.view
 
+// Retro/Clean Travel Map Style JSON (Similar to your reference image)
 const val TRAVEL_MAP_STYLE = """
 [
   { "elementType": "geometry", "stylers": [ { "color": "#ebe3cd" } ] },
@@ -17,6 +18,7 @@ const val TRAVEL_MAP_STYLE = """
 ]
 """
 
+// Custom Dark Map Style JSON
 const val MIDNIGHT_MAP_STYLE = """
 [
   { "elementType": "geometry", "stylers": [ { "color": "#212121" } ] },
@@ -36,7 +38,7 @@ const val MIDNIGHT_MAP_STYLE = """
   { "featureType": "road.highway.controlled_access", "elementType": "geometry", "stylers": [ { "color": "#4e4e4e" } ] },
   { "featureType": "road.local", "elementType": "labels.text.fill", "stylers": [ { "color": "#616161" } ] },
   { "featureType": "transit", "elementType": "labels.text.fill", "stylers": [ { "color": "#757575" } ] },
-  { "featureType": "water", "elementType": "geometry", "stylers": [ { "color": "#000000" } ] },
+  { "featureType": "water", "elementType": "geometry.fill", "stylers": [ { "color": "#000000" } ] },
   { "featureType": "water", "elementType": "labels.text.fill", "stylers": [ { "color": "#3d3d3d" } ] }
 ]
 """

@@ -124,7 +124,7 @@ fun UserGuideCard(guide: GuideModel) {
                 }
             }
 
-            // Expanded Content: Discovery Map & Details
+            // Expanded Content: Midnight Map & Details
             AnimatedVisibility(visible = isExpanded) {
                 Column(modifier = Modifier.padding(top = 16.dp)) {
                     Text("Close-up Map View", color = TravelAccentTeal, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
