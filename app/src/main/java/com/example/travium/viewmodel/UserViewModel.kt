@@ -11,6 +11,9 @@ class UserViewModel(private val repo: UserRepo) : ViewModel() {
     private val _allUsers = MutableLiveData<List<UserModel>>()
     val allUsers: LiveData<List<UserModel>> = _allUsers
 
+    private val _userData = MutableLiveData<UserModel?>()
+    val userData: LiveData<UserModel?> = _userData
+
     fun login(
         email: String, password: String,
         callback: (Boolean, String) -> Unit
@@ -44,15 +47,18 @@ class UserViewModel(private val repo: UserRepo) : ViewModel() {
     }
 
     fun getUserById(userId: String, callback: (UserModel?) -> Unit) {
-        repo.getUserById(userId, callback)
+        repo.getUserById(userId) { user ->
+            _userData.postValue(user)
+            callback(user)
+        }
     }
 
     fun getAllUsers() {
         repo.getAllUsers { success, message, userList ->
             if (success && userList != null) {
-                _allUsers.value = userList
+                _allUsers.postValue(userList)
             } else {
-                _allUsers.value = emptyList()
+                _allUsers.postValue(emptyList())
             }
         }
     }

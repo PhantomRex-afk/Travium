@@ -478,7 +478,7 @@ fun GuideRegistrationScreen(
                         modifier = Modifier
                             .padding(bottom = 24.dp)
                             .clickable { 
-                                val intent = Intent(context, HomePageActivity::class.java)
+                                val intent = Intent(context, LoginActivity::class.java)
                                 context.startActivity(intent)
                             }
                     )
