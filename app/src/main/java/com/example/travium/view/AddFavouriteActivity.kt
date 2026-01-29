@@ -24,7 +24,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -49,9 +48,9 @@ import com.example.travium.repository.FavouriteRepositoryImpl
 import com.example.travium.ui.theme.TraviumTheme
 import com.example.travium.viewmodel.FavouriteViewModel
 import com.example.travium.viewmodel.FavouriteViewModelFactory
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.database.ktx.database
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
+import com.google.firebase.database.database
 
 class AddFavouriteActivity : ComponentActivity() {
 

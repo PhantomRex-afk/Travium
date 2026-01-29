@@ -25,4 +25,9 @@
     <string name="title_activity_chat_screen">ChatScreen</string>
     <string name="title_activity_main2">MainActivity2</string>
     <string name="title_activity_create_group_chat">CreateGroupChatActivity</string>
+    <string name="title_activity_create_booking">CreateBookingActivity</string>
+    <string name="title_activity_hotel_selection">HotelSelectionActivity</string>
+    <string name="title_activity_add_hotel">AddHotelActivity</string>
+    <string name="title_activity_add_hotel_screen">AddHotelScreen</string>
+    <string name="title_activity_hotel">HotelActivity</string>
 </resources>

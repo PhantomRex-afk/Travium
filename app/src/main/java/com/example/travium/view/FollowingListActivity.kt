@@ -1,6 +1,7 @@
 package com.example.travium.view
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -26,9 +27,7 @@ import androidx.compose.material3.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -43,8 +42,6 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.delay
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 data class FollowingUi(
     val id: String,
@@ -52,9 +49,7 @@ data class FollowingUi(
     val username: String,
     val profileImageUrl: String?,
     val lastActive: String? = null,
-    val isOnline: Boolean = false,
-    val mutualFriends: Int = 0,
-    val isLoaded: Boolean = true
+    val isOnline: Boolean = false
 )
 
 class FollowingListActivity : ComponentActivity() {
@@ -76,19 +71,16 @@ fun FollowingListBody() {
     val listState = rememberLazyListState()
 
     // Premium color palette
+    val darkNavy = Color(0xFF000033)
     val primaryBlue = Color(0xFF0EA5E9)
-    val secondaryBlue = Color(0xFF38BDF8)
-    val accentBlue = Color(0xFF7DD3FC)
-    val bgColor = Color(0xFFFAFAFA)
-    val cardBg = Color(0xFFFFFFFF)
-    val bubbleColor = primaryBlue.copy(alpha = 0.1f)
-    val textPrimary = Color(0xFF1E293B)
-    val textSecondary = Color(0xFF64748B)
-    val textTertiary = Color(0xFF94A3B8)
+    val bgColor = darkNavy
+    val cardBg = Color(0xFF1E293B)
+    val textPrimary = Color.White
+    val textSecondary = Color(0xFF94A3B8)
+    val textTertiary = Color(0xFF64748B)
 
     var searchQuery by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
-    var selectedUser by remember { mutableStateOf<FollowingUi?>(null) }
 
     // Get intent extras
     val activity = context as? ComponentActivity
@@ -106,7 +98,7 @@ fun FollowingListBody() {
     LaunchedEffect(userId) {
         if (userId.isNotEmpty()) {
             loadFollowing(userId, userRepository) { following ->
-                followingDetails = following
+                followingDetails = following.filter { it.id != userId } // Exclude self from the list
                 isLoading = false
             }
         } else {
@@ -134,7 +126,7 @@ fun FollowingListBody() {
                 onSearchToggle = { isSearching = !isSearching },
                 onClearSearch = { searchQuery = "" },
                 onBackClick = { (context as? ComponentActivity)?.finish() },
-                title = "Following (${followingDetails.size})"
+                title = "Following (${filteredFollowing.size})"
             )
         }
     ) { padding ->
@@ -167,7 +159,6 @@ fun FollowingListBody() {
                                 index = index,
                                 primaryBlue = primaryBlue,
                                 cardBg = cardBg,
-                                bubbleColor = bubbleColor,
                                 textPrimary = textPrimary,
                                 textSecondary = textSecondary,
                                 textTertiary = textTertiary,
@@ -202,7 +193,11 @@ fun FollowingListBody() {
                                 },
                                 context = context,
                                 isOwnProfile = isOwnProfile,
-                                onClick = { selectedUser = following }
+                                onClick = {
+                                    val intent = Intent(context, ProfileActivity::class.java)
+                                    intent.putExtra("USER_ID", following.id)
+                                    context.startActivity(intent)
+                                }
                             )
                         }
                     }
@@ -294,7 +289,7 @@ fun ChatLikeTopAppBar(
             }
         },
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = Color(0xFF0EA5E9)
+            containerColor = Color(0xFF000033)
         )
     )
 }
@@ -305,7 +300,6 @@ fun FollowingChatItem(
     index: Int,
     primaryBlue: Color,
     cardBg: Color,
-    bubbleColor: Color,
     textPrimary: Color,
     textSecondary: Color,
     textTertiary: Color,
@@ -347,17 +341,23 @@ fun FollowingChatItem(
                     .padding(vertical = 12.dp, horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Online indicator and avatar
                 Box(
                     modifier = Modifier.size(56.dp),
                     contentAlignment = Alignment.BottomEnd
                 ) {
-                    // Avatar
-                    Surface(
-                        shape = CircleShape,
-                        color = primaryBlue.copy(alpha = 0.1f),
-                        modifier = Modifier.size(56.dp)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .background(primaryBlue.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
                     ) {
+                        Text(
+                            text = following.name.take(1).uppercase(),
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = primaryBlue
+                        )
                         if (following.profileImageUrl != null) {
                             AsyncImage(
                                 model = following.profileImageUrl,
@@ -365,22 +365,9 @@ fun FollowingChatItem(
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
                             )
-                        } else {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = following.name.take(1).uppercase(),
-                                    fontSize = 20.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = primaryBlue
-                                )
-                            }
                         }
                     }
 
-                    // Online indicator
                     if (following.isOnline) {
                         Surface(
                             shape = CircleShape,
@@ -395,38 +382,17 @@ fun FollowingChatItem(
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                // User info
                 Column(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = following.name,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = textPrimary,
-                            maxLines = 1,
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        if (following.mutualFriends > 0) {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = bubbleColor,
-                                modifier = Modifier.padding(start = 8.dp)
-                            ) {
-                                Text(
-                                    text = "${following.mutualFriends} mutual",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = primaryBlue,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
-                    }
+                    Text(
+                        text = following.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = textPrimary,
+                        maxLines = 1
+                    )
 
                     Spacer(modifier = Modifier.height(4.dp))
 
@@ -437,7 +403,6 @@ fun FollowingChatItem(
                         maxLines = 1
                     )
 
-                    // Last active
                     following.lastActive?.let { lastActive ->
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
@@ -451,7 +416,6 @@ fun FollowingChatItem(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Unfollow button/menu
                 if (isOwnProfile) {
                     Box {
                         IconButton(
@@ -606,7 +570,6 @@ fun ChatEmptyFollowingState() {
     }
 }
 
-// Helper function to load following (updated to include more data)
 private fun loadFollowing(
     userId: String,
     userRepository: UserRepoImpl,
@@ -636,8 +599,7 @@ private fun loadFollowing(
                             username = user.username.ifEmpty { "@user" },
                             profileImageUrl = if (user.profileImageUrl.isNotEmpty()) user.profileImageUrl else null,
                             lastActive = "recently",
-                            isOnline = false,
-                            mutualFriends = (0..10).random() // Mock data
+                            isOnline = false
                         )
 
                         following.add(followingUi)
@@ -653,8 +615,7 @@ private fun loadFollowing(
                             username = "@user",
                             profileImageUrl = null,
                             lastActive = null,
-                            isOnline = false,
-                            mutualFriends = 0
+                            isOnline = false
                         ))
                         loadedCount++
                         if (loadedCount == totalCount) {

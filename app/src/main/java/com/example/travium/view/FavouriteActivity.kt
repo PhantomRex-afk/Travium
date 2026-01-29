@@ -56,12 +56,13 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.example.travium.model.FavouritePlace
 import com.example.travium.ui.theme.TraviumTheme
-import com.google.firebase.auth.ktx.auth
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.ktx.database
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.database.database
+
 
 class FavouriteActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
