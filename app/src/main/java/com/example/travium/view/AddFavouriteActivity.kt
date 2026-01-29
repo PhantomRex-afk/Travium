@@ -49,9 +49,12 @@ import com.example.travium.repository.FavouriteRepositoryImpl
 import com.example.travium.ui.theme.TraviumTheme
 import com.example.travium.viewmodel.FavouriteViewModel
 import com.example.travium.viewmodel.FavouriteViewModelFactory
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.database.database
 import com.google.firebase.database.ktx.database
-import com.google.firebase.ktx.Firebase
+
 
 class AddFavouriteActivity : ComponentActivity() {
 

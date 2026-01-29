@@ -67,7 +67,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.travium.R
-import com.example.travium.model.ChatRoom
 import com.example.travium.model.NotificationModel
 import com.example.travium.model.UserModel
 import com.example.travium.repository.MakePostRepoImpl
@@ -233,10 +232,10 @@ fun MainScreen(
                 Box(modifier = Modifier.fillMaxSize()) {
                     when(selectedIndex){
                         0 -> HomeScreenBody()
-                        1 -> HomeScreenBody()
+                        1 -> GuideScreenBody()
                         2 -> MakePostBody(selectedImageUri = selectedImageUri, onPickImage = onPickImage)
                         3 -> ChatScreen()
-                        4 -> ProfileScreen(userId = currentUserId)
+                        4 -> ProfileScreen()
                         else -> HomeScreenBody()
                     }
                 }
@@ -308,6 +307,7 @@ fun NotificationItem(notification: NotificationModel, userViewModel: UserViewMod
     val message = when(notification.type) {
         "like" -> "liked your post."
         "comment" -> "commented: \"${notification.message}\""
+        "deletion" -> "notification: \"${notification.message}\""
         else -> ""
     }
 

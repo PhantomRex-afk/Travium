@@ -28,6 +28,7 @@ import com.example.travium.R
 import com.example.travium.ui.theme.TraviumTheme
 import com.google.firebase.auth.FirebaseAuth
 
+
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
