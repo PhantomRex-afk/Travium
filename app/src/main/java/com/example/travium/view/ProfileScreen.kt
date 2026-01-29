@@ -47,13 +47,12 @@ import com.google.firebase.database.database
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(userId: String) {
     val context = LocalContext.current
-    val user = Firebase.auth.currentUser
+    val currentUserId = Firebase.auth.currentUser?.uid
     
     val postViewModel = remember { MakePostViewModel(MakePostRepoImpl()) }
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
-    val allPosts by postViewModel.allPosts.observeAsState(initial = emptyList())
 
     var fullName by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
@@ -70,39 +69,34 @@ fun ProfileScreen() {
     val cyanAccent = Color(0xFF00FFFF)
 
     // Fetch user data and posts from Firebase
-    LaunchedEffect(user?.uid) {
-        if (user != null) {
-            val database = Firebase.database
-            
-            // Fetch User Details
-            val userRef = database.getReference("users").child(user.uid)
-            userRef.addValueEventListener(object : ValueEventListener {
+    LaunchedEffect(userId) {
+        val database = Firebase.database
+        val userRef = database.getReference("users").child(userId)
+        userRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                fullName = snapshot.child("fullName").getValue(String::class.java) ?: "Anonymous"
+                username = snapshot.child("username").getValue(String::class.java) ?: ""
+                bio = snapshot.child("bio").getValue(String::class.java) ?: "No bio yet"
+                profileImageUrl = snapshot.child("profileImageUrl").getValue(String::class.java)
+            }
+            override fun onCancelled(error: DatabaseError) {}
+        })
+
+        val postsRef = database.getReference("posts")
+        postsRef.orderByChild("userId").equalTo(userId)
+            .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
-                    fullName = snapshot.child("fullName").getValue(String::class.java) ?: "Anonymous"
-                    username = snapshot.child("username").getValue(String::class.java) ?: ""
-                    bio = snapshot.child("bio").getValue(String::class.java) ?: "No bio yet"
-                    profileImageUrl = snapshot.child("profileImageUrl").getValue(String::class.java)
+                    val posts = mutableListOf<MakePostModel>()
+                    for (postSnapshot in snapshot.children) {
+                        val post = postSnapshot.getValue(MakePostModel::class.java)
+                        if (post != null) {
+                            posts.add(post)
+                        }
+                    }
+                    userPosts = posts.reversed()
                 }
                 override fun onCancelled(error: DatabaseError) {}
             })
-
-            // Fetch User Posts
-            val postsRef = database.getReference("posts")
-            postsRef.orderByChild("userId").equalTo(user.uid)
-                .addValueEventListener(object : ValueEventListener {
-                    override fun onDataChange(snapshot: DataSnapshot) {
-                        val posts = mutableListOf<MakePostModel>()
-                        for (postSnapshot in snapshot.children) {
-                            val post = postSnapshot.getValue(MakePostModel::class.java)
-                            if (post != null) {
-                                posts.add(post)
-                            }
-                        }
-                        userPosts = posts.reversed() // Show newest first
-                    }
-                    override fun onCancelled(error: DatabaseError) {}
-                })
-        }
     }
 
     Box(modifier = Modifier.fillMaxSize().background(darkNavy)) {
@@ -121,7 +115,6 @@ fun ProfileScreen() {
                         .padding(bottom = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Profile Image
                     Surface(
                         shape = CircleShape,
                         border = BorderStroke(2.dp, cyanAccent),
@@ -142,7 +135,6 @@ fun ProfileScreen() {
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Username and Bio
                     Text(
                         if (username.isNotEmpty()) "@$username" else fullName,
                         color = Color.White,
@@ -157,7 +149,6 @@ fun ProfileScreen() {
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Stats Row
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
@@ -167,35 +158,34 @@ fun ProfileScreen() {
                         ProfileStatColumn("0", "Following", cyanAccent)
                     }
 
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = midnightBlue,
-                                contentColor = Color.White
-                            )
+                    if (userId != currentUserId) {
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Text("Follow", fontWeight = FontWeight.Bold)
-                        }
-                        Button(
-                            onClick = { 
-                                // Message logic
-                            },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = midnightBlue,
-                                contentColor = Color.White
-                            )
-                        ) {
-                            Text("Message", fontWeight = FontWeight.Bold)
+                            Button(
+                                onClick = {},
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = midnightBlue,
+                                    contentColor = Color.White
+                                )
+                            ) {
+                                Text("Follow", fontWeight = FontWeight.Bold)
+                            }
+                            Button(
+                                onClick = {},
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = midnightBlue,
+                                    contentColor = Color.White
+                                )
+                            ) {
+                                Text("Message", fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                     
@@ -205,7 +195,6 @@ fun ProfileScreen() {
                 }
             }
 
-            /* Gallery Grid with Like and Comment Overlays */
             items(userPosts) { post ->
                 Box(
                     modifier = Modifier
@@ -223,7 +212,6 @@ fun ProfileScreen() {
                         modifier = Modifier.fillMaxSize()
                     )
                     
-                    // Overlay for Like and Comment counts
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -242,7 +230,6 @@ fun ProfileScreen() {
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            // Likes
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     imageVector = Icons.Default.Favorite,
@@ -259,7 +246,6 @@ fun ProfileScreen() {
                                 )
                             }
                             
-                            // Comments
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     painter = painterResource(R.drawable.comment),
@@ -323,6 +309,6 @@ fun ProfileStatColumn(value: String, label: String, accentColor: Color) {
 @Composable
 fun ProfileScreenPreview() {
     TraviumTheme {
-        ProfileScreen()
+        ProfileScreen(userId = "preview")
     }
 }

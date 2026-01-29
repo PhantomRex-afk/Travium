@@ -233,10 +233,10 @@ fun MainScreen(
                 Box(modifier = Modifier.fillMaxSize()) {
                     when(selectedIndex){
                         0 -> HomeScreenBody()
-                        1 -> HomeScreenBody()
+                        1 -> GuideScreenBody()
                         2 -> MakePostBody(selectedImageUri = selectedImageUri, onPickImage = onPickImage)
                         3 -> ChatScreen()
-                        4 -> ProfileScreen()
+                        4 -> ProfileScreen(userId = currentUserId)
                         else -> HomeScreenBody()
                     }
                 }
@@ -308,6 +308,7 @@ fun NotificationItem(notification: NotificationModel, userViewModel: UserViewMod
     val message = when(notification.type) {
         "like" -> "liked your post."
         "comment" -> "commented: \"${notification.message}\""
+        "deletion" -> "notification: \"${notification.message}\""
         else -> ""
     }
 
