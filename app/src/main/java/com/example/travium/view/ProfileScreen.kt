@@ -1,21 +1,39 @@
 package com.example.travium.view
 
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,7 +48,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.example.travium.R
+import com.example.travium.model.Comment
 import com.example.travium.model.MakePostModel
+import com.example.travium.model.UserModel
 import com.example.travium.repository.MakePostRepoImpl
 import com.example.travium.repository.UserRepoImpl
 import com.example.travium.ui.theme.TraviumTheme
@@ -58,6 +78,11 @@ fun ProfileScreen(userId: String) {
     var profileImageUrl by remember { mutableStateOf<String?>(null) }
     var userPosts by remember { mutableStateOf<List<MakePostModel>>(emptyList()) }
 
+    var followersCount by remember { mutableStateOf(0L) }
+    var followingCount by remember { mutableStateOf(0L) }
+    var isFollowing by remember { mutableStateOf(false) }
+    var currentUserName by remember { mutableStateOf("") }
+
     var selectedPostId by remember { mutableStateOf<String?>(null) }
     var isSheetOpen by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -66,8 +91,7 @@ fun ProfileScreen(userId: String) {
     val darkNavy = Color(0xFF000033)
     val cyanAccent = Color(0xFF00FFFF)
 
-    // Fetch user data and posts from Firebase
-    LaunchedEffect(userId) {
+    LaunchedEffect(userId, currentUserId) {
         val database = Firebase.database
         val userRef = database.getReference("users").child(userId)
         userRef.addValueEventListener(object : ValueEventListener {
@@ -87,14 +111,29 @@ fun ProfileScreen(userId: String) {
                     val posts = mutableListOf<MakePostModel>()
                     for (postSnapshot in snapshot.children) {
                         val post = postSnapshot.getValue(MakePostModel::class.java)
-                        if (post != null) {
-                            posts.add(post)
-                        }
+                        if (post != null) posts.add(post)
                     }
                     userPosts = posts.reversed()
                 }
                 override fun onCancelled(error: DatabaseError) {}
             })
+
+        if (currentUserId != null) {
+            userViewModel.isFollowing(currentUserId, userId) { following ->
+                isFollowing = following
+            }
+            val currentUserRef = database.getReference("users").child(currentUserId)
+            currentUserRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    currentUserName = snapshot.child("fullName").getValue(String::class.java) ?: ""
+                }
+
+                override fun onCancelled(error: DatabaseError) {}
+            })
+        }
+
+        userViewModel.getFollowersCount(userId) { count -> followersCount = count }
+        userViewModel.getFollowingCount(userId) { count -> followingCount = count }
     }
 
     Box(modifier = Modifier.fillMaxSize().background(darkNavy)) {
@@ -105,7 +144,6 @@ fun ProfileScreen(userId: String) {
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            /* Header Section */
             item(span = { GridItemSpan(maxLineSpan) }) {
                 Column(
                     modifier = Modifier
@@ -121,7 +159,7 @@ fun ProfileScreen(userId: String) {
                     ) {
                         Image(
                             painter = rememberAsyncImagePainter(
-                                profileImageUrl ?: R.drawable.blastoise
+                                model = profileImageUrl ?: R.drawable.blastoise
                             ),
                             contentDescription = "Profile Image",
                             modifier = Modifier
@@ -152,29 +190,61 @@ fun ProfileScreen(userId: String) {
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         ProfileStatColumn(userPosts.size.toString(), "Posts", cyanAccent)
-                        ProfileStatColumn("0", "Followers", cyanAccent)
-                        ProfileStatColumn("0", "Following", cyanAccent)
+                        ProfileStatColumn(followersCount.toString(), "Followers", cyanAccent) {
+                            val intent = Intent(context, FollowersListActivity::class.java)
+                            intent.putExtra("USER_ID", userId)
+                            context.startActivity(intent)
+                        }
+                        ProfileStatColumn(followingCount.toString(), "Following", cyanAccent) {
+                            val intent = Intent(context, FollowingListActivity::class.java)
+                            intent.putExtra("USER_ID", userId)
+                            context.startActivity(intent)
+                        }
                     }
 
-                    if (userId != currentUserId) {
+                    if (userId != currentUserId && currentUserId != null) {
                         Spacer(modifier = Modifier.height(24.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Button(
-                                onClick = {},
+                                onClick = {
+                                    if (isFollowing) {
+                                        userViewModel.unfollowUser(currentUserId, userId) { success, message ->
+                                            if (success) {
+                                                isFollowing = false
+                                            }
+                                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                        }
+                                    } else {
+                                        userViewModel.followUser(currentUserId, userId) { success, message ->
+                                            if (success) {
+                                                isFollowing = true
+                                            }
+                                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                },
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = midnightBlue,
-                                    contentColor = Color.White
+                                    containerColor = if(isFollowing) midnightBlue else cyanAccent,
+                                    contentColor = if(isFollowing) Color.White else darkNavy
                                 )
                             ) {
-                                Text("Follow", fontWeight = FontWeight.Bold)
+                                Text(if(isFollowing) "Unfollow" else "Follow", fontWeight = FontWeight.Bold)
                             }
                             Button(
-                                onClick = {},
+                                onClick = {
+                                    val intent = Intent(context, ChatActivity::class.java)
+                                    intent.putExtra("receiverId", userId)
+                                    intent.putExtra("receiverName", fullName)
+                                    intent.putExtra("receiverImage", profileImageUrl)
+                                    intent.putExtra("currentUserId", currentUserId)
+                                    intent.putExtra("currentUserName", currentUserName)
+                                    context.startActivity(intent)
+                                },
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
@@ -276,19 +346,11 @@ fun ProfileScreen(userId: String) {
                     dragHandle = { BottomSheetDefaults.DragHandle(color = TravelSoftGray) },
                     modifier = Modifier.fillMaxHeight(0.9f)
                 ) {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        PostCard(
-                            post = latestPost,
-                            postViewModel = postViewModel,
-                            userViewModel = userViewModel,
-                            onCommentClick = {} // Already in comment view
-                        )
-                        CommentSection(
-                            post = latestPost,
-                            postViewModel = postViewModel,
-                            userViewModel = userViewModel
-                        )
-                    }
+                    CommentSection(
+                        post = latestPost,
+                        postViewModel = postViewModel,
+                        userViewModel = userViewModel
+                    )
                 }
             }
         }
@@ -296,8 +358,11 @@ fun ProfileScreen(userId: String) {
 }
 
 @Composable
-fun ProfileStatColumn(value: String, label: String, accentColor: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+fun ProfileStatColumn(value: String, label: String, accentColor: Color, onClick: (() -> Unit)? = null) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = (if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+    ) {
         Text(value, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
         Text(label, color = Color.White.copy(alpha = 0.6f), fontSize = 12.sp)
     }

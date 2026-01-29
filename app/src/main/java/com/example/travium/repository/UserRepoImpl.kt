@@ -66,6 +66,10 @@ class UserRepoImpl : UserRepo {
     }
 
     override fun followUser(currentUserId: String, targetUserId: String, callback: (Boolean, String) -> Unit) {
+        if (currentUserId == targetUserId) {
+            callback(false, "You cannot follow yourself.")
+            return
+        }
         followingRef.child(currentUserId).child(targetUserId).setValue(true)
             .addOnSuccessListener {
                 followersRef.child(targetUserId).child(currentUserId).setValue(true)
