@@ -16,7 +16,9 @@ import java.io.InputStream
 import java.util.concurrent.Executors
 
 class GuideRepoImpl : GuideRepo {
-    private val guidesRef: DatabaseReference = FirebaseDatabase.getInstance().getReference("guides")
+
+    private val database: FirebaseDatabase = FirebaseDatabase.getInstance()
+    private val guidesRef: DatabaseReference = database.getReference("guides")
 
     private val cloudinary = Cloudinary(
         mapOf(
@@ -44,7 +46,7 @@ class GuideRepoImpl : GuideRepo {
                         inputStream, ObjectUtils.asMap("resource_type", "image")
                     )
                     val imageUrl = (response["url"] as String?)?.replace("http://", "https://")
-
+                    
                     synchronized(uploadedUrls) {
                         if (imageUrl != null) uploadedUrls.add(imageUrl)
                         uploadCount++
@@ -79,20 +81,6 @@ class GuideRepoImpl : GuideRepo {
                     callback(true, "Guide published successfully")
                 } else {
                     callback(false, task.exception?.message ?: "Failed to publish guide")
-                }
-            }
-    }
-
-    override fun registerGuide(guide: GuideModel, callback: (Boolean, String) -> Unit) {
-        val guideId = guidesRef.push().key ?: return callback(false, "Failed to generate ID")
-        val finalGuide = guide.copy(guideId = guideId)
-
-        guidesRef.child(guideId).setValue(finalGuide)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    callback(true, "Application submitted successfully!")
-                } else {
-                    callback(false, task.exception?.message ?: "Submission failed")
                 }
             }
     }
@@ -140,15 +128,6 @@ class GuideRepoImpl : GuideRepo {
             } else {
                 callback(false, task.exception?.message ?: "Failed to delete guide")
             }
-        }
-    }
-
-    override fun getGuide(guideId: String, callback: (GuideModel?, String?) -> Unit) {
-        guidesRef.child(guideId).get().addOnSuccessListener { snapshot ->
-            val guide = snapshot.getValue(GuideModel::class.java)
-            callback(guide, null)
-        }.addOnFailureListener {
-            callback(null, it.message)
         }
     }
 }

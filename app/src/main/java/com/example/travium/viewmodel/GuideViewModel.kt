@@ -1,97 +1,112 @@
 package com.example.travium.viewmodel
 
+import android.content.Context
+import android.net.Uri
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.example.travium.model.AdminNotificationModel
-import com.example.travium.model.UserModel
-import com.example.travium.repository.AdminNotificationRepo
-import com.example.travium.repository.UserRepo
-import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import com.example.travium.model.GuideModel
+import com.example.travium.model.HotelLocation
+import com.example.travium.repository.GuideRepo
 
-class GuideViewModel(
-    private val repository: UserRepo,
-    private val adminRepo: AdminNotificationRepo
-) : ViewModel() {
+class GuideViewModel(private val repo: GuideRepo) : ViewModel() {
 
-    private val _loading = MutableStateFlow(false)
-    val loading: StateFlow<Boolean> = _loading.asStateFlow()
+    private val _allGuides = MutableLiveData<List<GuideModel>>()
+    val allGuides: LiveData<List<GuideModel>> = _allGuides
 
-    private val _status = MutableStateFlow<String?>(null)
-    val status: StateFlow<String?> = _status.asStateFlow()
-
-    private val _userProfile = MutableStateFlow<UserModel?>(null)
-    val userProfile: StateFlow<UserModel?> = _userProfile.asStateFlow()
-
-    fun registerGuide(
-        fullName: String,
-        email: String,
-        password: String,
-        dob: String,
-        gender: String,
-        phone: String,
-        location: String,
-        experience: String,
-        specialties: String,
-        bio: String
+    fun addGuide(
+        context: Context, 
+        placeName: String, 
+        imageUris: List<Uri>, 
+        accommodations: String,
+        latitude: Double,
+        longitude: Double,
+        hotels: List<HotelLocation>,
+        callback: (Boolean, String) -> Unit
     ) {
-        _loading.value = true
-        // First create auth account
-        repository.register(email, password) { success, userId, message ->
-            if (success) {
-                val guideUser = UserModel(
-                    userId = userId,
-                    email = email,
-                    fullName = fullName,
-                    dob = dob,
-                    gender = gender,
-                    phoneNumber = phone,
-                    location = location,
-                    yearsOfExperience = experience,
-                    specialties = specialties,
-                    bio = bio,
-                    isGuide = true,
-                    status = "pending"
+        if (placeName.isBlank()) {
+            callback(false, "Please enter a place name")
+            return
+        }
+        if (imageUris.isEmpty()) {
+            callback(false, "Please select at least one picture")
+            return
+        }
+
+        repo.uploadImages(context, imageUris) { urls ->
+            if (urls != null) {
+                val guide = GuideModel(
+                    placeName = placeName,
+                    imageUrls = urls,
+                    accommodations = accommodations,
+                    latitude = latitude,
+                    longitude = longitude,
+                    hotels = hotels
                 )
-                // Then add details to database
-                repository.addUserToDatabase(userId, guideUser) { dbSuccess, dbMessage ->
-                    if (dbSuccess) {
-                        // Notify Admin
-                        val adminNotification = AdminNotificationModel(
-                            title = "New Guide Application",
-                            message = "$fullName has submitted a guide application for $location.",
-                            timestamp = System.currentTimeMillis()
-                        )
-                        adminRepo.sendNotification(adminNotification) { _, _ ->
-                            _loading.value = false
-                            _status.value = "success: Application submitted!"
-                        }
-                    } else {
-                        _loading.value = false
-                        _status.value = dbMessage
-                    }
+                repo.addGuide(guide, callback)
+            } else {
+                callback(false, "Failed to upload images")
+            }
+        }
+    }
+
+    fun updateGuide(
+        context: Context,
+        guideId: String,
+        placeName: String,
+        imageUris: List<Uri>, // New images to upload
+        existingImageUrls: List<String>, // Existing images to keep
+        accommodations: String,
+        latitude: Double,
+        longitude: Double,
+        hotels: List<HotelLocation>,
+        callback: (Boolean, String) -> Unit
+    ) {
+        if (placeName.isBlank()) {
+            callback(false, "Please enter a place name")
+            return
+        }
+
+        if (imageUris.isNotEmpty()) {
+            repo.uploadImages(context, imageUris) { newUrls ->
+                if (newUrls != null) {
+                    val updatedGuide = GuideModel(
+                        guideId = guideId,
+                        placeName = placeName,
+                        imageUrls = existingImageUrls + newUrls,
+                        accommodations = accommodations,
+                        latitude = latitude,
+                        longitude = longitude,
+                        hotels = hotels
+                    )
+                    repo.updateGuide(updatedGuide, callback)
+                } else {
+                    callback(false, "Failed to upload new images")
                 }
-            } else {
-                _loading.value = false
-                _status.value = message
+            }
+        } else {
+            val updatedGuide = GuideModel(
+                guideId = guideId,
+                placeName = placeName,
+                imageUrls = existingImageUrls,
+                accommodations = accommodations,
+                latitude = latitude,
+                longitude = longitude,
+                hotels = hotels
+            )
+            repo.updateGuide(updatedGuide, callback)
+        }
+    }
+
+    fun getAllGuides() {
+        repo.getAllGuides { success, message, guides ->
+            if (success) {
+                _allGuides.value = guides ?: emptyList()
             }
         }
     }
 
-    fun fetchGuideProfile(userId: String) {
-        _loading.value = true
-        repository.getUserById(userId) { user ->
-            _loading.value = false
-            if (user != null) {
-                _userProfile.value = user
-            } else {
-                _status.value = "Profile not found"
-            }
-        }
-    }
-
-    fun clearStatus() {
-        _status.value = null
+    fun deleteGuide(guideId: String, callback: (Boolean, String) -> Unit) {
+        repo.deleteGuide(guideId, callback)
     }
 }
