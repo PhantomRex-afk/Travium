@@ -72,6 +72,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.travium.R
 import com.example.travium.model.UserModel
 import com.example.travium.repository.UserRepoImpl
@@ -85,8 +86,9 @@ class RegisterActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val userRepo = UserRepoImpl()
-            val userViewModel = UserViewModel(userRepo)
+            val userViewModel: UserViewModel = viewModel {
+                UserViewModel(UserRepoImpl())
+            }
             RegisterBody(userViewModel)
         }
     }
@@ -306,6 +308,25 @@ fun RegisterBody(viewModel: UserViewModel? = null) {
                         }, contentAlignment = Alignment.Center) {
                             if (isLoading) CircularProgressIndicator(color = White, modifier = Modifier.size(24.dp))
                             else Text("Create Account", style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, color = White))
+                        }
+
+                        // Added clickable "Register as a Guide" button
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(52.dp)
+                                .clip(RoundedCornerShape(16.dp))
+                                .border(1.dp, secondaryColor, RoundedCornerShape(16.dp))
+                                .clickable {
+                                    val intent = Intent(context, GuideRegistrationActivity::class.java)
+                                    context.startActivity(intent)
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                "Register as a Guide",
+                                style = TextStyle(fontWeight = FontWeight.Bold, fontSize = 16.sp, color = secondaryColor)
+                            )
                         }
                     }
                 }

@@ -6,9 +6,15 @@ data class UserModel(
     val fullName : String = "",
     val username: String = "",
     val dob : String = "",
+    val gender: String = "",
+    val phoneNumber: String = "",
     val country : String = "",
+    val location: String = "", // Used for District in guides
     val bio: String = "",
     val profileImageUrl: String = "",
-    val followers: List<String> = emptyList(),
-    val following: List<String> = emptyList()
+    val isGuide: Boolean = false,
+    val yearsOfExperience: String = "",
+    val specialties: String = "",
+    val status: String = "", // pending, approved, rejected
+    val timestamp: Long = System.currentTimeMillis()
 )

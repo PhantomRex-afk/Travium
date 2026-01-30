@@ -10,4 +10,6 @@ interface GuideRepo {
     fun updateGuide(guide: GuideModel, callback: (Boolean, String) -> Unit)
     fun getAllGuides(callback: (Boolean, String, List<GuideModel>?) -> Unit)
     fun deleteGuide(guideId: String, callback: (Boolean, String) -> Unit)
+    fun registerGuide(guide: GuideModel, callback: (Boolean, String) -> Unit)
+    fun getGuide(guideId: String, callback: (GuideModel?, String?) -> Unit)
 }
