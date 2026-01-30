@@ -1,8 +1,7 @@
-package com.example.travium.view
+package com.example.travium.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.example.travium.Model.ReportModel
-import com.example.travium.Repository.ReportRepo
+import com.example.travium.model.ReportModel
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase

@@ -1,4 +1,4 @@
-package com.example.travium
+package com.example.travium.view
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -17,8 +17,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.travium.Model.ReportModel
-import com.example.travium.view.NotificationViewModel
+
+import com.example.travium.R
+import com.example.travium.model.ReportModel
+import com.example.travium.viewmodel.NotificationViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
