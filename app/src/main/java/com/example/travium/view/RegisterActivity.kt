@@ -60,6 +60,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -200,14 +201,14 @@ fun RegisterBody(viewModel: UserViewModel? = null) {
                         modifier = Modifier.padding(24.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        OutlinedTextField(value = fullName, onValueChange = { fullName = it }, placeholder = { Text("Full Name") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = premiumTextFieldColors(primaryColor, textFieldBg), singleLine = true)
-                        OutlinedTextField(value = email, onValueChange = { email = it }, placeholder = { Text("Enter your email") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = premiumTextFieldColors(primaryColor, textFieldBg), singleLine = true)
-                        OutlinedTextField(value = password, onValueChange = { password = it }, placeholder = { Text("Create a password") }, visualTransformation = if (visibility) VisualTransformation.None else PasswordVisualTransformation(), trailingIcon = { IconButton(onClick = { visibility = !visibility }) { Icon(painter = if (visibility) painterResource(R.drawable.baseline_visibility_24) else painterResource(R.drawable.baseline_visibility_off_24), "Toggle password visibility", tint = White.copy(alpha = 0.7f)) } }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = premiumTextFieldColors(primaryColor, textFieldBg), singleLine = true)
-                        OutlinedTextField(value = confirmPassword, onValueChange = { confirmPassword = it }, placeholder = { Text("Confirm Password") }, visualTransformation = if (confirmVisibility) VisualTransformation.None else PasswordVisualTransformation(), trailingIcon = { IconButton(onClick = { confirmVisibility = !confirmVisibility }) { Icon(painter = if (confirmVisibility) painterResource(R.drawable.baseline_visibility_24) else painterResource(R.drawable.baseline_visibility_off_24), "Toggle password visibility", tint = White.copy(alpha = 0.7f)) } }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = premiumTextFieldColors(primaryColor, textFieldBg), singleLine = true)
+                        OutlinedTextField(value = fullName, onValueChange = { fullName = it }, placeholder = { Text("Full Name") }, modifier = Modifier.fillMaxWidth().testTag("fullName"), shape = RoundedCornerShape(16.dp), colors = premiumTextFieldColors(primaryColor, textFieldBg), singleLine = true)
+                        OutlinedTextField(value = email, onValueChange = { email = it }, placeholder = { Text("Enter your email") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), modifier = Modifier.fillMaxWidth().testTag("email"), shape = RoundedCornerShape(16.dp), colors = premiumTextFieldColors(primaryColor, textFieldBg), singleLine = true)
+                        OutlinedTextField(value = password, onValueChange = { password = it }, placeholder = { Text("Create a password") }, visualTransformation = if (visibility) VisualTransformation.None else PasswordVisualTransformation(), trailingIcon = { IconButton(onClick = { visibility = !visibility }) { Icon(painter = if (visibility) painterResource(R.drawable.baseline_visibility_24) else painterResource(R.drawable.baseline_visibility_off_24), "Toggle password visibility", tint = White.copy(alpha = 0.7f)) } }, modifier = Modifier.fillMaxWidth().testTag("password"), shape = RoundedCornerShape(16.dp), colors = premiumTextFieldColors(primaryColor, textFieldBg), singleLine = true)
+                        OutlinedTextField(value = confirmPassword, onValueChange = { confirmPassword = it }, placeholder = { Text("Confirm Password") }, visualTransformation = if (confirmVisibility) VisualTransformation.None else PasswordVisualTransformation(), trailingIcon = { IconButton(onClick = { confirmVisibility = !confirmVisibility }) { Icon(painter = if (confirmVisibility) painterResource(R.drawable.baseline_visibility_24) else painterResource(R.drawable.baseline_visibility_off_24), "Toggle password visibility", tint = White.copy(alpha = 0.7f)) } }, modifier = Modifier.fillMaxWidth().testTag("confirmPassword"), shape = RoundedCornerShape(16.dp), colors = premiumTextFieldColors(primaryColor, textFieldBg), singleLine = true)
 
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             // Country Selector Fix
-                            Box(modifier = Modifier.weight(1f).clickable { expanded = true }) {
+                            Box(modifier = Modifier.weight(1f).testTag("countryBox").clickable { expanded = true }) {
                                 OutlinedTextField(
                                     value = selectedOptionText,
                                     onValueChange = {},
@@ -239,7 +240,7 @@ fun RegisterBody(viewModel: UserViewModel? = null) {
                             }
 
                             // Birth Date Fix
-                            Box(modifier = Modifier.weight(1f).clickable { showDatePicker = true }) {
+                            Box(modifier = Modifier.weight(1f).testTag("dateBox").clickable { showDatePicker = true }) {
                                 OutlinedTextField(
                                     value = selectedDate,
                                     onValueChange = {},
@@ -260,10 +261,10 @@ fun RegisterBody(viewModel: UserViewModel? = null) {
                         }
 
                         if (selectedOptionText == "Other") {
-                            OutlinedTextField(value = customCountry, onValueChange = { customCountry = it }, placeholder = { Text("Enter your country") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = premiumTextFieldColors(primaryColor, textFieldBg), singleLine = true)
+                            OutlinedTextField(value = customCountry, onValueChange = { customCountry = it }, placeholder = { Text("Enter your country") }, modifier = Modifier.fillMaxWidth().testTag("customCountry"), shape = RoundedCornerShape(16.dp), colors = premiumTextFieldColors(primaryColor, textFieldBg), singleLine = true)
                         }
 
-                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { terms = !terms }) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("termsRow").clickable { terms = !terms }) {
                             CustomCheckbox(checked = terms)
                             Spacer(Modifier.width(12.dp))
                             Text("I agree to the terms and conditions", color = White.copy(alpha = 0.9f), fontSize = 14.sp)
@@ -271,7 +272,7 @@ fun RegisterBody(viewModel: UserViewModel? = null) {
 
                         Box(modifier = Modifier.fillMaxWidth().height(52.dp).clip(RoundedCornerShape(16.dp)).background(brush = Brush.horizontalGradient(
                             listOf(primaryColor, secondaryColor)
-                        )).clickable {
+                        )).testTag("registerButton").clickable {
                             if (!terms) {
                                 Toast.makeText(context, "Please agree to terms", Toast.LENGTH_SHORT).show()
                                 return@clickable
@@ -311,11 +312,11 @@ fun RegisterBody(viewModel: UserViewModel? = null) {
                 }
 
                 Text(
-                    buildAnnotatedString {
+                    modifier = Modifier.testTag("signInText").clickable { context.startActivity(Intent(context, LoginActivity::class.java)) },
+                    text = buildAnnotatedString {
                         withStyle(SpanStyle(White.copy(alpha = 0.8f))) { append("Already have an account? ") }
                         withStyle(SpanStyle(secondaryColor, fontWeight = FontWeight.Bold)) { append("Sign In") }
-                    },
-                    modifier = Modifier.clickable { context.startActivity(Intent(context, LoginActivity::class.java)) }
+                    }
                 )
             }
         }

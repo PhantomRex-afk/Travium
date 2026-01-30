@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -113,7 +114,7 @@ fun ForgetPasswordBody(viewModel: UserViewModel? = null) {
                         value = email,
                         onValueChange = { email = it },
                         placeholder = { Text("Email Address") },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().testTag("emailInput"),
                         shape = RoundedCornerShape(16.dp),
                         colors = loginTextFieldColors(primaryColor, textFieldBg),
                         singleLine = true
@@ -144,7 +145,8 @@ fun ForgetPasswordBody(viewModel: UserViewModel? = null) {
                                         Log.e("ForgetPasswordActivity", "Password reset failed: $message")
                                     }
                                 }
-                             },
+                             }
+                            .testTag("sendResetLinkButton"),
                         contentAlignment = Alignment.Center
                     ) {
                         if (isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
