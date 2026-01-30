@@ -299,7 +299,7 @@ fun SettingsListItem(item: SettingsItemData, value: String? = null, onClick: () 
         Icon(
             imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight, 
             contentDescription = null,
-            modifier = Modifier.size(14.dp),
+            modifier = Modifier.size(24.dp),
             tint = Color.White.copy(alpha = 0.3f)
         )
     }
