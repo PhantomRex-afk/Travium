@@ -1,16 +1,20 @@
 package com.example.travium.view
 
+import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -37,6 +41,10 @@ import com.example.travium.repository.UserRepoImpl
 import com.example.travium.viewmodel.MakePostViewModel
 import com.example.travium.viewmodel.UserViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 
 // Travel-themed dark colors
 val TravelDeepNavy = Color(0xFF0F172A)
@@ -51,35 +59,129 @@ fun HomeScreenBody() {
     val userViewModel = remember { UserViewModel(UserRepoImpl()) }
     val allPosts by postViewModel.allPosts.observeAsState(initial = emptyList())
     
+    var searchQuery by remember { mutableStateOf("") }
+    var searchResults by remember { mutableStateOf<List<UserModel>>(emptyList()) }
+    var isSearching by remember { mutableStateOf(false) }
+
     var selectedPostId by remember { mutableStateOf<String?>(null) }
     var isSheetOpen by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
+    val context = LocalContext.current
+
     LaunchedEffect(Unit) {
         postViewModel.getAllPosts()
+    }
+
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.isNotBlank()) {
+            isSearching = true
+            val usersRef = FirebaseDatabase.getInstance().getReference("users")
+            usersRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    val users = mutableListOf<UserModel>()
+                    val lowercasedQuery = searchQuery.lowercase()
+                    for (child in snapshot.children) {
+                        val user = child.getValue(UserModel::class.java)
+                        if (user != null && (user.username.lowercase().contains(lowercasedQuery) || user.fullName.lowercase().contains(lowercasedQuery))) {
+                            users.add(user)
+                        }
+                    }
+                    searchResults = users.sortedWith(compareBy({ !it.username.lowercase().startsWith(lowercasedQuery) && !it.fullName.lowercase().startsWith(lowercasedQuery) }, { it.username }))
+                    isSearching = false
+                }
+
+                override fun onCancelled(error: DatabaseError) {
+                    isSearching = false
+                }
+            })
+        } else {
+            searchResults = emptyList()
+            isSearching = false
+        }
     }
 
     Box(modifier = Modifier
         .fillMaxSize()
         .background(TravelDeepNavy)
     ) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 12.dp),
-            contentPadding = PaddingValues(vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(allPosts) { post ->
-                PostCard(
-                    post = post, 
-                    postViewModel = postViewModel, 
-                    userViewModel = userViewModel,
-                    onCommentClick = {
-                        selectedPostId = post.postId
-                        isSheetOpen = true
+        Column {
+            // Search Bar
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                placeholder = { Text("Search for users...", color = TravelSoftGray) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TravelAccentTeal) },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(Icons.Default.Close, contentDescription = null, tint = TravelSoftGray)
+                        }
                     }
-                )
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    focusedBorderColor = TravelAccentTeal,
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                    focusedContainerColor = Color.White.copy(alpha = 0.05f),
+                    unfocusedContainerColor = Color.White.copy(alpha = 0.05f)
+                ),
+                shape = RoundedCornerShape(24.dp),
+                singleLine = true
+            )
+
+            if (searchQuery.isNotBlank()) {
+                when {
+                    isSearching -> {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = TravelAccentTeal)
+                        }
+                    }
+                    searchResults.isEmpty() -> {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("No users found.", color = TravelSoftGray, fontSize = 16.sp)
+                        }
+                    }
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(horizontal = 16.dp)
+                        ) {
+                            items(searchResults) { user ->
+                                UserSearchItem(user = user) {
+                                    val intent = Intent(context, ProfileActivity::class.java)
+                                    intent.putExtra("USER_ID", user.userId)
+                                    context.startActivity(intent)
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Feed
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(allPosts) { post ->
+                        PostCard(
+                            post = post, 
+                            postViewModel = postViewModel, 
+                            userViewModel = userViewModel,
+                            onCommentClick = {
+                                selectedPostId = post.postId
+                                isSheetOpen = true
+                            }
+                        )
+                    }
+                }
             }
         }
 
@@ -101,6 +203,50 @@ fun HomeScreenBody() {
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun UserSearchItem(user: UserModel, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(TravelCardNavy),
+            contentAlignment = Alignment.Center
+        ) {
+            if (user.profileImageUrl.isNotEmpty()) {
+                Image(
+                    painter = rememberAsyncImagePainter(user.profileImageUrl),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Text(
+                    text = (if (user.username.isNotEmpty()) user.username else user.fullName).take(1).uppercase(),
+                    color = TravelAccentTeal,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(
+                text = if (user.username.isNotEmpty()) "@${user.username}" else user.fullName,
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp
+            )
         }
     }
 }
@@ -131,16 +277,25 @@ fun PostAuthorHeader(userId: String, userViewModel: UserViewModel) {
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = (user?.fullName?.take(1) ?: "T").uppercase(),
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp
-            )
+            if (user?.profileImageUrl?.isNotEmpty() == true) {
+                Image(
+                    painter = rememberAsyncImagePainter(user?.profileImageUrl),
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Text(
+                    text = (user?.username?.take(1) ?: user?.fullName?.take(1) ?: "T").uppercase(),
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+            }
         }
         Spacer(modifier = Modifier.width(10.dp))
         Text(
-            text = user?.fullName ?: "Traveler",
+            text = user?.username?.let { "@$it" } ?: user?.fullName ?: "Traveler",
             color = Color.White,
             fontWeight = FontWeight.SemiBold,
             fontSize = 15.sp
@@ -301,7 +456,7 @@ fun CommentSection(post: MakePostModel, postViewModel: MakePostViewModel, userVi
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = comment.fullName.take(1).uppercase(),
+                            text = (if (comment.fullName.startsWith("@")) comment.fullName.drop(1) else comment.fullName).take(1).uppercase(),
                             color = TravelAccentTeal,
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp
@@ -310,7 +465,7 @@ fun CommentSection(post: MakePostModel, postViewModel: MakePostViewModel, userVi
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
                         Text(
-                            text = comment.fullName,
+                            text = if (comment.fullName.startsWith("@")) comment.fullName else "@${comment.fullName}",
                             color = Color.White,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 14.sp
@@ -352,7 +507,7 @@ fun CommentSection(post: MakePostModel, postViewModel: MakePostViewModel, userVi
                     if (currentUserId.isNotEmpty() && newCommentText.isNotBlank()) {
                         val comment = Comment(
                             userId = currentUserId,
-                            fullName = currentUserProfile?.fullName ?: "Explorer",
+                            fullName = currentUserProfile?.username ?: currentUserProfile?.fullName ?: "Explorer",
                             message = newCommentText
                         )
                         postViewModel.addComment(post.postId, comment) { success ->

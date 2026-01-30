@@ -49,4 +49,8 @@ class MakePostViewModel(private val makePostRepo: MakePostRepo) : ViewModel() {
             }
         }
     }
+
+    fun deletePost(postId: String, userId: String, reason: String, callback: (Boolean, String) -> Unit) {
+        makePostRepo.deletePost(postId, userId, reason, callback)
+    }
 }
